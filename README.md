@@ -14,14 +14,23 @@ A curated library of 25 Agent Skills for Claude Code, installable as a plugin or
 
 ### Plugin (recommended)
 
-In Claude Code:
+Inside an interactive Claude Code session:
 
 ```
 /plugin marketplace add Drizzy07x/Skillquiver
 /plugin install skillquiver@skillquiver
 ```
 
-All 25 skills load globally (every project). Update later with `/plugin update skillquiver`.
+Or from any terminal (works even where `/plugin` slash commands are not available):
+
+```bash
+claude plugin marketplace add Drizzy07x/Skillquiver
+claude plugin install skillquiver@skillquiver --scope user
+```
+
+All 25 skills load globally (every project). Update later with `/plugin update skillquiver` or `claude plugin update skillquiver`.
+
+> **Note:** `/plugin` slash commands only exist in the interactive Claude Code CLI. In other environments (IDE integrations, non-interactive sessions), use the `claude plugin` terminal commands above or the manual install below.
 
 ### Manual
 
