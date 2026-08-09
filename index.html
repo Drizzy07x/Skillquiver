@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skillquiver — 25 Agent Skills for Claude Code</title>
+<meta name="description" content="25 Agent Skills for Claude Code. Each skill says when to use it, so Claude picks the right one on its own: writing a plan, finding a bug, checking that work is really done.">
+<meta name="theme-color" content="#0B0E13">
+<meta property="og:title" content="Skillquiver — 25 Agent Skills for Claude Code">
+<meta property="og:description" content="Each skill says when to use it, so Claude picks the right one on its own.">
+<meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.svg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0B0E13;
+  --panel: #131822;
+  --line: #222A36;
+  --bone: #E8E4DC;
+  --muted: #8B929E;
+  --copper: #C87941;
+  --gold: #E0A458;
+  --fletch: #7FA6A0;
+  --display: "Syne", "Segoe UI", sans-serif;
+  --body: "Instrument Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--bone);
+  font: 400 16px/1.65 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+::selection { background: var(--copper); color: #14100C; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+.eyebrow {
+  font: 500 11px/1 var(--mono);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+/* ── nav ─────────────────────────────────────────── */
+.nav {
+  position: sticky; top: 0; z-index: 20;
+  border-bottom: 1px solid var(--line);
+  background: rgba(11, 14, 19, .82);
+  backdrop-filter: blur(10px);
+}
+.nav .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
+.nav .mark { width: 20px; height: 26px; }
+.nav .name { font: 700 17px/1 var(--display); letter-spacing: -.02em; margin-right: auto; }
+.nav a.link { font-size: 14px; color: var(--muted); text-decoration: none; }
+.nav a.link:hover { color: var(--gold); }
+.nav a.gh { font-size: 14px; color: var(--bone); text-decoration: none; border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; }
+.nav a.gh:hover { border-color: var(--copper); }
+
+/* ── hero ────────────────────────────────────────── */
+.hero { border-bottom: 1px solid var(--line); overflow: hidden; }
+.hero .wrap {
+  display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px;
+  align-items: center; padding-top: 88px; padding-bottom: 88px;
+}
+.hero h1 {
+  font: 800 clamp(40px, 5.4vw, 70px)/1 var(--display);
+  letter-spacing: -.035em;
+  text-wrap: balance;
+  margin: 18px 0 0;
+}
+.hero h1 em { font-style: normal; color: var(--copper); }
+.hero p.sub { color: var(--muted); font-size: 18px; max-width: 34em; margin: 22px 0 0; }
+.hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.btn {
+  font: 600 15px var(--body); text-decoration: none;
+  padding: 11px 22px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--bone);
+}
+.btn:hover { border-color: var(--copper); }
+.btn.solid { background: var(--copper); border-color: var(--copper); color: #14100C; }
+.btn.solid:hover { background: var(--gold); border-color: var(--gold); }
+.meta { margin-top: 26px; font: 400 13px var(--mono); color: var(--muted); }
+.meta b { color: var(--bone); font-weight: 500; }
+
+/* the quiver: 25 shafts, one drawn at a time */
+.quiver { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+.vis { position: relative; }
+/* the quiver mouth: a band the arrows sit in */
+.vis .rim {
+  position: absolute; left: -6px; right: -6px; bottom: 22px; height: 3px;
+  background: var(--copper); border-radius: 2px; opacity: .85;
+}
+.vis .rim::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -22px; height: 3px;
+  background: var(--copper); border-radius: 2px; opacity: .5;
+}
+.shafts { display: flex; align-items: flex-end; gap: 6px; height: 210px; }
+.shaft {
+  flex: 1; position: relative; height: var(--h);
+  background: linear-gradient(to top, transparent, var(--line) 12%, var(--line));
+  border-radius: 1px;
+  transition: background .45s ease, transform .45s ease, height .5s cubic-bezier(.2,.8,.3,1);
+}
+.shaft::before {
+  content: ""; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-bottom: 8px solid var(--line);
+  transition: border-bottom-color .45s ease;
+}
+.shaft.lit { height: 100%; background: linear-gradient(to top, transparent, var(--copper) 12%, var(--gold)); transform: translateY(-12px); }
+.shaft.lit::before { border-bottom-color: var(--gold); }
+.draw { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 18px; min-height: 116px; }
+.draw .cond { color: var(--muted); font-size: 15px; }
+.draw .cond::before { content: "when "; color: var(--fletch); font: 500 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.draw .fires { font: 500 17px var(--mono); color: var(--gold); margin-top: 8px; display: block; text-decoration: none; }
+.draw .fires:hover { text-decoration: underline; text-underline-offset: 4px; }
+.draw .fires::before { content: "→ "; color: var(--copper); }
+.draw.swap .cond, .draw.swap .fires { opacity: 0; transform: translateY(4px); }
+.draw .cond, .draw .fires { transition: opacity .3s ease, transform .3s ease; }
+
+/* ── generic section ─────────────────────────────── */
+.band { border-bottom: 1px solid var(--line); padding: 76px 0; }
+.band h2 { font: 700 clamp(26px, 3.4vw, 36px)/1.1 var(--display); letter-spacing: -.025em; margin: 12px 0 0; }
+.band p.lede { color: var(--muted); max-width: 56ch; margin: 14px 0 0; }
+
+/* ── what is a skill ─────────────────────────────── */
+.explain { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.tree {
+  font: 400 13px/1.9 var(--mono); color: var(--muted);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px 24px; overflow-x: auto;
+}
+.tree b { color: var(--bone); font-weight: 500; }
+.tree i { color: var(--fletch); font-style: normal; }
+
+/* ── install ─────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; margin: 28px 0 14px; flex-wrap: wrap; }
+.tabs button {
+  font: 500 14px var(--body); color: var(--muted); cursor: pointer;
+  background: none; border: 1px solid transparent; border-radius: 7px; padding: 8px 14px;
+}
+.tabs button:hover { color: var(--bone); }
+.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--line); background: var(--panel); }
+.pane[hidden] { display: none; }
+.pane p { color: var(--muted); font-size: 15px; margin: 0 0 14px; }
+.cmd {
+  position: relative; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 18px 64px 18px 20px; margin: 0 0 12px;
+}
+.cmd pre { margin: 0; overflow-x: auto; font: 400 14px/1.8 var(--mono); }
+.cmd pre .p { color: var(--copper); }
+.cmd .copy {
+  position: absolute; top: 12px; right: 12px; cursor: pointer;
+  font: 500 12px var(--mono); color: var(--muted);
+  background: none; border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px;
+}
+.cmd .copy:hover { color: var(--gold); border-color: var(--gold); }
+.note { color: var(--muted); font-size: 14px; margin-top: 18px; }
+code { font: 400 .92em var(--mono); color: var(--gold); }
+
+/* ── the quiver list: skills as arrows ───────────── */
+.tools { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin: 28px 0 4px; }
+#filter {
+  flex: 1; min-width: 240px;
+  font: 400 15px var(--body); color: var(--bone);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px;
+}
+#filter::placeholder { color: var(--muted); }
+#filter:focus { outline: none; border-color: var(--copper); }
+#count { font: 400 13px var(--mono); color: var(--muted); }
+
+.group { margin-top: 40px; }
+.group .head { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.group .head .rule { flex: 1; height: 1px; background: var(--line); }
+.group .head .n { font: 400 12px var(--mono); color: var(--muted); }
+
+/* the row itself is the arrow: fletching at the nock, shaft along the base, head at the tip */
+.arrow {
+  position: relative; display: grid; grid-template-columns: 278px 1fr 1fr;
+  gap: 26px; align-items: baseline;
+  padding: 20px 44px 20px 4px;
+  text-decoration: none;
+}
+.arrow::before {
+  content: ""; position: absolute; left: 4px; right: 34px; bottom: 0; height: 1px;
+  background: linear-gradient(to right, var(--line) 30%, rgba(200,121,65,.3));
+  transition: background .25s ease;
+}
+.arrow::after {
+  content: ""; position: absolute; right: 16px; bottom: -4px;
+  width: 0; height: 0;
+  border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent;
+  border-left: 9px solid var(--line);
+  transition: transform .25s ease, border-left-color .25s ease;
+}
+.arrow:hover::after, .arrow:focus-visible::after { transform: translateX(8px); border-left-color: var(--gold); }
+.arrow:hover::before { background: linear-gradient(to right, var(--line) 10%, var(--copper)); }
+.arrow .id {
+  display: inline-flex; align-items: center; gap: 9px; white-space: nowrap;
+  font: 500 15px var(--mono); color: var(--bone);
+}
+.arrow:hover .id { color: var(--gold); }
+.arrow .fletch { width: 13px; height: 11px; flex: none; color: var(--copper); }
+.arrow .does { color: var(--muted); font-size: 14.5px; line-height: 1.55; }
+.arrow .when { color: var(--fletch); font-size: 14px; line-height: 1.55; }
+.arrow .when::before { content: "use when "; font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #5D7A76; }
+.hidden { display: none !important; }
+.empty { color: var(--muted); padding: 32px 4px; font-size: 15px; }
+
+/* ── chain ───────────────────────────────────────── */
+.chain { margin-top: 34px; border-left: 1px solid var(--line); }
+.step { position: relative; padding: 0 0 26px 30px; }
+.step::before {
+  content: ""; position: absolute; left: -4px; top: 9px; width: 7px; height: 7px;
+  background: var(--copper); border-radius: 50%;
+}
+.step:last-child { padding-bottom: 0; }
+.step .k { font: 400 12px var(--mono); color: var(--muted); letter-spacing: .1em; }
+.step .s { font: 500 15px var(--mono); color: var(--gold); display: block; margin: 3px 0 2px; text-decoration: none; width: fit-content; }
+.step .s:hover { text-decoration: underline; text-underline-offset: 4px; }
+.step .t { color: var(--muted); font-size: 14.5px; }
+
+/* ── footer ──────────────────────────────────────── */
+footer { padding: 46px 0 64px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--gold); }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width: 900px) {
+  .hero .wrap { grid-template-columns: 1fr; gap: 44px; padding-top: 60px; padding-bottom: 60px; }
+  .explain { grid-template-columns: 1fr; gap: 28px; }
+  .shafts { height: 150px; }
+  .arrow { grid-template-columns: 1fr; gap: 8px; padding: 18px 40px 18px 4px; }
+  .arrow .does, .arrow .when { padding-left: 22px; }
+  .band { padding: 56px 0; }
+  .nav a.link { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="fletch" viewBox="0 0 13 11">
+    <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+      <path d="M1 1 L5 5.5 L1 10"/><path d="M6 1 L10 5.5 L6 10"/>
+    </g>
+  </symbol>
+  <symbol id="quivermark" viewBox="-70 -170 140 280">
+    <g transform="rotate(14)">
+      <path d="M -52 -38 L -52 78 Q -52 96 -34 96 L 34 96 Q 52 96 52 78 L 52 -38"
+            fill="none" stroke="#E0A458" stroke-width="10" stroke-linecap="round"/>
+      <line x1="-52" y1="34" x2="52" y2="34" stroke="#E0A458" stroke-width="10" stroke-opacity=".35"/>
+      <g stroke="#C87941" stroke-width="9" stroke-linecap="round" fill="#C87941">
+        <line x1="-26" y1="80" x2="-26" y2="-92"/><path d="M -26 -122 L -41 -88 L -11 -88 Z" stroke="none"/>
+        <line x1="26" y1="80" x2="26" y2="-92"/><path d="M 26 -122 L 11 -88 L 41 -88 Z" stroke="none"/>
+      </g>
+      <g stroke="#E8E4DC" stroke-width="9" stroke-linecap="round" fill="#E8E4DC">
+        <line x1="0" y1="84" x2="0" y2="-128"/><path d="M 0 -158 L -15 -124 L 15 -124 Z" stroke="none"/>
+      </g>
+    </g>
+  </symbol>
+</svg>
+
+<nav class="nav">
+  <div class="wrap">
+    <svg class="mark" aria-hidden="true"><use href="#quivermark"/></svg>
+    <span class="name">Skillquiver</span>
+    <a class="link" href="#skill">How it works</a>
+    <a class="link" href="#install">Install</a>
+    <a class="link" href="#quiver">All 25 skills</a>
+    <a class="gh" href="https://github.com/Drizzy07x/Skillquiver">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">25 agent skills · claude code</span>
+      <h1>Claude <em>picks</em> the right skill on its own.</h1>
+      <p class="sub">Every skill here says what it does and when to use it. Claude reads those lines, matches them to what you asked for, and opens the one that fits. You never have to remember its name.</p>
+      <div class="actions">
+        <a class="btn solid" href="#install">Install</a>
+        <a class="btn" href="#quiver">See all 25 skills</a>
+      </div>
+      <p class="meta">MIT · <b>25</b> skills · works in every project · nothing to build</p>
+    </div>
+
+    <div class="quiver">
+      <div class="vis">
+        <div class="shafts" id="shafts" aria-hidden="true"></div>
+        <div class="rim" aria-hidden="true"></div>
+      </div>
+      <div class="draw" id="draw">
+        <span class="cond"></span>
+        <a class="fires" href="#quiver"></a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="band" id="skill">
+  <div class="wrap explain">
+    <div>
+      <span class="eyebrow">How it works</span>
+      <h2>A skill is a folder with one file in it.</h2>
+      <p class="lede">The top of that <code>SKILL.md</code> file has two things: what the skill does, and when to use it. Those are the only lines Claude keeps in mind. It opens the rest of the file only when the moment arrives — which is why 25 skills cost you almost nothing until one is needed.</p>
+    </div>
+    <div class="tree">
+.claude/skills/<br>
+├── <b>diagnose-systematically/</b><br>
+│&nbsp;&nbsp;&nbsp;└── SKILL.md<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>name:</i> diagnose-systematically<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>description:</i> … <b>Use when</b> something<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fails, crashes, or returns a<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wrong result.<br>
+├── verify-work/<br>
+└── … 23 more
+    </div>
+  </div>
+</section>
+
+<section class="band" id="install">
+  <div class="wrap">
+    <span class="eyebrow">Install</span>
+    <h2>Three ways to install. Pick one.</h2>
+    <p class="lede">The first one is the easiest: it adds all 25 skills to every project, and one command updates them later.</p>
+
+    <div class="tabs" role="tablist" aria-label="Install method">
+      <button role="tab" aria-selected="true" aria-controls="p1" id="t1">In Claude Code</button>
+      <button role="tab" aria-selected="false" aria-controls="p2" id="t2">Terminal</button>
+      <button role="tab" aria-selected="false" aria-controls="p3" id="t3">Manual</button>
+    </div>
+
+    <div class="pane" id="p1" role="tabpanel" aria-labelledby="t1">
+      <p>Type these two lines inside a Claude Code session:</p>
+      <div class="cmd"><pre><span class="p">/</span>plugin marketplace add Drizzy07x/Skillquiver
+<span class="p">/</span>plugin install skillquiver@skillquiver</pre><button class="copy">copy</button></div>
+      <p class="note">Update later with <code>/plugin update skillquiver</code>.</p>
+    </div>
+
+    <div class="pane" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
+      <p>Use this if <code>/plugin</code> commands aren't available where you are — inside an IDE, for example:</p>
+      <div class="cmd"><pre>claude plugin marketplace add Drizzy07x/Skillquiver
+claude plugin install skillquiver@skillquiver --scope user</pre><button class="copy">copy</button></div>
+      <p class="note"><code>--scope user</code> means every project on this computer gets the skills.</p>
+    </div>
+
+    <div class="pane" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
+      <p>Download the repo and copy the skill folders where you want them:</p>
+      <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
+cp -r Skillquiver/.claude/skills/* ~/.claude/skills/</pre><button class="copy">copy</button></div>
+      <p class="note">Copy them into a single project's <code>.claude/skills/</code> folder instead, and they only work in that project.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="quiver">
+  <div class="wrap">
+    <span class="eyebrow">All 25</span>
+    <h2>What each skill does, and when it steps in.</h2>
+    <div class="tools">
+      <input id="filter" type="search" placeholder="Search skills…" autocomplete="off" aria-label="Search skills">
+      <span id="count"></span>
+    </div>
+    <noscript><p class="note">JavaScript is off — <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/.claude/skills">browse the 25 skills on GitHub</a>.</p></noscript>
+    <div id="list"></div>
+    <p class="empty hidden" id="empty">Nothing matches. Try <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <span class="eyebrow">Working together</span>
+    <h2>One feature, from idea to merge.</h2>
+    <p class="lede">These aren't 25 separate tricks. Almost every step of building something has a skill that fits it. A normal run looks like this:</p>
+    <div class="chain" id="chain"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>MIT · built for <a href="https://claude.com/claude-code">Claude Code</a></span>
+    <a href="https://github.com/Drizzy07x/Skillquiver">github.com/Drizzy07x/Skillquiver</a>
+  </div>
+</footer>
+
+<script>
+const REPO = "https://github.com/Drizzy07x/Skillquiver/blob/main/.claude/skills/";
+
+const GROUPS = [
+  ["Planning", [
+    ["brainstorming", "Asks what you actually want before a line of code is written.", "you're starting something new and the details aren't settled."],
+    ["writing-plans", "Turns the idea into a written list of tasks, in order.", "you know what to build but nobody has written down the steps."],
+    ["executing-plans", "Works through a written plan one task at a time, stopping only if it gets stuck.", "a plan already exists and you want it carried out."],
+    ["subagent-driven-development", "Hands each task to its own helper agent and reviews the result before moving on.", "the tasks in the plan don't depend on each other."],
+    ["dispatching-parallel-agents", "Sends out several helper agents at once, one per unrelated problem.", "you have two or more separate problems and no reason to fix them in order."],
+  ]],
+  ["Execution", [
+    ["test-driven-development", "Writes the failing test first, then the smallest code that makes it pass.", "you're adding a feature or fixing a bug."],
+    ["solve-efficiently", "Finds the few files that actually matter instead of reading the whole project.", "the change touches several parts of the codebase."],
+    ["execute-durably", "Keeps progress in a file on disk so long work can be picked up where it stopped.", "the job is long and might get interrupted."],
+    ["refactor-safely", "Tidies code without changing what it does, with tests in place first.", "code is messy or duplicated but still has to work exactly the same."],
+    ["using-git-worktrees", "Sets up a separate working copy so your current work stays untouched.", "you're starting a feature and don't want to disturb what's already open."],
+    ["communicate-clearly", "Keeps the answer as short as it can be without dropping the proof.", "you want less noise, or something explained in plain words."],
+  ]],
+  ["Verification & debugging", [
+    ["diagnose-systematically", "Reproduces the failure, shrinks it, then tests one guess at a time.", "something breaks and nobody knows why yet."],
+    ["verification-before-completion", "Runs the command and reads the output before anyone says it works.", "you're about to hear “done”, “fixed”, or “all tests pass”."],
+    ["verify-work", "Checks finished work against real evidence and flags claims with nothing behind them.", "you want a second opinion on something that says it's complete."],
+    ["research-systematically", "Writes the question down first, then backs every answer with a source.", "comparing options, measuring, or checking how a library really behaves."],
+  ]],
+  ["Code review", [
+    ["requesting-code-review", "Sends the finished work to a reviewer agent and collects what it finds.", "a task is done and about to be merged."],
+    ["receiving-code-review", "Checks each review comment against the code before changing anything.", "feedback arrives and some of it might be wrong."],
+    ["finishing-a-development-branch", "Runs the tests, asks how you want to land the work, then cleans up after it.", "the feature is finished and needs to go somewhere."],
+  ]],
+  ["UI & automation", [
+    ["design-ui", "Chooses the look on purpose, builds it as one system, then checks it in a real browser.", "a screen looks generic, or you're redesigning one."],
+    ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface."],
+  ]],
+  ["Prompt & skill engineering", [
+    ["engineer-prompts", "Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.", "you're writing a prompt that other people will reuse."],
+    ["writing-skills", "Builds and tests a new skill, then proves it actually gets picked up.", "you want to add a skill of your own, or fix one that never fires."],
+    ["skill-generalizer", "Removes your private paths, keys, and personal habits so a skill can be shared.", "a skill you made for yourself is about to go public."],
+    ["skill-personalizer", "Adjusts a downloaded skill to the tools and folders you really use.", "a skill you installed fires at the wrong moments."],
+    ["skill-miner", "Looks through past sessions for the work you keep doing by hand.", "you notice you're repeating the same steps over and over."],
+  ]],
+];
+
+const FLAT = GROUPS.flatMap(([, s]) => s);
+
+/* ── skills list ─────────────────────────────────── */
+document.getElementById("list").innerHTML = GROUPS.map(([group, skills]) => `
+  <div class="group">
+    <div class="head">
+      <span class="eyebrow">${group}</span><span class="rule"></span><span class="n">${skills.length}</span>
+    </div>
+    ${skills.map(([id, does, when]) => `
+      <a class="arrow" href="${REPO}${id}/SKILL.md">
+        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}</span>
+        <span class="does">${does}</span>
+        <span class="when">${when}</span>
+      </a>`).join("")}
+  </div>`).join("");
+
+const count = document.getElementById("count");
+const empty = document.getElementById("empty");
+count.textContent = `${FLAT.length} shown`;
+
+document.getElementById("filter").addEventListener("input", e => {
+  const q = e.target.value.trim().toLowerCase();
+  let shown = 0;
+  for (const group of document.querySelectorAll(".group")) {
+    let inGroup = 0;
+    for (const row of group.querySelectorAll(".arrow")) {
+      const hit = row.textContent.toLowerCase().includes(q);
+      row.classList.toggle("hidden", !hit);
+      inGroup += hit;
+    }
+    group.classList.toggle("hidden", !inGroup);
+    shown += inGroup;
+  }
+  count.textContent = shown === FLAT.length ? `${FLAT.length} shown` : `${shown} of ${FLAT.length}`;
+  empty.classList.toggle("hidden", shown > 0);
+});
+
+/* ── chain ───────────────────────────────────────── */
+const CHAIN = [
+  ["brainstorming", "Agree what you're building."],
+  ["writing-plans", "Write the steps down, in order."],
+  ["using-git-worktrees", "Get a clean workspace to build in."],
+  ["subagent-driven-development", "Build it task by task, reviewed as you go."],
+  ["test-driven-development", "Each task starts with a failing test."],
+  ["verification-before-completion", "Run it. Read the output. Then say it works."],
+  ["requesting-code-review", "Get the finished work reviewed."],
+  ["finishing-a-development-branch", "Merge it, then clean up."],
+];
+document.getElementById("chain").innerHTML = CHAIN.map(([id, t], i) => `
+  <div class="step">
+    <span class="k">${String(i + 1).padStart(2, "0")}</span>
+    <a class="s" href="${REPO}${id}/SKILL.md">${id}</a>
+    <span class="t">${t}</span>
+  </div>`).join("");
+
+/* ── install tabs ────────────────────────────────── */
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+function selectTab(tab) {
+  tabs.forEach(t => {
+    const on = t === tab;
+    t.setAttribute("aria-selected", on);
+    document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+  });
+}
+tabs.forEach((tab, i) => {
+  tab.addEventListener("click", () => selectTab(tab));
+  tab.addEventListener("keydown", e => {
+    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    const next = tabs[(i + step + tabs.length) % tabs.length];
+    selectTab(next);
+    next.focus();
+  });
+});
+
+/* ── copy buttons ────────────────────────────────── */
+for (const btn of document.querySelectorAll(".copy")) {
+  btn.addEventListener("click", async () => {
+    const text = btn.previousElementSibling.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "copied";
+    } catch {
+      // no clipboard access (insecure origin, denied permission) — select it so Ctrl+C works
+      getSelection().selectAllChildren(btn.previousElementSibling);
+      btn.textContent = "ctrl+c";
+    }
+    setTimeout(() => (btn.textContent = "copy"), 1400);
+  });
+}
+
+/* ── hero: the draw ──────────────────────────────── */
+const shafts = document.getElementById("shafts");
+for (let i = 0; i < 25; i++) {
+  const s = document.createElement("div");
+  s.className = "shaft";
+  s.style.setProperty("--h", 30 + Math.round(33 * (1 + Math.sin(i * 1.1))) + "%");
+  shafts.append(s);
+}
+const BARS = [...shafts.children];
+
+const DRAWS = [
+  ["the tests pass on your machine but fail in CI", "diagnose-systematically"],
+  ["you're about to say the work is done", "verification-before-completion"],
+  ["everyone agreed what to build, no code yet", "writing-plans"],
+  ["a reviewer says your fix is wrong", "receiving-code-review"],
+  ["four unrelated tests broke at once", "dispatching-parallel-agents"],
+  ["the page looks like every other page", "design-ui"],
+];
+/* self-check: every id the hero and the chain link to must be a real skill folder */
+const KNOWN = new Set(FLAT.map(([id]) => id));
+for (const id of [...DRAWS.map(d => d[1]), ...CHAIN.map(c => c[0])]) {
+  if (!KNOWN.has(id)) console.error(`Skillquiver: "${id}" is not one of the ${FLAT.length} skills — link would 404.`);
+}
+
+const draw = document.getElementById("draw");
+const cond = draw.querySelector(".cond");
+const fires = draw.querySelector(".fires");
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let n = 0, held = false;
+
+/* hold the cycle while the reader is on it — otherwise the link moves under the cursor */
+draw.addEventListener("pointerenter", () => (held = true));
+draw.addEventListener("pointerleave", () => (held = false));
+draw.addEventListener("focusin", () => (held = true));
+draw.addEventListener("focusout", () => (held = false));
+
+function paint(i) {
+  const [c, skill] = DRAWS[i];
+  const idx = FLAT.findIndex(([id]) => id === skill);
+  BARS.forEach((b, k) => b.classList.toggle("lit", k === idx));
+  cond.textContent = c;
+  fires.textContent = skill;
+  fires.href = REPO + skill + "/SKILL.md";
+}
+paint(0);
+
+if (!still) {
+  setInterval(() => {
+    if (held) return;
+    draw.classList.add("swap");
+    setTimeout(() => {
+      paint(n = (n + 1) % DRAWS.length);
+      draw.classList.remove("swap");
+    }, 320);
+  }, 3800);
+}
+</script>
+</body>
+</html>
