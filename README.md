@@ -1,6 +1,6 @@
 # Skillquiver
 
-A curated library of 25 Agent Skills for Claude Code, installed as project skills under [`.claude/skills/`](.claude/skills/).
+A curated library of 25 Agent Skills for Claude Code, installable as a plugin or as project skills under [`.claude/skills/`](.claude/skills/).
 
 ## Skills
 
