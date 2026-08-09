@@ -1,5 +1,6 @@
 {
   "name": "skillquiver",
+  "description": "Curated library of 25 Agent Skills for Claude Code: planning, execution, verification, code review, UI and skill engineering",
   "owner": { "name": "Drizzy07x", "url": "https://github.com/Drizzy07x" },
   "plugins": [
     {
