@@ -34,4 +34,6 @@ A curated library of 25 Agent Skills for Claude Code, installed as project skill
 
 ## Usage
 
-Clone into a project (or copy `.claude/skills/` into an existing one) and Claude Code picks the skills up as project skills automatically.
+**Per project:** clone into a project (or copy `.claude/skills/` into an existing one) and Claude Code picks the skills up as project skills automatically.
+
+**Globally:** copy the skill folders into `~/.claude/skills/` and they load in every project.
