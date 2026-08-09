@@ -32,7 +32,20 @@ A curated library of 25 Agent Skills for Claude Code, installed as project skill
 | [writing-plans](.claude/skills/writing-plans/SKILL.md) | Writes a task-by-task implementation plan document from a spec, before touching code. |
 | [writing-skills](.claude/skills/writing-skills/SKILL.md) | Creates, edits, and tests Agent Skills: frontmatter rules, trigger descriptions, verification before deployment. |
 
-## Usage
+## Installation
+
+### Plugin (recommended)
+
+In Claude Code:
+
+```
+/plugin marketplace add Drizzy07x/Skillquiver
+/plugin install skillquiver@skillquiver
+```
+
+All 25 skills load globally (every project). Update later with `/plugin update skillquiver`.
+
+### Manual
 
 **Per project:** clone into a project (or copy `.claude/skills/` into an existing one) and Claude Code picks the skills up as project skills automatically.
 
