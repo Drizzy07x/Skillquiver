@@ -1,0 +1,52 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow2" cx="0.5" cy="0.32" r="0.6">
+      <stop offset="0" stop-color="#C87941" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#C87941" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="#0E1116"/>
+  <rect width="1280" height="640" fill="url(#glow2)"/>
+
+  <!-- quiver mark, centered -->
+  <g transform="translate(640,205)">
+    <g transform="rotate(14) scale(0.82)">
+      <path d="M -52 -38 L -52 78 Q -52 96 -34 96 L 34 96 Q 52 96 52 78 L 52 -38"
+            fill="none" stroke="#E0A458" stroke-width="9" stroke-linecap="round"/>
+      <line x1="-52" y1="34" x2="52" y2="34" stroke="#E0A458" stroke-width="9" stroke-opacity="0.35"/>
+      <g stroke="#C87941" stroke-width="8" stroke-linecap="round" fill="#C87941">
+        <line x1="-26" y1="80" x2="-26" y2="-92"/>
+        <path d="M -26 -122 L -41 -88 L -11 -88 Z" stroke="none"/>
+        <line x1="26" y1="80" x2="26" y2="-92"/>
+        <path d="M 26 -122 L 11 -88 L 41 -88 Z" stroke="none"/>
+      </g>
+      <g stroke="#E8E4DC" stroke-width="8" stroke-linecap="round" fill="#E8E4DC">
+        <line x1="0" y1="84" x2="0" y2="-128"/>
+        <path d="M 0 -158 L -15 -124 L 15 -124 Z" stroke="none"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- wordmark centered -->
+  <text x="640" y="420" text-anchor="middle"
+        font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="96" font-weight="700" letter-spacing="-3" fill="#E8E4DC">Skillquiver</text>
+
+  <!-- 25 tally ticks: one per skill, grouped in fives -->
+  <g stroke="#C87941" stroke-width="4" stroke-linecap="round">
+    <!-- group gap 26px, tick gap 16px, tall tick every 5th -->
+    <g transform="translate(640,470)">
+      <line x1="-233" y1="0" x2="-233" y2="18"/><line x1="-217" y1="0" x2="-217" y2="18"/><line x1="-201" y1="0" x2="-201" y2="18"/><line x1="-185" y1="0" x2="-185" y2="18"/><line x1="-169" y1="-6" x2="-169" y2="24"/>
+      <line x1="-143" y1="0" x2="-143" y2="18"/><line x1="-127" y1="0" x2="-127" y2="18"/><line x1="-111" y1="0" x2="-111" y2="18"/><line x1="-95" y1="0" x2="-95" y2="18"/><line x1="-79" y1="-6" x2="-79" y2="24"/>
+      <line x1="-53" y1="0" x2="-53" y2="18"/><line x1="-37" y1="0" x2="-37" y2="18"/><line x1="-21" y1="0" x2="-21" y2="18"/><line x1="-5" y1="0" x2="-5" y2="18"/><line x1="11" y1="-6" x2="11" y2="24"/>
+      <line x1="37" y1="0" x2="37" y2="18"/><line x1="53" y1="0" x2="53" y2="18"/><line x1="69" y1="0" x2="69" y2="18"/><line x1="85" y1="0" x2="85" y2="18"/><line x1="101" y1="-6" x2="101" y2="24"/>
+      <line x1="127" y1="0" x2="127" y2="18"/><line x1="143" y1="0" x2="143" y2="18"/><line x1="159" y1="0" x2="159" y2="18"/><line x1="175" y1="0" x2="175" y2="18"/><line x1="191" y1="-6" x2="191" y2="24"/>
+    </g>
+  </g>
+
+  <!-- tagline -->
+  <text x="640" y="548" text-anchor="middle"
+        font-family="'Cascadia Code','SF Mono',Consolas,Menlo,monospace"
+        font-size="26" letter-spacing="6" fill="#8B929E">25 AGENT SKILLS FOR CLAUDE CODE</text>
+</svg>
