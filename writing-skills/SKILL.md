@@ -1,6 +1,6 @@
 ---
 name: writing-skills
-description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+description: Creates, edits, and tests Agent Skills: frontmatter rules, trigger-condition descriptions, token-efficiency budgets, and subagent-based verification before deployment. Use when creating new skills, editing existing skills, or verifying skills work.
 ---
 
 # Writing Skills
@@ -19,6 +19,8 @@ You write test cases (pressure scenarios with subagents), watch them fail (basel
 
 **Official guidance:** For Anthropic's official skill authoring best practices, see anthropic-best-practices.md. This document provides additional patterns and guidelines that complement the TDD-focused approach in this skill.
 
+**Precedence note:** This library follows the trigger-conditions-only description rule defined below (and this skill is the single owner of frontmatter/description rules for the library). Where anthropic-best-practices.md recommends describing "what the Skill does and when to use it", this skill's rule supersedes it on that point.
+
 ## What is a Skill?
 
 A **skill** is a reference guide for proven techniques, patterns, or tools. Skills help future agents find and apply effective approaches.
@@ -29,18 +31,7 @@ A **skill** is a reference guide for proven techniques, patterns, or tools. Skil
 
 ## TDD Mapping for Skills
 
-| TDD Concept | Skill Creation |
-|-------------|----------------|
-| **Test case** | Pressure scenario with subagent |
-| **Production code** | Skill document (SKILL.md) |
-| **Test fails (RED)** | Agent violates rule without skill (baseline) |
-| **Test passes (GREEN)** | Agent complies with skill present |
-| **Refactor** | Close loopholes while maintaining compliance |
-| **Write test first** | Run baseline scenario BEFORE writing skill |
-| **Watch it fail** | Document exact rationalizations agent uses |
-| **Minimal code** | Write skill addressing those specific violations |
-| **Watch it pass** | Verify agent now complies |
-| **Refactor cycle** | Find new rationalizations → plug → re-verify |
+The full TDD-to-skill mapping table lives in [testing-skills-with-subagents.md](testing-skills-with-subagents.md). Short version: pressure scenario = test case, baseline failure without the skill = RED, compliance with the skill = GREEN, closing loopholes = REFACTOR.
 
 The entire skill creation process follows RED-GREEN-REFACTOR.
 
@@ -94,7 +85,7 @@ skills/
 
 **Frontmatter (YAML):**
 - Two required fields: `name` and `description` (see [agentskills.io/specification](https://agentskills.io/specification) for all supported fields)
-- Max 1024 characters total
+- `name` max 64 characters; `description` max 1024 characters
 - `name`: Use letters, numbers, and hyphens only (no parentheses, special chars)
 - `description`: Third-person, describes ONLY when to use (NOT what it does)
   - Start with "Use when..." to focus on triggering conditions
@@ -243,7 +234,7 @@ Always use subagents (50-100x context savings). REQUIRED: Use [other-skill-name]
 **Compress examples:**
 ```markdown
 # ❌ BAD: Verbose example (42 words)
-your human partner: "How did we handle authentication errors in React Router before?"
+the user: "How did we handle authentication errors in React Router before?"
 You: I'll search past conversations for React Router authentication patterns.
 [Dispatch subagent with search query: "React Router authentication error handling 401"]
 
@@ -260,7 +251,8 @@ You: Searching...
 
 **Verification:**
 ```bash
-wc -w skills/path/SKILL.md
+# Git Bash: wc -w SKILL.md
+# PowerShell: (-split (Get-Content SKILL.md -Raw)).Count
 # getting-started workflows: aim for <150 each
 # Other frequently-loaded: aim for <200 total
 ```
@@ -315,10 +307,10 @@ digraph when_flowchart {
 
 See `graphviz-conventions.dot` in this directory for graphviz style rules.
 
-**Visualizing for your human partner:** Use `render-graphs.js` in this directory to render a skill's flowcharts to SVG:
+**Visualizing for the user:** Use `render-graphs.js` in this directory to render a skill's flowcharts to SVG (requires Graphviz; on Windows: `winget install Graphviz.Graphviz`):
 ```bash
-./render-graphs.js ../some-skill           # Each diagram separately
-./render-graphs.js ../some-skill --combine # All diagrams in one SVG
+node render-graphs.js ../some-skill           # Each diagram separately
+node render-graphs.js ../some-skill --combine # All diagrams in one SVG
 ```
 
 ## Code Examples
@@ -481,28 +473,6 @@ Skills that enforce discipline (like TDD) need to resist rationalization. Agents
 
 **Psychology note:** Understanding WHY persuasion techniques work helps you apply them systematically. See persuasion-principles.md for research foundation (Cialdini, 2021; Meincke et al., 2025) on authority, commitment, scarcity, social proof, and unity principles.
 
-### Close Every Loophole Explicitly
-
-Don't just state the rule - forbid specific workarounds:
-
-<Bad>
-```markdown
-Write code before test? Delete it.
-```
-</Bad>
-
-<Good>
-```markdown
-Write code before test? Delete it. Start over.
-
-**No exceptions:**
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
-```
-</Good>
-
 ### Address "Spirit vs Letter" Arguments
 
 Add foundational principle early:
@@ -513,41 +483,9 @@ Add foundational principle early:
 
 This cuts off entire class of "I'm following the spirit" rationalizations.
 
-### Build Rationalization Table
+### The Four Loophole-Closing Moves
 
-Capture rationalizations from baseline testing (see Testing section below). Every excuse agents make goes in the table:
-
-```markdown
-| Excuse | Reality |
-|--------|---------|
-| "Too simple to test" | Simple code breaks. Test takes 30 seconds. |
-| "I'll test after" | Tests passing immediately prove nothing. |
-| "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?" |
-```
-
-### Create Red Flags List
-
-Make it easy for agents to self-check when rationalizing:
-
-```markdown
-## Red Flags - STOP and Start Over
-
-- Code before test
-- "I already manually tested it"
-- "Tests after achieve the same purpose"
-- "It's about spirit not ritual"
-- "This is different because..."
-
-**All of these mean: Delete code. Start over with TDD.**
-```
-
-### Update SDO for Violation Symptoms
-
-Add to description: symptoms of when you're ABOUT to violate the rule:
-
-```yaml
-description: use when implementing any feature or bugfix, before writing implementation code
-```
+Close every loophole explicitly (forbid specific workarounds, not just the rule), build a rationalization table, create a red flags list, and add violation symptoms to the description. All four moves are worked through with before/after examples in [testing-skills-with-subagents.md](testing-skills-with-subagents.md) under "Plugging Each Hole".
 
 ## RED-GREEN-REFACTOR for Skills
 
@@ -629,13 +567,11 @@ Deploying untested skills = deploying untested code. It's a violation of quality
 **IMPORTANT: Create a todo for EACH checklist item below.**
 
 **RED Phase - Write Failing Test:**
-- [ ] Create pressure scenarios (3+ combined pressures for discipline skills)
-- [ ] Run scenarios WITHOUT skill - document baseline behavior verbatim
-- [ ] Identify patterns in rationalizations/failures
+- [ ] Run the RED-phase checklist in [testing-skills-with-subagents.md](testing-skills-with-subagents.md) (pressure scenarios, baseline runs, verbatim rationalizations)
 
 **GREEN Phase - Write Minimal Skill:**
 - [ ] Name uses only letters, numbers, hyphens (no parentheses/special chars)
-- [ ] YAML frontmatter with required `name` and `description` fields (max 1024 chars; see [spec](https://agentskills.io/specification))
+- [ ] YAML frontmatter with required `name` and `description` fields (`name` max 64 chars, `description` max 1024 chars; see [spec](https://agentskills.io/specification))
 - [ ] Description starts with "Use when..." and includes specific triggers/symptoms
 - [ ] Description written in third person
 - [ ] Keywords throughout for search (errors, symptoms, tools)
@@ -648,11 +584,7 @@ Deploying untested skills = deploying untested code. It's a violation of quality
 - [ ] Run scenarios WITH skill - verify agents now comply
 
 **REFACTOR Phase - Close Loopholes:**
-- [ ] Identify NEW rationalizations from testing
-- [ ] Add explicit counters (if discipline skill)
-- [ ] Build rationalization table from all test iterations
-- [ ] Create red flags list
-- [ ] Re-test until bulletproof
+- [ ] Run the REFACTOR-phase checklist in [testing-skills-with-subagents.md](testing-skills-with-subagents.md) (counters, rationalization table, red flags, re-test until bulletproof)
 
 **Quality Checks:**
 - [ ] Small flowchart only if decision non-obvious
@@ -662,7 +594,7 @@ Deploying untested skills = deploying untested code. It's a violation of quality
 - [ ] Supporting files only for tools or heavy reference
 
 **Deployment:**
-- [ ] Commit skill to git and push to your fork (if configured)
+- [ ] If the skills library is a git repository, commit and push (this library is not one by default — skip unless it has been initialized)
 - [ ] Consider contributing back via PR (if broadly useful)
 
 ## Discovery Workflow

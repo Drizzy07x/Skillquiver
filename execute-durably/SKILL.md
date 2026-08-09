@@ -97,4 +97,4 @@ DO-CONFIRM: work from judgment, then stop at each point and confirm every item. 
 
 ## Boundaries
 
-This skill governs durability and proof, not the work itself. Debugging method belongs to diagnose-systematically; safe restructuring to refactor-safely; auditing a finished delivery claim to verify-work; web and desktop evidence capture to automate-ui; version-bound documentation lookup to research-systematically.
+This skill governs durability and proof, not the work itself. Debugging method belongs to diagnose-systematically; safe restructuring to refactor-safely; auditing a finished delivery claim to verify-work; web and desktop evidence capture to automate-ui; version-bound documentation lookup to research-systematically. Following a written implementation plan's task sequence is executing-plans / subagent-driven-development; this skill supplies the durable state and evidence discipline underneath long work.

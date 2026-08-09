@@ -2,6 +2,8 @@
 
 Use this when preparing public release copy or install instructions.
 
+Last verified: 2026-08-09. Agent support changes quickly — verify these claims against current agent documentation before publishing.
+
 ## Native Agent Skills Support
 
 | Agent | Current support shape | Good default install path |

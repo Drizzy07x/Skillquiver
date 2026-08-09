@@ -1,6 +1,6 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work
+description: Guides integration of a finished branch: verify tests, present merge/PR/keep/discard options to the user, and clean up worktrees. Use when implementation is complete, all tests pass, and the work needs to be integrated.
 ---
 
 # Finishing a Development Branch
@@ -9,11 +9,13 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 **Core principle:** Verify tests → Detect environment → Present options → Execute choice → Clean up.
 
+Shell commands below are bash — run via the Bash tool (Git Bash) on Windows.
+
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
 ## Step 1: Verify Tests
 
-Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`).
+Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`). If the project has no test suite, verification is whatever check the project does have (build, lint, smoke run); if there is none, ask the user what should gate completion.
 
 **If tests fail**, report the failures and stop — the menu comes after a green suite:
 
@@ -52,6 +54,8 @@ Confirm before merging: merging into the wrong base is expensive to undo.
 
 ## Step 4: Present Options
 
+**Review checkpoint:** requesting-code-review makes review mandatory before merge ("When to Request Review"). If this work has not been reviewed yet, dispatch a review per that skill before offering the merge option.
+
 **Normal repo and named-branch worktree — present exactly these 3 options:**
 
 ```
@@ -76,8 +80,7 @@ Which option?
 ```
 
 Present the menu exactly as written — concise, with every option coming
-from the list above. Discarding the work happens only in response to your
-human partner explicitly asking for it (see "If your human partner asks to
+from the list above. Discarding the work happens only in response to the user explicitly asking for it (see "If the user asks to
 discard the work" below). Wait for their answer; the integration decision
 is theirs.
 
@@ -121,15 +124,15 @@ git push -u origin <feature-branch>
 Then create the pull/merge request against <base-branch> with the forge's
 tooling — its CLI if one is available, or the creation URL most forges
 print when you push — following the repo's PR template and conventions if
-present, and report the URL to your human partner.
+present, and report the URL to the user.
 
-Keep the worktree — your human partner iterates on PR feedback there.
+Keep the worktree — the user iterates on PR feedback there.
 
 ### Option 3: Keep As-Is
 
 Report: "Keeping branch <name>. Worktree preserved at <path>."
 
-### If your human partner asks to discard the work
+### If the user asks to discard the work
 
 This path exists only as a response to an explicit request to throw the
 work away. Confirm first:
@@ -166,8 +169,9 @@ Step 2, from before that directory change.
 
 **If `GIT_DIR == GIT_COMMON`:** Normal repo, no worktree to clean up. Done.
 
-**If `WORKTREE_PATH` is under `.worktrees/` or `worktrees/`:** This workflow
-created this worktree — we own cleanup:
+**If `WORKTREE_PATH` is under `.worktrees/` or `worktrees/`** (the ownership
+convention from the using-git-worktrees skill): This workflow created this
+worktree — we own cleanup:
 
 ```bash
 git worktree remove "$WORKTREE_PATH"
@@ -191,11 +195,11 @@ place. If your platform provides a workspace-exit tool, use it.
 | Excuse | Reality |
 |--------|---------|
 | "Tests passed earlier this session" | Run the suite on the tree you are about to integrate. A green run only proves the tree it ran on. |
-| "They obviously want it merged" | Integration is your human partner's decision. Present the menu and wait. |
-| "They seem done with this feature — I'll offer to discard it" | The menu is complete as written. Discard happens only when your human partner asks for it in so many words. |
+| "They obviously want it merged" | Integration is the user's decision. Present the menu and wait. |
+| "They seem done with this feature — I'll offer to discard it" | The menu is complete as written. Discard happens only when the user asks for it in so many words. |
 | "'Yeah, get rid of it' counts as confirmation" | Only the typed word `discard` authorizes deletion. |
 | "The PR is up, so the worktree is clutter now" | PR feedback gets fixed in that worktree. It stays until the work lands. |
 | "This other worktree looks stale — I'll clean it too" | Clean up only worktrees under `.worktrees/` or `worktrees/`. Everything else belongs to the host. |
 | "The merged-result failure is probably flaky" | A failing merged result stops everything. Branch and worktree stay put while you investigate. |
 | "The base branch is obviously main" | Confirm the fork point or ask. Merging into the wrong base is expensive to undo. |
-| "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request. |
+| "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on the user's explicit request. |

@@ -29,7 +29,7 @@ Only add context agents don't already have. Challenge each piece of information:
 
 **Good example: Concise** (approximately 50 tokens):
 
-````markdown  theme={null}
+````markdown
 ## Extract PDF text
 
 Use pdfplumber for text extraction:
@@ -44,7 +44,7 @@ with pdfplumber.open("file.pdf") as pdf:
 
 **Bad example: Too verbose** (approximately 150 tokens):
 
-```markdown  theme={null}
+```markdown
 ## Extract PDF text
 
 PDF (Portable Document Format) files are a common file format that contains
@@ -70,7 +70,7 @@ Use when:
 
 Example:
 
-```markdown  theme={null}
+```markdown
 ## Code review process
 
 1. Analyze the code structure and organization
@@ -89,7 +89,7 @@ Use when:
 
 Example:
 
-````markdown  theme={null}
+````markdown
 ## Generate report
 
 Use this template and customize as needed:
@@ -112,7 +112,7 @@ Use when:
 
 Example:
 
-````markdown  theme={null}
+````markdown
 ## Database migration
 
 Run exactly this script:
@@ -184,6 +184,8 @@ Consistent naming makes it easier to:
 
 ### Writing effective descriptions
 
+> Library note: this library follows the trigger-conditions-only description rule in writing-skills/SKILL.md. The "what + when" guidance in this section is superseded on that point.
+
 The `description` field enables Skill discovery and should include both what the Skill does and when to use it.
 
 <Warning>
@@ -202,33 +204,33 @@ Effective examples:
 
 **PDF Processing skill:**
 
-```yaml  theme={null}
+```yaml
 description: Extract text and tables from PDF files, fill forms, merge documents. Use when working with PDF files or when the user mentions PDFs, forms, or document extraction.
 ```
 
 **Excel Analysis skill:**
 
-```yaml  theme={null}
+```yaml
 description: Analyze Excel spreadsheets, create pivot tables, generate charts. Use when analyzing Excel files, spreadsheets, tabular data, or .xlsx files.
 ```
 
 **Git Commit Helper skill:**
 
-```yaml  theme={null}
+```yaml
 description: Generate descriptive commit messages by analyzing git diffs. Use when the user asks for help writing commit messages or reviewing staged changes.
 ```
 
 Avoid vague descriptions like these:
 
-```yaml  theme={null}
+```yaml
 description: Helps with documents
 ```
 
-```yaml  theme={null}
+```yaml
 description: Processes data
 ```
 
-```yaml  theme={null}
+```yaml
 description: Does stuff with files
 ```
 
@@ -244,13 +246,7 @@ SKILL.md serves as an overview that points agents to detailed materials as neede
 
 #### Visual overview: From simple to complex
 
-A basic Skill starts with just a SKILL.md file containing metadata and instructions:
-
-<img src="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-simple-file.png?fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=87782ff239b297d9a9e8e1b72ed72db9" alt="Simple SKILL.md file showing YAML frontmatter and markdown body" data-og-width="2048" width="2048" data-og-height="1153" height="1153" data-path="images/agent-skills-simple-file.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-simple-file.png?w=280&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=c61cc33b6f5855809907f7fda94cd80e 280w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-simple-file.png?w=560&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=90d2c0c1c76b36e8d485f49e0810dbfd 560w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-simple-file.png?w=840&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=ad17d231ac7b0bea7e5b4d58fb4aeabb 840w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-simple-file.png?w=1100&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=f5d0a7a3c668435bb0aee9a3a8f8c329 1100w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-simple-file.png?w=1650&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=0e927c1af9de5799cfe557d12249f6e6 1650w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-simple-file.png?w=2500&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=46bbb1a51dd4c8202a470ac8c80a893d 2500w" />
-
-As your Skill grows, you can bundle additional content that agents load only when needed:
-
-<img src="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-bundling-content.png?fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=a5e0aa41e3d53985a7e3e43668a33ea3" alt="Bundling additional reference files like reference.md and forms.md." data-og-width="2048" width="2048" data-og-height="1327" height="1327" data-path="images/agent-skills-bundling-content.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-bundling-content.png?w=280&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=f8a0e73783e99b4a643d79eac86b70a2 280w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-bundling-content.png?w=560&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=dc510a2a9d3f14359416b706f067904a 560w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-bundling-content.png?w=840&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=82cd6286c966303f7dd914c28170e385 840w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-bundling-content.png?w=1100&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=56f3be36c77e4fe4b523df209a6824c6 1100w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-bundling-content.png?w=1650&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=d22b5161b2075656417d56f41a74f3dd 1650w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-bundling-content.png?w=2500&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=3dd4bdd6850ffcc96c6c45fcb0acd6eb 2500w" />
+A basic Skill starts with just a SKILL.md file containing metadata and instructions. As your Skill grows, you can bundle additional content that agents load only when needed.
 
 The complete Skill directory structure might look like this:
 
@@ -268,7 +264,7 @@ pdf/
 
 #### Pattern 1: High-level guide with references
 
-````markdown  theme={null}
+````markdown
 ---
 name: PDF Processing
 description: Extracts text and tables from PDF files, fills forms, and merges documents. Use when working with PDF files or when the user mentions PDFs, forms, or document extraction.
@@ -308,7 +304,7 @@ bigquery-skill/
     └── marketing.md (campaigns, attribution)
 ```
 
-````markdown SKILL.md theme={null}
+````markdown SKILL.md
 # BigQuery Data Analysis
 
 ## Available datasets
@@ -333,7 +329,7 @@ grep -i "api usage" reference/product.md
 
 Show basic content, link to advanced content:
 
-```markdown  theme={null}
+```markdown
 # DOCX Processing
 
 ## Creating documents
@@ -358,7 +354,7 @@ Agents may partially read files when they're referenced from other referenced fi
 
 **Bad example: Too deep**:
 
-```markdown  theme={null}
+```markdown
 # SKILL.md
 See [advanced.md](advanced.md)...
 
@@ -371,7 +367,7 @@ Here's the actual information...
 
 **Good example: One level deep**:
 
-```markdown  theme={null}
+```markdown
 # SKILL.md
 
 **Basic usage**: [instructions in SKILL.md]
@@ -386,7 +382,7 @@ For reference files longer than 100 lines, include a table of contents at the to
 
 **Example**:
 
-```markdown  theme={null}
+```markdown
 # API Reference
 
 ## Contents
@@ -415,7 +411,7 @@ Break complex operations into clear, sequential steps. For particularly complex 
 
 **Example 1: Research synthesis workflow** (for Skills without code):
 
-````markdown  theme={null}
+````markdown
 ## Research synthesis workflow
 
 Copy this checklist and track your progress:
@@ -457,7 +453,7 @@ This example shows how workflows apply to analysis tasks that don't require code
 
 **Example 2: PDF form filling workflow** (for Skills with code):
 
-````markdown  theme={null}
+````markdown
 ## PDF form filling workflow
 
 Copy this checklist and check off items as you complete them:
@@ -508,7 +504,7 @@ This pattern greatly improves output quality.
 
 **Example 1: Style guide compliance** (for Skills without code):
 
-```markdown  theme={null}
+```markdown
 ## Content review process
 
 1. Draft your content following the guidelines in STYLE_GUIDE.md
@@ -528,7 +524,7 @@ This shows the validation loop pattern using reference documents instead of scri
 
 **Example 2: Document editing process** (for Skills with code):
 
-```markdown  theme={null}
+```markdown
 ## Document editing process
 
 1. Make your edits to `word/document.xml`
@@ -552,14 +548,14 @@ Don't include information that will become outdated:
 
 **Bad example: Time-sensitive** (will become wrong):
 
-```markdown  theme={null}
+```markdown
 If you're doing this before August 2025, use the old API.
 After August 2025, use the new API.
 ```
 
 **Good example** (use "old patterns" section):
 
-```markdown  theme={null}
+```markdown
 ## Current method
 
 Use the v2 API endpoint: `api.example.com/v2/messages`
@@ -603,7 +599,7 @@ Provide templates for output format. Match the level of strictness to your needs
 
 **For strict requirements** (like API responses or data formats):
 
-````markdown  theme={null}
+````markdown
 ## Report structure
 
 ALWAYS use this exact template structure:
@@ -627,7 +623,7 @@ ALWAYS use this exact template structure:
 
 **For flexible guidance** (when adaptation is useful):
 
-````markdown  theme={null}
+````markdown
 ## Report structure
 
 Here is a sensible default format, but use your best judgment based on the analysis:
@@ -652,7 +648,7 @@ Adjust sections as needed for the specific analysis type.
 
 For Skills where output quality depends on seeing examples, provide input/output pairs just like in regular prompting:
 
-````markdown  theme={null}
+````markdown
 ## Commit message format
 
 Generate commit messages following these examples:
@@ -694,7 +690,7 @@ Examples help agents understand the desired style and level of detail more clear
 
 Guide agents through decision points:
 
-```markdown  theme={null}
+```markdown
 ## Document modification workflow
 
 1. Determine the modification type:
@@ -736,7 +732,7 @@ This approach ensures you're solving actual problems rather than anticipating re
 
 **Evaluation structure**:
 
-```json  theme={null}
+```json
 {
   "skills": ["pdf-processing"],
   "query": "Extract all text from this PDF file and save it to output.txt",
@@ -835,7 +831,7 @@ Unix-style paths work across all platforms, while Windows-style paths cause erro
 
 Don't present multiple approaches unless necessary:
 
-````markdown  theme={null}
+````markdown
 **Bad example: Too many choices** (confusing):
 "You can use pypdf, or pdfplumber, or PyMuPDF, or pdf2image, or..."
 
@@ -858,7 +854,7 @@ When writing scripts for Skills, handle error conditions rather than punting to 
 
 **Good example: Handle errors explicitly**:
 
-```python  theme={null}
+```python
 def process_file(path):
     """Process a file, creating it if it doesn't exist."""
     try:
@@ -878,7 +874,7 @@ def process_file(path):
 
 **Bad example: Punt to the agent**:
 
-```python  theme={null}
+```python
 def process_file(path):
     # Just fail and let the agent figure it out
     return open(path).read()
@@ -888,7 +884,7 @@ Configuration parameters should also be justified and documented to avoid "voodo
 
 **Good example: Self-documenting**:
 
-```python  theme={null}
+```python
 # HTTP requests typically complete within 30 seconds
 # Longer timeout accounts for slow connections
 REQUEST_TIMEOUT = 30
@@ -900,7 +896,7 @@ MAX_RETRIES = 3
 
 **Bad example: Magic numbers**:
 
-```python  theme={null}
+```python
 TIMEOUT = 47  # Why 47?
 RETRIES = 5   # Why 5?
 ```
@@ -916,9 +912,7 @@ Even if your agent could write a script, pre-made scripts offer advantages:
 * Save time (no code generation required)
 * Ensure consistency across uses
 
-<img src="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=4bbc45f2c2e0bee9f2f0d5da669bad00" alt="Bundling executable scripts alongside instruction files" data-og-width="2048" width="2048" data-og-height="1154" height="1154" data-path="images/agent-skills-executable-scripts.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=280&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=9a04e6535a8467bfeea492e517de389f 280w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=560&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=e49333ad90141af17c0d7651cca7216b 560w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=840&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=954265a5df52223d6572b6214168c428 840w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=1100&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=2ff7a2d8f2a83ee8af132b29f10150fd 1100w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=1650&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=48ab96245e04077f4d15e9170e081cfb 1650w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=2500&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=0301a6c8b3ee879497cc5b5483177c90 2500w" />
-
-The diagram above shows how executable scripts work alongside instruction files. The instruction file (forms.md) references the script, and the agent can execute it without loading its contents into context.
+Executable scripts work alongside instruction files: the instruction file (for example, forms.md) references the script, and the agent can execute it without loading its contents into context.
 
 **Important distinction**: Make clear in your instructions whether the agent should:
 
@@ -929,7 +923,7 @@ For most utility scripts, execution is preferred because it's more reliable and 
 
 **Example**:
 
-````markdown  theme={null}
+````markdown
 ## Utility scripts
 
 **analyze_form.py**: Extract all form fields from PDF
@@ -964,7 +958,7 @@ python scripts/fill_form.py input.pdf fields.json output.pdf
 
 When inputs can be rendered as images, have the agent analyze them:
 
-````markdown  theme={null}
+````markdown
 ## Form layout analysis
 
 1. Convert PDF to images:
@@ -1058,7 +1052,7 @@ If your Skill uses MCP (Model Context Protocol) tools, always use fully qualifie
 
 **Example**:
 
-```markdown  theme={null}
+```markdown
 Use the BigQuery:bigquery_schema tool to retrieve table schemas.
 Use the GitHub:create_issue tool to create issues.
 ```
@@ -1074,7 +1068,7 @@ Without the server prefix, agents may fail to locate the tool, especially when m
 
 Don't assume packages are available:
 
-````markdown  theme={null}
+````markdown
 **Bad example: Assumes installation**:
 "Use the pdf library to process the file."
 
@@ -1135,16 +1129,6 @@ Before sharing a Skill, verify:
 
 ## Next steps
 
-<CardGroup cols={2}>
-  <Card title="Get started with Agent Skills" icon="rocket" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart">
-    Create your first Skill
-  </Card>
-
-  <Card title="Use Skills in Claude Code" icon="terminal" href="https://code.claude.com/docs/en/skills">
-    Create and manage Skills in Claude Code
-  </Card>
-
-  <Card title="Use Skills with the API" icon="code" href="https://platform.claude.com/docs/en/build-with-claude/skills-guide">
-    Upload and use Skills programmatically
-  </Card>
-</CardGroup>
+* [Get started with Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart) - create your first Skill
+* [Use Skills in Claude Code](https://code.claude.com/docs/en/skills) - create and manage Skills in Claude Code
+* [Use Skills with the API](https://platform.claude.com/docs/en/build-with-claude/skills-guide) - upload and use Skills programmatically

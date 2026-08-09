@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+description: Executes a written implementation plan inline, task by task, stopping only on blockers. Use when a plan exists and subagent dispatch is unavailable, or the user wants the plan executed in a separate session.
 ---
 
 # Executing Plans
@@ -11,7 +11,7 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
-**Note:** If subagent dispatch is available, use subagent-driven-development instead of this skill.
+**Routing:** Use this skill when subagent dispatch is unavailable OR the user wants a separate execution session; otherwise use subagent-driven-development.
 
 ## The Process
 
@@ -19,7 +19,7 @@ Load plan, review critically, execute all tasks, report when complete.
 1. Ensure an isolated workspace: use using-git-worktrees to create one or verify the existing one
 2. Read plan file
 3. Review critically - identify any questions or concerns about the plan
-4. If concerns: Raise them with your human partner before starting
+4. If concerns: Raise them with the user before starting
 5. If no concerns: Create todos for the plan items and proceed
 
 ### Step 2: Execute Tasks
@@ -30,9 +30,12 @@ For each task:
 3. Run verifications as specified
 4. Mark as completed
 
+Track completed tasks in a ledger file (reuse subagent-driven-development's convention: `<workspace>/progress.md`, first line naming the plan file, one `Task <N>: complete` line per finished task) so a compacted session can resume where it stopped.
+
 ### Step 3: Complete Development
 
 After all tasks complete and verified:
+- Before claiming the work is done, apply verification-before-completion: run the verification commands and confirm their output first
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice

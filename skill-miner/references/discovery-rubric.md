@@ -24,19 +24,19 @@ Prefer summaries and metadata first. Open raw transcripts only when needed to co
 For a first pass, run:
 
 ```bash
-python3 scripts/scan_sessions.py --days 30 --limit 300 --min-count 3
+python scripts/scan_sessions.py --days 30 --limit 300 --min-count 3
 ```
 
 For agents without a stable native history format, pass exported files:
 
 ```bash
-python3 scripts/scan_sessions.py --export ~/Downloads/cursor-chat-export.json --export ./opencode-transcripts/
+python scripts/scan_sessions.py --export ~/Downloads/cursor-chat-export.json --export ./opencode-transcripts/
 ```
 
 Workflow candidates are driven by `references/patterns.json`. For personal use, edit or replace that file with local workflow names and trigger regexes:
 
 ```bash
-python3 scripts/scan_sessions.py --patterns ./my-patterns.json
+python scripts/scan_sessions.py --patterns ./my-patterns.json
 ```
 
 The scanner emits sanitized clusters. Review the result manually before creating skills because command-only turns, automations, pasted logs, and multi-topic sessions can still create noisy clusters. Treat rollout summaries as compressed memory evidence, not raw transcript evidence; use them to discover candidates, then confirm with raw examples when possible.
@@ -111,7 +111,7 @@ For each selected workflow candidate, simulate the next two lifecycle steps befo
 When creating selected candidates:
 
 - Start with one small `SKILL.md`.
-- Keep frontmatter to `name` and `description`.
+- Follow `writing-skills` for frontmatter and description rules (single owner of those rules; `name` + `description` only).
 - Use the user's real phrasing in trigger conditions for personal skills.
 - Move long examples, schemas, and scripts into bundled resources.
 - Validate that the new skill would trigger on the evidence examples and stay silent on neighbor tasks.

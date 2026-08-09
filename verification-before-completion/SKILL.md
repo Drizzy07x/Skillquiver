@@ -79,11 +79,7 @@ Skip any step = lying, not verifying
 ❌ "Should pass now" / "Looks correct"
 ```
 
-**Regression tests (TDD Red-Green):**
-```
-✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
-❌ "I've written a regression test" (without red-green verification)
-```
+**Regression tests:** verify the red-green cycle per test-driven-development; a test that has never failed proves nothing.
 
 **Build:**
 ```
@@ -102,8 +98,11 @@ Skip any step = lying, not verifying
 ✅ Agent reports success → Check VCS diff → Verify changes → Report actual state
 ❌ Trust agent report
 ```
+For a full independent audit of delegated work, invoke verify-work.
 
 ## When To Apply
+
+This skill is the in-session gate before a claim is made; for an independent audit of already-claimed work, invoke verify-work.
 
 **ALWAYS before:**
 - ANY variation of success/completion claims

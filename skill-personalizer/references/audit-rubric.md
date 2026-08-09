@@ -4,7 +4,7 @@ Use this rubric before personalizing an existing skill, especially when the user
 
 ## Data Sources
 
-Use the same evidence surfaces as `skill-miner`: active sessions, archived sessions, rollout summaries, exported transcripts, installed skill files, and project-local agent instructions.
+Use the evidence surfaces listed in `skill-miner/references/discovery-rubric.md` section 1: active sessions, archived sessions, rollout summaries, exported transcripts, installed skill files, and project-local agent instructions.
 
 Keep raw transcripts local unless the user asks for verbatim evidence. Prefer sanitized examples in reports.
 
@@ -24,15 +24,12 @@ Keep raw transcripts local unless the user asks for verbatim evidence. Prefer sa
 
 ## Static Quality Checklist
 
-- Frontmatter contains only safe cross-agent fields unless platform-specific metadata is intentionally isolated.
-- `name` is lowercase hyphen-case.
-- `description` starts with `Use when` and describes trigger conditions, not the workflow.
-- Strongest trigger terms appear early in the description.
+- Frontmatter and description rules: follow `writing-skills` (single owner of naming, frontmatter, and description guidance).
 - `SKILL.md` is concise; long examples, rubrics, scripts, and data belong in bundled resources.
 - YAML is quoted when punctuation could break parsing.
 - Critical safety rules appear near the top of the skill body.
 - Avoid narrative postmortems such as “in one session we found”.
-- Avoid excessive MUST/NEVER emphasis; use concrete rules and rationale.
+- Avoid unmotivated emphasis; imperative MUST/NEVER language is correct for discipline-enforcing skills per `writing-skills/persuasion-principles.md`.
 
 ## Research-Backed Heuristics
 

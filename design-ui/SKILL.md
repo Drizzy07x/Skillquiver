@@ -1,6 +1,6 @@
 ---
 name: design-ui
-description: Turn visual intent into inspectable constraints, implement UI as one coherent system, verify the rendered result at real viewports, and review the resulting code structure against named depth red flags. Use when an interface looks generic or off, when a page/screen/dashboard is being built or redesigned, when a claim about design quality or fidelity needs proof, or when judging module boundaries and interfaces in UI code before merge.
+description: Turn visual intent into inspectable constraints, implement UI as one coherent system, verify the rendered result at real viewports, and review the resulting UI code structure for component-level red flags. Use when an interface looks generic or off, when a page/screen/dashboard is being built or redesigned, or when a claim about design quality or fidelity needs proof.
 ---
 
 # Design UI
@@ -44,11 +44,11 @@ Establish hierarchy, typography, spacing, color, shape, imagery, and motion as o
 
 Preserve real content. Never invent testimonials, customers, product metrics, certifications, screenshots, or operational state. Use supplied assets, generate authorized references, or mark missing assets clearly. Respect responsive behavior and existing functionality. Motion must express the intent and degrade coherently under a reduced-motion preference.
 
-**Frontend performance (React/Next.js only)** — run a bounded static pass looking for: a Next.js root layout whose client boundary may be broader than necessary; raw `img` and `script` elements needing framework-aware replacement; large packages imported statically from client components. Every hit is a version-bound candidate, not a finding: confirm against version-matched docs, then measure the affected bundle, render, or network behavior before claiming an optimization. Valid exceptions are common.
+**Frontend performance** — only if the stack is React/Next.js, additionally run a bounded static pass looking for: a Next.js root layout whose client boundary may be broader than necessary; raw `img` and `script` elements needing framework-aware replacement; large packages imported statically from client components. Every hit is a version-bound candidate, not a finding: confirm against version-matched docs, then measure the affected bundle, render, or network behavior before claiming an optimization. Valid exceptions are common.
 
 ## 4. Verify the render
 
-Use real browser checks (automate-ui) to exercise relevant interactions and capture actual renders. Minimum: one mobile viewport at or below 480 CSS px and one desktop viewport at or above 1024 CSS px; add intermediate widths where layout behavior changes. A screenshot supports visual review but does not prove behavior.
+Use real browser checks (automate-ui) to exercise relevant interactions and capture actual renders. On this machine, set viewports with the mcp__Claude_Browser__resize_window presets — mobile (375x812) and desktop (1280x800) — or explicit width/height for intermediate widths. Minimum: one mobile viewport at or below 480 CSS px and one desktop viewport at or above 1024 CSS px; add intermediate widths where layout behavior changes. A screenshot supports visual review but does not prove behavior.
 
 Keep four evidence layers distinct — intent (what the design must express and preserve), render (screenshots tied to exact viewports and source state), review (named checks against those renders), behavioral (browser assertions for interactions) — and never merge them into one unsupported quality claim. For each capture, record the screenshot path, viewport, and what it shows.
 
@@ -62,22 +62,15 @@ Required checks, each marked pass / fail / not-evaluated with a concrete note:
 
 Add checks for motion, reduced motion, contrast, theme parity, loading states, or image fidelity only when relevant to the intent. A full pass means the declared review ran against specific renders at mobile and desktop with passing interaction checks — it does not prove universal accessibility, cross-browser behavior, production performance, or objective aesthetic quality. Taste stays subjective; say so.
 
-## 5. Review the code structure
+## 5. Review the UI code structure
 
-Judge structure by one currency: what it costs the next reader to change the code safely. Name the modules in scope as an explicit file list and read each completely, interface first, then body. Check the mechanical floor yourself (function length, nesting depth, parameter counts) and do not resell it as judgment. Report findings; never edit during the review — structural fixes belong to refactor-safely, completion audits to verify-work.
+This pass covers UI-specific structure only — component boundaries, prop flow, and style tokens in the code this skill produced or touched. Generic pre-merge code review routes to requesting-code-review; broader structural cleanup to refactor-safely. Name the components in scope as an explicit file list and read each completely, interface (props) first, then body. Report findings; never edit during the review — structural fixes belong to refactor-safely, completion audits to verify-work.
 
 | Flag | Detect | Fix |
 | --- | --- | --- |
-| Shallow module | Public surface rivals body size; wrapper saves callers nothing | Deepen it, or inline the wrapper away |
-| Information leakage | One decision (format, protocol, path rule) encoded in two+ places | Give the decision one owner module; others call it |
-| Temporal decomposition | Structure mirrors execution order; step modules half-share a format | Reorganize around who knows what, not what runs when |
-| Pass-through method | Forwards arguments unchanged; adds no contract, check, or translation | Remove the layer, or make it earn a real contract |
-| Conjoined functions | Neither unit understandable without the other open | Merge, or re-split along a boundary each side can state alone |
-| Comment restates code | Deleting it loses nothing a rename would not restore | Fix the name; keep only comments that carry why |
-| Vague name | `data`, `info`, `handle`, `process`, or a name fitting several meanings | Rename for one meaning; a name that resists choosing means restructure |
-| Non-obvious code | Reader needs an unstated fact: an ordering, a unit, an invariant | Make the fact visible in code, or state it where depended on |
-
-For each public interface, weigh what a caller must learn against what the module does for them; flag any unit where learning the interface costs more than inlining the body would. Prefer one deeper module over several shallow ones; do not split merely for size when the pieces would share hidden state.
+| Component boundary mismatch | One visual concept split across components that always change together, or one component rendering several unrelated concepts | Re-split along the seams the design actually has |
+| Prop drilling as pass-through | Props forwarded unchanged through layers that add no contract, check, or translation | Move state closer to its use, compose children in, or remove the layer |
+| Style-token leakage | Raw color, spacing, or type values repeated where the token set from section 2 already owns them | Route every such value through the token; one owner per design decision |
 
 Report findings ordered by comprehension cost, each with file:line, flag name, observed symptom, cost in reader terms, and the named fix. Name what was reviewed and found clean, so a silent miss is distinguishable from an unchecked file.
 

@@ -64,17 +64,9 @@ Route by domain: UI creation, redesign, or design-quality claims → design-ui b
 
 ### Delegation
 
-Delegate only when two or more genuinely independent units exist, boundaries are clear, and the independent outputs plausibly repay planning and coordination cost — otherwise work solo and say why. Rules that survive any tooling:
+Delegate only when two or more genuinely independent units exist, boundaries are clear, and the independent outputs plausibly repay coordination cost — otherwise work solo and say why. Cap workers at min(available capacity − 1, 3, independent ready units); parallel writes only for disjoint owned paths, coupled edits stay under one owner. Delegation contract and worker report requirements: see execute-durably section 4.
 
-- Cap workers at min(available capacity − 1, 3, independent ready units).
-- Parallel writes only for authorized changes with disjoint owned paths; coupled edits stay under one owner. Parallel reads (investigation, research, review) are the safe default.
-- Depth one: subagents never spawn descendants or verify their own parent's work.
-- Give each worker the raw task and minimum context; never leak the expected conclusion into an independent validation.
-- One classified retry per failed unit; after a second failure, absorb the work or report a blocker.
-- When a real RED test target exists with separate ownership, a test-writing worker precedes the implementing worker.
-- Require from each worker: status, changed paths, exact commands with exit codes, blockers, remaining risks. An omitted or invented check is not evidence.
-- Delegated work absorbed back into the main thread is degraded solo work, not successful delegation — report it as such.
-- After delegated, durable, or quality-claiming work, run a fresh independent verification pass (a second context that sees objective, diff, and evidence without the expected verdict). Self-verification never closes a criterion.
+Route by shape: parallel dispatch across independent problem domains → dispatching-parallel-agents; serial, review-gated execution of a written implementation plan → subagent-driven-development.
 
 ## 4. Execute the smallest coherent change
 

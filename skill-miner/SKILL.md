@@ -1,6 +1,6 @@
 ---
 name: skill-miner
-description: Use when mining coding-agent session history, archived transcripts, memories, or repeated local work to discover recurring workflows that should become new Agent Skills.
+description: Mines coding-agent session history, archived transcripts, memories, and repeated local work to surface recurring workflows worth turning into new Agent Skills. Use when session history or repeated manual procedures should be distilled into skills.
 ---
 
 # Skill Miner
@@ -27,7 +27,7 @@ Do not use to tune an existing skill; use `skill-personalizer`. Do not use to pu
 5. Score candidates by recurrence, friction, risk, portability, and future value.
 6. For each strong candidate, draft a concise skill name, trigger description, workflow outline, bundled-resource needs, and validation prompts.
 7. Recommend whether each candidate should stay personal, become a public skill via `skill-generalizer`, or be skipped.
-8. If the user asks to proceed, create the selected skill folders and verify frontmatter/layout.
+8. If the user asks to proceed, create the selected skill folders and verify frontmatter/layout. REQUIRED SUB-SKILL: use `writing-skills` when creating any selected candidate.
 
 ## Evidence Rules
 

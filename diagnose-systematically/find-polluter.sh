@@ -1,21 +1,28 @@
 #!/usr/bin/env bash
 # Bisection script to find which test creates unwanted files/state
-# Usage: ./find-polluter.sh <file_or_dir_to_check> <test_pattern>
-# Example: ./find-polluter.sh '.git' 'src/**/*.test.ts'
+# Requires bash. On Windows, run it through Git Bash (e.g. the Bash tool);
+# it will not work under PowerShell or cmd.
+# Usage: ./find-polluter.sh <file_or_dir_to_check> <test_pattern> [test_runner]
+#   test_runner: command used to run a single test file (default: npm test)
+# Examples:
+#   ./find-polluter.sh '.git' 'src/**/*.test.ts'
+#   ./find-polluter.sh '.git' 'src/**/*.test.ts' 'npx vitest run'
 
 set -e
 
-if [ $# -ne 2 ]; then
-  echo "Usage: $0 <file_to_check> <test_pattern>"
-  echo "Example: $0 '.git' 'src/**/*.test.ts'"
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+  echo "Usage: $0 <file_to_check> <test_pattern> [test_runner]"
+  echo "Example: $0 '.git' 'src/**/*.test.ts' 'npx vitest run'"
   exit 1
 fi
 
 POLLUTION_CHECK="$1"
 TEST_PATTERN="$2"
+TEST_RUNNER="${3:-npm test}"
 
 echo "🔍 Searching for test that creates: $POLLUTION_CHECK"
 echo "Test pattern: $TEST_PATTERN"
+echo "Test runner: $TEST_RUNNER"
 echo ""
 
 # Get list of test files (find . emits ./-prefixed paths, so accept the
@@ -47,8 +54,9 @@ for TEST_FILE in $TEST_FILES; do
 
   echo "[$COUNT/$TOTAL] Testing: $TEST_FILE"
 
-  # Run the test
-  npm test "$TEST_FILE" > /dev/null 2>&1 || true
+  # Run the test (unquoted expansion is intentional: the runner may be
+  # a multi-word command like 'npx vitest run')
+  $TEST_RUNNER "$TEST_FILE" > /dev/null 2>&1 || true
 
   # Check if pollution appeared
   if [ -e "$POLLUTION_CHECK" ]; then
@@ -61,7 +69,7 @@ for TEST_FILE in $TEST_FILES; do
     ls -la "$POLLUTION_CHECK"
     echo ""
     echo "To investigate:"
-    echo "  npm test $TEST_FILE    # Run just this test"
+    echo "  $TEST_RUNNER $TEST_FILE    # Run just this test"
     echo "  cat $TEST_FILE         # Review test code"
     exit 1
   fi

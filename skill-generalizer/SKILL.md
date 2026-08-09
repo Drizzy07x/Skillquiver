@@ -1,6 +1,6 @@
 ---
 name: skill-generalizer
-description: Use when turning local, private, or personal Agent Skills into publishable skills for GitHub, marketplaces, teams, or public sharing, especially when private paths, personal habits, credentials, internal hosts, or user-specific context must be removed.
+description: Converts local, private, or personal Agent Skills into publishable ones: strips private paths, personal habits, credentials, and internal hosts, then verifies portability. Use when preparing a skill for GitHub, marketplaces, teams, or public sharing.
 ---
 
 # Skill Generalizer
@@ -27,7 +27,7 @@ Do not use for tuning a skill only for the user's own machine; use `skill-person
 6. Keep `SKILL.md` concise; move long rubrics, examples, or scripts into bundled resources.
 7. Check target-agent compatibility before writing install instructions or support claims.
 8. Produce publication-ready packaging and honest promotion copy only when requested.
-9. Verify frontmatter, file layout, install path, and at least one realistic usage prompt.
+9. Verify frontmatter, file layout, install path, and at least one realistic usage prompt. REQUIRED SUB-SKILL: use `writing-skills` for verification and testing of the generalized output.
 
 ## Public Release Rules
 
@@ -42,3 +42,5 @@ Do not use for tuning a skill only for the user's own machine; use `skill-person
 Read [publication-rubric.md](references/publication-rubric.md) when doing a full release pass, redaction review, README rewrite, or promotional packaging.
 
 Read [platform-compatibility.md](references/platform-compatibility.md) before claiming support for Codex, Claude Code, Cursor, OpenCode, Gemini CLI, or other coding agents.
+
+The bundled `agents/openai.yaml` is Codex packaging metadata (display name and default prompt); Claude Code ignores it.

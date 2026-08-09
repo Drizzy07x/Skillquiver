@@ -138,6 +138,8 @@ def content_to_text(content) -> str:
 
 def sanitize(text: str, max_len: int = 180) -> str:
     text = re.sub(r"/Users/[^/\s]+", "/Users/<user>", text)
+    text = re.sub(r"[A-Za-z]:\\Users\\[^\\\s]+", r"C:\\Users\\<user>", text)
+    text = re.sub(r"[A-Za-z]:/Users/[^/\s]+", "C:/Users/<user>", text)
     text = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", "<email>", text)
     text = re.sub(r"\b(?:gho|sk|xox[baprs])-[-A-Za-z0-9_]{12,}\b", "<token>", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -388,7 +390,10 @@ def load_workflow_patterns(path: str) -> dict:
     if not pattern_path.exists():
         return {}
     data = json.loads(pattern_path.read_text(errors="ignore"))
-    return data if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        return {}
+    # Keys starting with "_" are comments; real entries are dicts.
+    return {k: v for k, v in data.items() if not k.startswith("_") and isinstance(v, dict)}
 
 
 def classify_workflows(text: str, patterns: dict) -> set[str]:

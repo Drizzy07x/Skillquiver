@@ -18,7 +18,7 @@ Observe before acting. Act on what the interface actually shows, not what it sho
 
 ## Mode 1: Explore an unfamiliar web interface
 
-Use when the navigation path is unknown, spans sites, or the interface has drifted and no stable reproduction exists.
+Use when the navigation path is unknown, spans sites, or the interface has drifted and no stable reproduction exists. Tool surface on this machine: mcp__Claude_Browser__* or mcp__claude-in-chrome__*.
 
 1. **Bound the exploration before starting.** Freeze: starting URL, one concrete goal, extraction schema if any, maximum steps, and side-effect scope:
    - `observe`: navigate and inspect; no form submission, downloads, or remote state change.
@@ -27,11 +27,11 @@ Use when the navigation path is unknown, spans sites, or the interface has drift
    A declared scope does not guarantee containment — after the run, review the actual action timeline for deviations and report any.
 2. **Explore and record.** Log each step: URL, action, what appeared. Record final status, step count, failure reason, and screenshot paths. Do not claim a remote artifact was preserved unless you downloaded it locally.
 3. **Hand off to a deterministic reproduction.** Discovery output seeds a scripted reproduction (e.g. a Playwright test) that must fail closed until explicit actions and at least one user-visible assertion replace the discovery placeholder. Preserve the starting URL, original goal, and observed step count in the handoff. Inspect and adapt any generated candidate to the project's conventions before copying it into a repository.
-4. **Never let exploration self-certify.** An adaptive agent's completion judgment means its own logic terminated, not that the site state is correct. Verify through Mode 2. Label all discovery output as navigation evidence.
+4. **Never let exploration self-certify.** An adaptive agent's completion judgment means its own logic terminated, not that the site state is correct. All discovery output is navigation evidence per the Core rules distinction; verify through Mode 2.
 
 ## Mode 2: Verify known web behavior
 
-Use for web UI defects, end-to-end flows, accessibility checks, flaky-test investigation, or visual change verification when the behavior to check is already known. Requires an automation framework (typically Playwright) already configured in the project — confirm the config and executable exist before proceeding; do not install, download browsers, or update snapshots without authorization.
+Use for web UI defects, end-to-end flows, accessibility checks, flaky-test investigation, or visual change verification when the behavior to check is already known. Scripted verification runs the project's automation framework (typically Playwright), which must already be configured — confirm the config and executable exist before proceeding; do not install, download browsers, or update snapshots without authorization. Interactive inspection alongside it uses the same web tool surface as Mode 1: mcp__Claude_Browser__* or mcp__claude-in-chrome__*.
 
 1. **Select the smallest useful test** at the public user-visible seam. Prefer an existing test; use solve-efficiently to locate candidate tests and callers. If the interface is unfamiliar, drop to Mode 1 first. If the outcome includes visual direction or redesign fidelity, involve design-ui and keep visual review separate from behavioral assertions.
 2. **Choose browsers by risk.** One configured project for a narrow behavioral change. Add engines, viewports, or operating systems only when compatibility is part of the claim. A Chromium pass is not cross-browser evidence.
@@ -50,7 +50,7 @@ Use for web UI defects, end-to-end flows, accessibility checks, flaky-test inves
 
 ## Mode 3: Operate a desktop application
 
-Use for native application or cross-application desktop workflows that need auditable evidence — clicking through an app and proving which window or dialog appeared. Requires a desktop automation capability already available; start live input only for the task, never merely because this skill loaded.
+Use for native application or cross-application desktop workflows that need auditable evidence — clicking through an app and proving which window or dialog appeared. Tool surface on this machine: mcp__Windows-MCP__* or mcp__computer-use__* (note the computer-use tier restrictions: browsers are read-only and terminals/IDEs are click-only — route browser work through the web tools and shell commands through Bash). Start live input only for the task, never merely because this skill loaded.
 
 1. **Confirm the surface first.** Take a screenshot or window snapshot before any input. Confirm the target application's expected window is in the foreground before clicking or typing — input into the wrong window is the classic failure.
 2. **Keep one session.** Batch adjacent inputs. If the tool reports busy or rejects an input, wait for the active input to finish and issue a fresh command — never replay or queue the rejected batch.
@@ -79,6 +79,6 @@ DO-CONFIRM: work from judgment, then stop at each point and confirm every item. 
 
 **Before claiming behavior**
 - Evidence captured at the user-visible seam from real actions, fresh captures, correct focus.
-- Navigation evidence labeled as such; behavioral claims backed by an executable assertion or explicit final-state verification.
+- Evidence classified per the Core rules distinction; behavioral claims backed by behavioral proof, never navigation evidence alone.
 - Red recorded before the fix; identical command green after. Flaky results reported separately.
 - Everything not exercised named in the report.

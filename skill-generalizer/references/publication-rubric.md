@@ -43,9 +43,7 @@ Use placeholders like `<workspace>`, `<repo>`, `<skill-name>`, `<agent-skills-di
 ## 4. Packaging Checklist
 
 - `skills/<skill-name>/SKILL.md` exists.
-- Frontmatter has only `name` and `description`.
-- Skill name is lowercase hyphen-case.
-- Description starts with `Use when` and contains only trigger conditions.
+- Frontmatter, naming, and description rules: follow `writing-skills` (single owner of those rules).
 - `SKILL.md` is short enough to scan.
 - Long checklists, scripts, examples, and templates live in bundled resources.
 - README install instructions match the actual folder names.

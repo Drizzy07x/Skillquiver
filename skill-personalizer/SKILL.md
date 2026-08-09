@@ -1,6 +1,6 @@
 ---
 name: skill-personalizer
-description: Use when auditing or adapting newly created, downloaded, forked, installed, or community Agent Skills to the user's tools, habits, directories, session history, and preferred workflows, especially when triggers feel wrong, noisy, or too generic.
+description: Audits and adapts community or newly installed Agent Skills to the user's tools, directories, habits, and session history. Use when a downloaded, forked, or generated skill has triggers that feel wrong, noisy, or too generic, or references tools the user does not have.
 ---
 
 # Skill Personalizer
@@ -39,6 +39,6 @@ Do not use when preparing a skill for public release; use `skill-generalizer` fo
 
 ## References
 
-Read [audit-rubric.md](references/audit-rubric.md) for the diagnostic pass inherited from the original optimizer.
+Read [audit-rubric.md](references/audit-rubric.md) for the diagnostic checklist for existing skills.
 
 Read [personalization-rubric.md](references/personalization-rubric.md) for local defaults, session evidence, and validation scenarios.

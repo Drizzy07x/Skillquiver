@@ -1,13 +1,13 @@
 ---
 name: dispatching-parallel-agents
-description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+description: Dispatches parallel subagents, one per independent domain, to investigate or fix several unrelated problems concurrently. Use when 2+ independent investigations or fixes — typically unrelated test failures in different files or subsystems — can each proceed without shared state or sequential dependencies.
 ---
 
 # Dispatching Parallel Agents
 
 ## Overview
 
-You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
+Subagents get isolated context you construct precisely — for the full rationale, see subagent-driven-development's "Why subagents" paragraph.
 
 When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
 
@@ -54,6 +54,8 @@ Group failures by what's broken:
 - File C tests: Abort functionality
 
 Each domain is independent - fixing tool approval doesn't affect abort tests.
+
+Domains must map to disjoint files; if they can't, run sequentially or give each agent its own worktree (using-git-worktrees).
 
 ### 2. Create Focused Agent Tasks
 
@@ -126,37 +128,13 @@ Return: Summary of what you found and what you fixed.
 **❌ Vague output:** "Fix it" - you don't know what changed
 **✅ Specific:** "Return summary of root cause and changes"
 
-## When NOT to Use
-
-**Related failures:** Fixing one might fix others - investigate together first
-**Need full context:** Understanding requires seeing entire system
-**Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
-
 ## Real Example from Session
 
-**Scenario:** 6 test failures across 3 files after major refactoring
+6 test failures across 3 files after refactoring; one agent per file:
 
-**Failures:**
-- agent-tool-abort.test.ts: 3 failures (timing issues)
-- batch-completion-behavior.test.ts: 2 failures (tools not executing)
-- tool-approval-race-conditions.test.ts: 1 failure (execution count = 0)
-
-**Decision:** Independent domains - abort logic separate from batch completion separate from race conditions
-
-**Dispatch:**
-```
-Agent 1 → Fix agent-tool-abort.test.ts
-Agent 2 → Fix batch-completion-behavior.test.ts
-Agent 3 → Fix tool-approval-race-conditions.test.ts
-```
-
-**Results:**
 - Agent 1: Replaced timeouts with event-based waiting
 - Agent 2: Fixed event structure bug (threadId in wrong place)
 - Agent 3: Added wait for async tool execution to complete
-
-**Integration:** All fixes independent, no conflicts, full suite green
 
 ## Verification
 

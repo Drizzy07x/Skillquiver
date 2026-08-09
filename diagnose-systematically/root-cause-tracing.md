@@ -8,20 +8,7 @@ Bugs often manifest deep in the call stack (git init in wrong directory, file cr
 
 ## When to Use
 
-```dot
-digraph when_to_use {
-    "Bug appears deep in stack?" [shape=diamond];
-    "Can trace backwards?" [shape=diamond];
-    "Fix at symptom point" [shape=box];
-    "Trace to original trigger" [shape=box];
-    "BETTER: Also add defense-in-depth" [shape=box];
-
-    "Bug appears deep in stack?" -> "Can trace backwards?" [label="yes"];
-    "Can trace backwards?" -> "Trace to original trigger" [label="yes"];
-    "Can trace backwards?" -> "Fix at symptom point" [label="no - dead end"];
-    "Trace to original trigger" -> "BETTER: Also add defense-in-depth";
-}
-```
+When a bug appears deep in the stack and the trail can be followed backwards, trace it to the original trigger and fix there. Fix at the point where the error appears only when the backward trail truly dead-ends. After fixing at the source, consider adding layered validation as well (see `defense-in-depth.md`).
 
 **Use when:**
 - Error happens deep in execution (not at entry point)
@@ -94,6 +81,23 @@ npm test 2>&1 | grep 'DEBUG git init'
 - Find the line number triggering the call
 - Identify the pattern (same test? same parameter?)
 
+## Locating the Failing Layer in Multi-Component Systems
+
+When the path runs through several components (CI → build → deploy, API → service → database), instrument every boundary before proposing fixes: log what enters and what exits each component, and confirm config/environment propagation at each hop. One instrumented run shows which layer the data dies in; investigate that layer.
+
+```bash
+# Layer 1: entry point - is the value present at all?
+echo "API_KEY: ${API_KEY:+SET}${API_KEY:-UNSET}"
+
+# Layer 2: intermediate script - did it propagate?
+env | grep API_KEY || echo "API_KEY not in environment"
+
+# Layer 3: consumer - what does the application actually see?
+node -e "console.log('key seen by app:', process.env.API_KEY ? 'SET' : 'UNSET')"
+```
+
+This reveals which hop drops the value (entry ✓, intermediate ✗) instead of guessing at the whole chain.
+
 ## Finding Which Test Causes Pollution
 
 If something appears during tests but you don't know which test:
@@ -129,27 +133,7 @@ Runs tests one-by-one, stops at first polluter. See script for usage.
 
 ## Key Principle
 
-```dot
-digraph principle {
-    "Found immediate cause" [shape=ellipse];
-    "Can trace one level up?" [shape=diamond];
-    "Trace backwards" [shape=box];
-    "Is this the source?" [shape=diamond];
-    "Fix at source" [shape=box];
-    "Add validation at each layer" [shape=box];
-    "Bug impossible" [shape=doublecircle];
-    "NEVER fix just the symptom" [shape=octagon, style=filled, fillcolor=red, fontcolor=white];
-
-    "Found immediate cause" -> "Can trace one level up?";
-    "Can trace one level up?" -> "Trace backwards" [label="yes"];
-    "Can trace one level up?" -> "NEVER fix just the symptom" [label="no"];
-    "Trace backwards" -> "Is this the source?";
-    "Is this the source?" -> "Trace backwards" [label="no - keeps going"];
-    "Is this the source?" -> "Fix at source" [label="yes"];
-    "Fix at source" -> "Add validation at each layer";
-    "Add validation at each layer" -> "Bug impossible";
-}
-```
+From the immediate cause, keep asking what called this, and with what value, one level at a time, until the answer is the source rather than another caller. Fix at the source, then add validation at each layer the bad value passed through so the bug becomes structurally impossible.
 
 **NEVER fix just where the error appears.** Trace back to find the original trigger.
 
@@ -159,11 +143,3 @@ digraph principle {
 **Before operation:** Log before the dangerous operation, not after it fails
 **Include context:** Directory, cwd, environment variables, timestamps
 **Capture stack:** `new Error().stack` shows complete call chain
-
-## Real-World Impact
-
-From debugging session (2025-10-03):
-- Found root cause through 5-level trace
-- Fixed at source (getter validation)
-- Added 4 layers of defense
-- 1847 tests passed, zero pollution
