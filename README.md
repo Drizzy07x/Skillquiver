@@ -93,7 +93,7 @@ All 22 skills load globally (every project). Update later with `/plugin update s
 |-------|--------------|
 | [windows-doctor](.claude/skills/windows-doctor/SKILL.md) | Diagnoses a Windows machine with read-only checks, then repairs and optimizes on evidence, with restore points and confirmation gates. |
 
-### Prompt & skill engineering
+### Prompt engineering
 
 | Skill | What it does |
 |-------|--------------|
