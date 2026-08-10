@@ -25,7 +25,7 @@ GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 BRANCH=$(git branch --show-current)
 ```
 
-**Submodule guard:** `GIT_DIR != GIT_COMMON` is also true inside git submodules. Before concluding "already in a worktree," verify you are not in a submodule:
+**Submodule guard:** As a belt-and-braces check before concluding "already in a worktree," confirm you are not inside a git submodule:
 
 ```bash
 # If this returns a path, you're in a submodule, not a worktree — treat as normal repo
@@ -79,10 +79,11 @@ Follow this priority order. Explicit user preference always beats observed files
 
 #### Safety Verification (project-local directories only)
 
-**MUST verify directory is ignored before creating worktree:**
+**MUST verify the chosen directory is ignored before creating worktree** — test a child path so the check works before the directory exists and with both `dir` and `dir/` gitignore styles:
 
 ```bash
-git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
+# $LOCATION is the worktree parent chosen in Directory Selection
+git check-ignore -q "$LOCATION/x"
 ```
 
 **If NOT ignored:** Add to .gitignore, stage the change, and ask the user whether to commit it before proceeding.
@@ -114,7 +115,8 @@ if [ -f Cargo.toml ]; then cargo build; fi
 
 # Python
 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
+if [ -f pyproject.toml ] && grep -q '\[tool\.poetry\]' pyproject.toml; then poetry install
+elif [ -f pyproject.toml ] && [ ! -f requirements.txt ]; then pip install -e .; fi
 
 # Go
 if [ -f go.mod ]; then go mod download; fi
@@ -156,13 +158,13 @@ Ready to implement <feature-name>
 | Directory not ignored | Add to .gitignore, stage, ask before commit |
 | Permission error on create | Sandbox fallback, work in place |
 | Tests fail during baseline | Report failures + ask |
-| No package.json/Cargo.toml | Skip dependency install |
+| No recognized manifest (package.json/Cargo.toml/requirements.txt/pyproject.toml/go.mod) | Skip dependency install |
 
 ## Common Rationalizations
 
 | Excuse | Reality |
 |--------|---------|
-| "I'm obviously not in a worktree — no need to check" | Run Step 0. Harness-created isolation and submodules both fool eyeballing; the detection commands settle it. |
+| "I'm obviously not in a worktree — no need to check" | Run Step 0. Harness-created isolation fools eyeballing; the detection commands settle it. |
 | "`git worktree add` is quicker than hunting for a native tool" | A native tool (e.g. `EnterWorktree`) owns placement, branching, and cleanup. Bypassing it is the #1 mistake — it creates phantom state your harness can't see or manage. |
 | "The worktree directory is surely ignored already" | Run `git check-ignore`. An unignored worktree directory commits the whole tree into the repo. |
 | "Any directory name works" | Explicit instructions beat an existing project-local directory, which beats the `.worktrees/` default. |

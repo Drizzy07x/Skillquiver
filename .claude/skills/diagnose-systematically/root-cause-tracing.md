@@ -102,7 +102,7 @@ This reveals which hop drops the value (entry ✓, intermediate ✗) instead of 
 
 If something appears during tests but you don't know which test:
 
-Use the bisection script `find-polluter.sh` in this directory:
+Use the polluter-finder script `find-polluter.sh` in this directory:
 
 ```bash
 ./find-polluter.sh '.git' 'src/**/*.test.ts'

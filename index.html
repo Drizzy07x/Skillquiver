@@ -473,6 +473,7 @@ document.getElementById("filter").addEventListener("input", e => {
       inGroup += hit;
     }
     group.classList.toggle("hidden", !inGroup);
+    group.querySelector(".n").textContent = inGroup;
     shown += inGroup;
   }
   count.textContent = shown === FLAT.length ? `${FLAT.length} shown` : `${shown} of ${FLAT.length}`;

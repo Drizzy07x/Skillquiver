@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bisection script to find which test creates unwanted files/state
+# Linear scan to find which test creates unwanted files/state
 # Requires bash. On Windows, run it through Git Bash (e.g. the Bash tool);
 # it will not work under PowerShell or cmd.
 # Usage: ./find-polluter.sh <file_or_dir_to_check> <test_pattern> [test_runner]
@@ -19,6 +19,14 @@ fi
 POLLUTION_CHECK="$1"
 TEST_PATTERN="$2"
 TEST_RUNNER="${3:-npm test}"
+
+# Each iteration detects pollution by its appearance after a test run, so the
+# artifact must be absent before the scan starts.
+if [ -e "$POLLUTION_CHECK" ]; then
+  echo "❌ $POLLUTION_CHECK already exists before any test ran."
+  echo "   Remove it first, then re-run this script."
+  exit 2
+fi
 
 echo "🔍 Searching for test that creates: $POLLUTION_CHECK"
 echo "Test pattern: $TEST_PATTERN"
@@ -42,15 +50,9 @@ echo "Found $TOTAL test files"
 echo ""
 
 COUNT=0
-for TEST_FILE in $TEST_FILES; do
+while IFS= read -r TEST_FILE; do
+  [ -n "$TEST_FILE" ] || continue
   COUNT=$((COUNT + 1))
-
-  # Skip if pollution already exists
-  if [ -e "$POLLUTION_CHECK" ]; then
-    echo "⚠️  Pollution already exists before test $COUNT/$TOTAL"
-    echo "   Skipping: $TEST_FILE"
-    continue
-  fi
 
   echo "[$COUNT/$TOTAL] Testing: $TEST_FILE"
 
@@ -73,7 +75,7 @@ for TEST_FILE in $TEST_FILES; do
     echo "  cat $TEST_FILE         # Review test code"
     exit 1
   fi
-done
+done <<< "$TEST_FILES"
 
 echo ""
 echo "✅ No polluter found - all tests clean!"

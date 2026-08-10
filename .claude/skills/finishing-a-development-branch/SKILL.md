@@ -35,7 +35,14 @@ GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 # Capture now, while still inside the workspace — Step 5 changes directory
 # before cleanup (Step 6) needs this value
 WORKTREE_PATH=$(git rev-parse --show-toplevel)
+BRANCH=$(git branch --show-current)
+echo "GIT_DIR=$GIT_DIR"
+echo "GIT_COMMON=$GIT_COMMON"
+echo "WORKTREE_PATH=$WORKTREE_PATH"
+echo "BRANCH=${BRANCH:-<detached>}"
 ```
+
+Note the printed values — shell variables do not persist between tool calls, and Step 6 needs them.
 
 This determines which menu to show and how cleanup works:
 
@@ -158,6 +165,11 @@ Then clean up the worktree (Step 6) and force-delete the branch:
 ```bash
 git branch -D <feature-branch>
 ```
+
+If Step 6 left the worktree in place (externally managed), git refuses to
+delete a branch still checked out there. Detach it first — `git -C
+"$WORKTREE_PATH" checkout --detach` or the platform's workspace-exit tool —
+then re-run the branch delete.
 
 ## Step 6: Cleanup Workspace
 

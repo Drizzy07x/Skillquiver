@@ -102,13 +102,7 @@ const URL_HOST = process.env.BRAINSTORM_URL_HOST || (HOST === '127.0.0.1' ? 'loc
 const SESSION_DIR = process.env.BRAINSTORM_DIR || '/tmp/brainstorm';
 const CONTENT_DIR = path.join(SESSION_DIR, 'content');
 const STATE_DIR = path.join(SESSION_DIR, 'state');
-const SUPERPOWERS_VERSION = readSuperpowersVersion();
-const TELEMETRY_DISABLE_ENV_VARS = [
-  'SUPERPOWERS_DISABLE_TELEMETRY',
-  'DISABLE_TELEMETRY',
-  'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'
-];
-const SUPERPOWERS_TELEMETRY_DISABLED = TELEMETRY_DISABLE_ENV_VARS.some(name => isTruthyEnv(process.env[name]));
+const SKILLQUIVER_VERSION = readSkillquiverVersion();
 let ownerPid = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_OWNER_PID) : null;
 
 // Per-session secret key. The companion is reachable by any local browser tab
@@ -204,30 +198,19 @@ const helperInjection = '<script>\n' + helperScript + '\n</script>';
 
 // ========== Helper Functions ==========
 
-function readSuperpowersVersion() {
-  const root = path.join(__dirname, '../../..');
-  const manifests = [
-    path.join(root, 'package.json'),
-    path.join(root, '.codex-plugin/plugin.json')
-  ];
+function readSkillquiverVersion() {
+  // Skills live at <root>/.claude/skills/brainstorming/scripts, so the plugin
+  // manifest sits four levels up in <root>/.claude-plugin/plugin.json.
+  const manifest = path.join(__dirname, '../../../../.claude-plugin/plugin.json');
 
-  for (const manifest of manifests) {
-    try {
-      const data = JSON.parse(fs.readFileSync(manifest, 'utf-8'));
-      if (data.version) return String(data.version);
-    } catch (e) {
-      // Packaged Codex plugins omit package.json; try the next manifest.
-    }
+  try {
+    const data = JSON.parse(fs.readFileSync(manifest, 'utf-8'));
+    if (data.version) return String(data.version);
+  } catch (e) {
+    // Manifest missing (e.g. skills copied standalone); fall through.
   }
 
   return 'unknown';
-}
-
-function isTruthyEnv(value) {
-  if (!value) return false;
-  const normalized = String(value).trim().toLowerCase();
-  if (!normalized) return false;
-  return !['0', 'false', 'no', 'off'].includes(normalized);
 }
 
 function escapeHtmlText(value) {
@@ -239,13 +222,10 @@ function escapeHtmlText(value) {
 }
 
 function brandMarkup() {
-  const version = escapeHtmlText(SUPERPOWERS_VERSION);
-  const text = SUPERPOWERS_TELEMETRY_DISABLED
-    ? 'Prime Radiant Superpowers v' + version
-    : 'Superpowers v' + version;
-  const logo = '';
+  const version = escapeHtmlText(SKILLQUIVER_VERSION);
+  const text = 'Skillquiver v' + version;
 
-  return '<div class="brand"><a href="https://github.com/obra/superpowers">' + logo + '<span class="brand-copy">' + text + '</span></a></div>';
+  return '<div class="brand"><a href="https://github.com/Drizzy07x/Skillquiver"><span class="brand-copy">' + text + '</span></a></div>';
 }
 
 function renderBranding(html) {

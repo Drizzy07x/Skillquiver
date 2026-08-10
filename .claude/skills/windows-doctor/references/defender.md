@@ -47,7 +47,7 @@ Last resort — leaves the machine with **no antivirus**. State that plainly and
 If a real kill is still wanted:
 
 1. **Tamper Protection OFF** — manual, no API by design: Windows Security → Virus & threat protection → Manage settings → Tamper Protection Off. Verify: `(Get-MpComputerStatus).IsTamperProtected` = `False`. Nothing below sticks until this is done.
-2. Real-time + cloud off (admin): `Set-MpPreference -DisableRealtimeMonitoring $true -DisableIOAVProtection $true`.
+2. Real-time + downloaded-file/attachment scanning off (admin): `Set-MpPreference -DisableRealtimeMonitoring $true -DisableIOAVProtection $true`.
 3. **Disable the services** — the `WinDefend` service can't be stopped from a running session; set its start type in the registry, which applies on next boot (restore point first):
 
    ```powershell
@@ -71,4 +71,4 @@ Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Sense'     Start 3 -Ty
 Set-MpPreference -DisableRealtimeMonitoring $false -DisableIOAVProtection $false
 ```
 
-Then reboot and turn **Tamper Protection back ON** in the UI (leaving it off is the real risk). Verify healthy: `Get-MpComputerStatus | Select-Object AMRunningMode, RealTimeProtectionEnabled, IsTamperProtected` → `Normal`, `True`, `True`. If Defender won't start (services stripped, app package damaged), re-register it: `Get-AppxPackage -AllUsers *Defender* | Reset-AppxPackage` then reboot; still broken → `references/corruption-update.md` (DISM/SFC).
+Then reboot and turn **Tamper Protection back ON** in the UI (leaving it off is the real risk). Verify healthy: `Get-MpComputerStatus | Select-Object AMRunningMode, RealTimeProtectionEnabled, IsTamperProtected` → `Normal`, `True`, `True`. If Defender won't start (services stripped, app package damaged), repair the Windows Security UI app: `Get-AppxPackage -AllUsers Microsoft.SecHealthUI | Reset-AppxPackage` then reboot (the Defender engine itself is serviced via DISM/SFC); still broken → `references/corruption-update.md` (DISM/SFC).

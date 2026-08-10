@@ -50,7 +50,7 @@ For a browser-visible symptom, use automate-ui to build or run the smallest user
 
 ## 2. Reproduce and minimize
 
-Run the signal enough times to distinguish deterministic failure from intermittency. For a flaky defect, measure a reproduction rate and increase it with controlled stress, repetition, or timing changes. When the flakiness stems from arbitrary delays in tests, apply `condition-based-waiting.md` in this skill; when it stems from test-order pollution, `find-polluter.sh` bisects to the polluting test.
+Run the signal enough times to distinguish deterministic failure from intermittency. For a flaky defect, measure a reproduction rate and increase it with controlled stress, repetition, or timing changes. When the flakiness stems from arbitrary delays in tests, apply `condition-based-waiting.md` in this skill; when it stems from test-order pollution, `find-polluter.sh` scans test-by-test to the polluting test.
 
 Remove one input, dependency, configuration element, or step at a time. Keep a removal only when the same symptom still occurs. Stop when every remaining element is load-bearing.
 

@@ -18,8 +18,7 @@ Write the test first. Watch it fail. Write minimal code to pass.
 **Always:**
 - New features
 - Bug fixes
-- Behavior changes during refactoring (pure behavior-preserving refactors: see refactor-safely)
-- Behavior changes
+- Behavior changes (including during refactoring; pure behavior-preserving refactors: see refactor-safely)
 
 **Exceptions (ask the user):**
 - Throwaway prototypes

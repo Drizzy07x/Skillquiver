@@ -18,7 +18,7 @@ Observe before acting. Act on what the interface actually shows, not what it sho
 
 ## Mode 1: Explore an unfamiliar web interface
 
-Use when the navigation path is unknown, spans sites, or the interface has drifted and no stable reproduction exists. Tool surface on this machine: mcp__Claude_Browser__* or mcp__claude-in-chrome__*.
+Use when the navigation path is unknown, spans sites, or the interface has drifted and no stable reproduction exists. Typical web tool surfaces (use whichever is available): mcp__Claude_Browser__* or mcp__claude-in-chrome__*.
 
 1. **Bound the exploration before starting.** Freeze: starting URL, one concrete goal, extraction schema if any, maximum steps, and side-effect scope:
    - `observe`: navigate and inspect; no form submission, downloads, or remote state change.
@@ -50,7 +50,7 @@ Use for web UI defects, end-to-end flows, accessibility checks, flaky-test inves
 
 ## Mode 3: Operate a desktop application
 
-Use for native application or cross-application desktop workflows that need auditable evidence — clicking through an app and proving which window or dialog appeared. Tool surface on this machine: mcp__Windows-MCP__* or mcp__computer-use__* (note the computer-use tier restrictions: browsers are read-only and terminals/IDEs are click-only — route browser work through the web tools and shell commands through Bash). Start live input only for the task, never merely because this skill loaded.
+Use for native application or cross-application desktop workflows that need auditable evidence — clicking through an app and proving which window or dialog appeared. Typical desktop tool surfaces (use whichever is available): a desktop-automation MCP such as mcp__Windows-MCP__* or mcp__computer-use__* (if using computer-use, note its tier restrictions: browsers are read-only and terminals/IDEs are click-only — route browser work through the web tools and shell commands through Bash). Start live input only for the task, never merely because this skill loaded.
 
 1. **Confirm the surface first.** Take a screenshot or window snapshot before any input. Confirm the target application's expected window is in the foreground before clicking or typing — input into the wrong window is the classic failure.
 2. **Keep one session.** Batch adjacent inputs. If the tool reports busy or rejects an input, wait for the active input to finish and issue a fresh command — never replay or queue the rejected batch.

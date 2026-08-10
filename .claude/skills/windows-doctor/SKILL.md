@@ -63,6 +63,7 @@ Read the matching file and follow it; don't load the rest.
 | Defender on/off, false positives, AV exclusions | `references/defender.md` |
 | "Optimize my PC" | `references/hardware-optimize.md` |
 | Device without driver, device errors, driver install/rollback | `references/drivers.md` |
+| Service fails to start or keeps crashing (SCM events 7000/7001/7031 in triage output) | `references/services.md` |
 
 ### Slow PC (route by triage evidence)
 

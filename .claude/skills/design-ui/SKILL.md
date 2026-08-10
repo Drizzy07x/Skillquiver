@@ -48,7 +48,7 @@ Preserve real content. Never invent testimonials, customers, product metrics, ce
 
 ## 4. Verify the render
 
-Use real browser checks (automate-ui) to exercise relevant interactions and capture actual renders. On this machine, set viewports with the mcp__Claude_Browser__resize_window presets — mobile (375x812) and desktop (1280x800) — or explicit width/height for intermediate widths. Minimum: one mobile viewport at or below 480 CSS px and one desktop viewport at or above 1024 CSS px; add intermediate widths where layout behavior changes. A screenshot supports visual review but does not prove behavior.
+Use real browser checks (automate-ui) to exercise relevant interactions and capture actual renders. If a browser resize tool is available (e.g. mcp__Claude_Browser__resize_window), use its mobile (375x812) and desktop (1280x800) presets — or explicit width/height for intermediate widths. Minimum: one mobile viewport at or below 480 CSS px and one desktop viewport at or above 1024 CSS px; add intermediate widths where layout behavior changes. A screenshot supports visual review but does not prove behavior.
 
 Keep four evidence layers distinct — intent (what the design must express and preserve), render (screenshots tied to exact viewports and source state), review (named checks against those renders), behavioral (browser assertions for interactions) — and never merge them into one unsupported quality claim. For each capture, record the screenshot path, viewport, and what it shows.
 
