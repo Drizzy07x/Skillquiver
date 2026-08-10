@@ -1,6 +1,6 @@
 ---
 name: execute-durably
-description: Run long, multi-turn, or interruption-prone work against an external state file with falsifiable criteria, an append-only evidence log, and independent verification before any criterion closes. Use when work spans several turns, risks context compaction, or must survive interruption and resume from where it stopped; skip work that finishes and can be checked in a single pass.
+description: Runs long, multi-turn, or interruption-prone work against an external state file with falsifiable criteria, an append-only evidence log, and independent verification before any criterion closes. Use when work spans several turns, risks context compaction, or must survive interruption and resume from where it stopped; skip work that finishes and can be checked in a single pass.
 ---
 
 # Execute Durably

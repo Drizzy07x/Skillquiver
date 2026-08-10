@@ -1,6 +1,6 @@
 ---
 name: engineer-prompts
-description: Build or audit a version-neutral prompt contract with explicit outcomes, boundaries, permissions, named tools, required evidence, and stop conditions, then render it as a stable prompt. Use when writing a reusable agent prompt, system prompt, or instruction set that must be testable, or when auditing an existing prompt for unobservable success criteria and unstated permissions.
+description: Builds or audits a version-neutral prompt contract with explicit outcomes, boundaries, permissions, named tools, required evidence, and stop conditions, then renders it as a stable prompt. Use when writing a reusable agent prompt, system prompt, or instruction set that must be testable, or when auditing an existing prompt for unobservable success criteria and unstated permissions.
 ---
 
 # Engineer Prompts

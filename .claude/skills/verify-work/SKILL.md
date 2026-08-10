@@ -1,6 +1,6 @@
 ---
 name: verify-work
-description: Independently audit finished work — verify a delivery or completion claim against real evidence. Use when asked to double-check that something just finished actually works, confirm a completion claim, judge release readiness, or find unsupported claims.
+description: Independently audits finished work — verifies a delivery or completion claim against real evidence. Use when asked to double-check that something just finished actually works, confirm a completion claim, judge release readiness, or find unsupported claims.
 ---
 
 # Verify Work

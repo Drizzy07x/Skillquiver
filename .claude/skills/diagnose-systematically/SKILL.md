@@ -1,6 +1,6 @@
 ---
 name: diagnose-systematically
-description: Find the cause of a defect through observable evidence - build a runnable signal, reproduce, minimize, test falsifiable hypotheses one variable at a time, and prove any authorized fix red-to-green. Use when something fails, crashes, does nothing, slows down, or returns a wrong result and the cause is not already demonstrated, including intermittent or flaky defects and performance regressions.
+description: Finds the cause of a defect through observable evidence - builds a runnable signal, reproduces, minimizes, tests falsifiable hypotheses one variable at a time, and proves any authorized fix red-to-green. Use when something fails, crashes, does nothing, slows down, or returns a wrong result and the cause is not already demonstrated, including intermittent or flaky defects and performance regressions.
 ---
 
 # Diagnose Systematically

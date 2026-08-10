@@ -1,6 +1,6 @@
 ---
 name: design-ui
-description: Turn visual intent into inspectable constraints, implement UI as one coherent system, verify the rendered result at real viewports, and review the resulting UI code structure for component-level red flags. Use when an interface looks generic or off, when a page/screen/dashboard is being built or redesigned, or when a claim about design quality or fidelity needs proof.
+description: Turns visual intent into inspectable constraints, implements UI as one coherent system, verifies the rendered result at real viewports, and reviews the resulting UI code structure for component-level red flags. Use when an interface looks generic or off, when a page/screen/dashboard is being built or redesigned, or when a claim about design quality or fidelity needs proof.
 ---
 
 # Design UI

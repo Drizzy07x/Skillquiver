@@ -1,6 +1,6 @@
 ---
 name: communicate-clearly
-description: Control the verbosity of your own reports with the shortest profile that still preserves evidence, and explain external sources in plain language without upgrading their claims. Use when the user asks for shorter or longer answers, a compact technical handoff, a set verbosity, or an ELI5 / plain-language explanation of a paper, result, or dense passage.
+description: Controls the verbosity of reports with the shortest profile that still preserves evidence, and explains external sources in plain language without upgrading their claims. Use when the user asks for shorter or longer answers, a compact technical handoff, a set verbosity, or an ELI5 / plain-language explanation of a paper, result, or dense passage.
 ---
 
 # Communicate Clearly

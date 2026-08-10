@@ -57,20 +57,20 @@ All 22 skills load globally (every project). Update later with `/plugin update s
 | Skill | What it does |
 |-------|--------------|
 | [test-driven-development](.claude/skills/test-driven-development/SKILL.md) | Enforces test-first red-green-refactor: failing test, minimal code to pass, verify green. |
-| [solve-efficiently](.claude/skills/solve-efficiently/SKILL.md) | Route work efficiently with progressive context discovery, matched effort, and durable project mapping. |
-| [execute-durably](.claude/skills/execute-durably/SKILL.md) | Run long or interruption-prone work against an external state file with falsifiable criteria and an append-only evidence log. |
-| [refactor-safely](.claude/skills/refactor-safely/SKILL.md) | Refactor working code and land changes in untested legacy code without altering observable behavior. |
+| [solve-efficiently](.claude/skills/solve-efficiently/SKILL.md) | Routes work efficiently with progressive context discovery, matched effort, and durable project mapping. |
+| [execute-durably](.claude/skills/execute-durably/SKILL.md) | Runs long or interruption-prone work against an external state file with falsifiable criteria and an append-only evidence log. |
+| [refactor-safely](.claude/skills/refactor-safely/SKILL.md) | Refactors working code and lands changes in untested legacy code without altering observable behavior. |
 | [using-git-worktrees](.claude/skills/using-git-worktrees/SKILL.md) | Ensures an isolated workspace exists via native tools or git worktree fallback before feature work. |
-| [communicate-clearly](.claude/skills/communicate-clearly/SKILL.md) | Control report verbosity with the shortest profile that preserves evidence; explain external sources in plain language. |
+| [communicate-clearly](.claude/skills/communicate-clearly/SKILL.md) | Controls report verbosity with the shortest profile that preserves evidence; explains external sources in plain language. |
 
 ### Verification & debugging
 
 | Skill | What it does |
 |-------|--------------|
-| [diagnose-systematically](.claude/skills/diagnose-systematically/SKILL.md) | Find the cause of a defect through observable evidence: reproduce, minimize, test falsifiable hypotheses one variable at a time. |
+| [diagnose-systematically](.claude/skills/diagnose-systematically/SKILL.md) | Finds the cause of a defect through observable evidence: reproduces, minimizes, tests falsifiable hypotheses one variable at a time. |
 | [verification-before-completion](.claude/skills/verification-before-completion/SKILL.md) | Requires running verification commands and confirming output before any success claim; evidence before assertions. |
-| [verify-work](.claude/skills/verify-work/SKILL.md) | Independently audit finished work: verify a delivery or completion claim against real evidence. |
-| [research-systematically](.claude/skills/research-systematically/SKILL.md) | Freeze the question before collecting results, bind every claim to a source, pin docs to the installed dependency version. |
+| [verify-work](.claude/skills/verify-work/SKILL.md) | Independently audits finished work: verifies a delivery or completion claim against real evidence. |
+| [research-systematically](.claude/skills/research-systematically/SKILL.md) | Freezes the question before collecting results, binds every claim to a source, pins docs to the installed dependency version. |
 
 ### Code review
 
@@ -84,8 +84,8 @@ All 22 skills load globally (every project). Update later with `/plugin update s
 
 | Skill | What it does |
 |-------|--------------|
-| [design-ui](.claude/skills/design-ui/SKILL.md) | Turn visual intent into inspectable constraints, implement UI as one coherent system, and verify the rendered result. |
-| [automate-ui](.claude/skills/automate-ui/SKILL.md) | Drive web and desktop UIs adaptively while capturing evidence that separates navigation from behavioral proof. |
+| [design-ui](.claude/skills/design-ui/SKILL.md) | Turns visual intent into inspectable constraints, implements UI as one coherent system, and verifies the rendered result. |
+| [automate-ui](.claude/skills/automate-ui/SKILL.md) | Drives web and desktop UIs adaptively while capturing evidence that separates navigation from behavioral proof. |
 
 ### System
 
@@ -97,7 +97,7 @@ All 22 skills load globally (every project). Update later with `/plugin update s
 
 | Skill | What it does |
 |-------|--------------|
-| [engineer-prompts](.claude/skills/engineer-prompts/SKILL.md) | Build or audit a prompt contract with explicit outcomes, boundaries, permissions, required evidence, and stop conditions. |
+| [engineer-prompts](.claude/skills/engineer-prompts/SKILL.md) | Builds or audits a prompt contract with explicit outcomes, boundaries, permissions, required evidence, and stop conditions. |
 
 ## License
 
