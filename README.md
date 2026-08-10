@@ -30,7 +30,7 @@ claude plugin marketplace add Drizzy07x/Skillquiver
 claude plugin install skillquiver@skillquiver --scope user
 ```
 
-All 23 skills load globally (every project). Update later with `/plugin update skillquiver` or `claude plugin update skillquiver`.
+All 23 skills load globally (every project). Update later with `/plugin update skillquiver@skillquiver` or `claude plugin update skillquiver@skillquiver`.
 
 > **Note:** `/plugin` slash commands only exist in the interactive Claude Code CLI. In other environments (IDE integrations, non-interactive sessions), use the `claude plugin` terminal commands above or the manual install below.
 
