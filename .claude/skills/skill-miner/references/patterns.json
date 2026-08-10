@@ -1,3 +1,0 @@
-{
-  "_comment": "Placeholder - personalize before first use. The previous owner's patterns were removed. Add workflow entries mined from your own session history, one key per workflow, e.g. \"my-workflow\": {\"pattern\": \"\\\\b(trigger|words)\\\\b\", \"direction\": \"personal\", \"why\": \"reason this recurs\", \"case_sensitive\": false}. Keys starting with an underscore are ignored by scan_sessions.py."
-}
