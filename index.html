@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0B0E13">
 <meta property="og:title" content="Skillquiver — 22 Agent Skills for Claude Code">
 <meta property="og:description" content="Each skill says when to use it, so Claude picks the right one on its own.">
-<meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.svg">
+<meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/mark.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -329,7 +329,7 @@ footer a:hover { color: var(--gold); }
 │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fails, crashes, or returns a<br>
 │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wrong result.<br>
 ├── verify-work/<br>
-└── … 23 more
+└── … 20 more
     </div>
   </div>
 </section>
@@ -534,7 +534,7 @@ for (const btn of document.querySelectorAll(".copy")) {
 
 /* ── hero: the draw ──────────────────────────────── */
 const shafts = document.getElementById("shafts");
-for (let i = 0; i < 22; i++) {
+for (let i = 0; i < FLAT.length; i++) {
   const s = document.createElement("div");
   s.className = "shaft";
   s.style.setProperty("--h", 30 + Math.round(33 * (1 + Math.sin(i * 1.1))) + "%");

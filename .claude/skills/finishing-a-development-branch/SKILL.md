@@ -1,6 +1,6 @@
 ---
 name: finishing-a-development-branch
-description: Guides integration of a finished branch: verify tests, present merge/PR/keep/discard options to the user, and clean up worktrees. Use when implementation is complete, all tests pass, and the work needs to be integrated.
+description: "Guides integration of a finished branch: verify tests, present merge/PR/keep/discard options to the user, and clean up worktrees. Use when implementation is complete, all tests pass, and the work needs to be integrated."
 ---
 
 # Finishing a Development Branch
