@@ -39,7 +39,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: inherit; }
-::selection { background: var(--copper); color: #14100C; }
+::selection { background: rgba(200, 121, 65, .35); }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
@@ -435,7 +435,7 @@ const GROUPS = [
   ]],
   ["System", [
     ["windows-doctor", "Checks what's actually wrong with Windows before repairing, cleaning, or tuning it.", "the machine is slow, blue-screens, loses internet, needs drivers, or Windows Update keeps failing."],
-    ["skillquiver-doctor", "Finds installed skills, plugins, and hooks that clash with these skills, and removes them only if you say yes — with backups.", "skills fire at the wrong time, a skill name shows up twice, or another plugin fights this one."],
+    ["skillquiver-doctor", "Finds skills, plugins, and hooks from other installs that conflict with these, and removes them — always with a backup and your ok.", "the wrong skill activates, a name shows up twice, or another plugin interferes."],
   ]],
   ["Prompt engineering", [
     ["engineer-prompts", "Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.", "you're writing a prompt that other people will reuse."],

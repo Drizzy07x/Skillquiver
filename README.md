@@ -92,7 +92,7 @@ All 23 skills load globally (every project). Update later with `/plugin update s
 | Skill | What it does |
 |-------|--------------|
 | [windows-doctor](.claude/skills/windows-doctor/SKILL.md) | Diagnoses a Windows machine with read-only checks, then repairs and optimizes on evidence, with restore points and confirmation gates. |
-| [skillquiver-doctor](.claude/skills/skillquiver-doctor/SKILL.md) | Detects foreign skills, plugins, and hooks that duplicate or contradict Skillquiver's skills, and removes them only with per-item consent and backups. |
+| [skillquiver-doctor](.claude/skills/skillquiver-doctor/SKILL.md) | Finds skills, plugins, and hooks from other installs that conflict with Skillquiver's, and removes them — always with a backup and per-item consent. |
 
 ### Prompt engineering
 
