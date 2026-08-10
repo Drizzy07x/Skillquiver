@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skillquiver — 22 Agent Skills for Claude Code</title>
-<meta name="description" content="22 Agent Skills for Claude Code. Each skill says when to use it, so Claude picks the right one on its own: writing a plan, finding a bug, checking that work is really done.">
+<title>Skillquiver — 23 Agent Skills for Claude Code</title>
+<meta name="description" content="23 Agent Skills for Claude Code. Each skill says when to use it, so Claude picks the right one on its own: writing a plan, finding a bug, checking that work is really done.">
 <meta name="theme-color" content="#0B0E13">
-<meta property="og:title" content="Skillquiver — 22 Agent Skills for Claude Code">
+<meta property="og:title" content="Skillquiver — 23 Agent Skills for Claude Code">
 <meta property="og:description" content="Each skill says when to use it, so Claude picks the right one on its own.">
 <meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -91,7 +91,7 @@ a { color: inherit; }
 .meta { margin-top: 26px; font: 400 13px var(--mono); color: var(--muted); }
 .meta b { color: var(--bone); font-weight: 500; }
 
-/* the quiver: 22 shafts, one drawn at a time */
+/* the quiver: 23 shafts, one drawn at a time */
 .quiver { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
 .vis { position: relative; }
 /* the quiver mouth: a band the arrows sit in */
@@ -282,7 +282,7 @@ footer a:hover { color: var(--gold); }
     <span class="name">Skillquiver</span>
     <a class="link" href="#skill">How it works</a>
     <a class="link" href="#install">Install</a>
-    <a class="link" href="#quiver">All 22 skills</a>
+    <a class="link" href="#quiver">All 23 skills</a>
     <a class="gh" href="https://github.com/Drizzy07x/Skillquiver">GitHub</a>
   </div>
 </nav>
@@ -290,14 +290,14 @@ footer a:hover { color: var(--gold); }
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow">22 agent skills · claude code</span>
+      <span class="eyebrow">23 agent skills · claude code</span>
       <h1>Claude <em>picks</em> the right skill on its own.</h1>
       <p class="sub">Every skill here says what it does and when to use it. Claude reads those lines, matches them to what you asked for, and opens the one that fits. You never have to remember its name.</p>
       <div class="actions">
         <a class="btn solid" href="#install">Install</a>
-        <a class="btn" href="#quiver">See all 22 skills</a>
+        <a class="btn" href="#quiver">See all 23 skills</a>
       </div>
-      <p class="meta">MIT · <b>22</b> skills · works in every project · nothing to build</p>
+      <p class="meta">MIT · <b>23</b> skills · works in every project · nothing to build</p>
     </div>
 
     <div class="quiver">
@@ -318,7 +318,7 @@ footer a:hover { color: var(--gold); }
     <div>
       <span class="eyebrow">How it works</span>
       <h2>A skill is a folder with one file in it.</h2>
-      <p class="lede">The top of that <code>SKILL.md</code> file has two things: what the skill does, and when to use it. Those are the only lines Claude keeps in mind. It opens the rest of the file only when the moment arrives — which is why 22 skills cost you almost nothing until one is needed.</p>
+      <p class="lede">The top of that <code>SKILL.md</code> file has two things: what the skill does, and when to use it. Those are the only lines Claude keeps in mind. It opens the rest of the file only when the moment arrives — which is why 23 skills cost you almost nothing until one is needed.</p>
     </div>
     <div class="tree">
 .claude/skills/<br>
@@ -329,7 +329,7 @@ footer a:hover { color: var(--gold); }
 │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fails, crashes, or returns a<br>
 │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wrong result.<br>
 ├── verify-work/<br>
-└── … 20 more
+└── … 21 more
     </div>
   </div>
 </section>
@@ -338,7 +338,7 @@ footer a:hover { color: var(--gold); }
   <div class="wrap">
     <span class="eyebrow">Install</span>
     <h2>Three ways to install. Pick one.</h2>
-    <p class="lede">The first one is the easiest: it adds all 22 skills to every project, and one command updates them later.</p>
+    <p class="lede">The first one is the easiest: it adds all 23 skills to every project, and one command updates them later.</p>
 
     <div class="tabs" role="tablist" aria-label="Install method">
       <button role="tab" aria-selected="true" aria-controls="p1" id="t1">In Claude Code</button>
@@ -371,13 +371,13 @@ cp -r Skillquiver/.claude/skills/* ~/.claude/skills/</pre><button class="copy">c
 
 <section class="band" id="quiver">
   <div class="wrap">
-    <span class="eyebrow">All 22</span>
+    <span class="eyebrow">All 23</span>
     <h2>What each skill does, and when it steps in.</h2>
     <div class="tools">
       <input id="filter" type="search" placeholder="Search skills…" autocomplete="off" aria-label="Search skills">
       <span id="count"></span>
     </div>
-    <noscript><p class="note">JavaScript is off — <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/.claude/skills">browse the 22 skills on GitHub</a>.</p></noscript>
+    <noscript><p class="note">JavaScript is off — <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/.claude/skills">browse the 23 skills on GitHub</a>.</p></noscript>
     <div id="list"></div>
     <p class="empty hidden" id="empty">Nothing matches. Try <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
   </div>
@@ -387,7 +387,7 @@ cp -r Skillquiver/.claude/skills/* ~/.claude/skills/</pre><button class="copy">c
   <div class="wrap">
     <span class="eyebrow">Working together</span>
     <h2>One feature, from idea to merge.</h2>
-    <p class="lede">These aren't 22 separate tricks. Almost every step of building something has a skill that fits it. A normal run looks like this:</p>
+    <p class="lede">These aren't 23 separate tricks. Almost every step of building something has a skill that fits it. A normal run looks like this:</p>
     <div class="chain" id="chain"></div>
   </div>
 </section>
@@ -434,7 +434,8 @@ const GROUPS = [
     ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface."],
   ]],
   ["System", [
-    ["windows-doctor", "Checks what's actually wrong with Windows before repairing, cleaning, or tuning it.", "the machine is slow, the disk is full, or Windows Update keeps failing."],
+    ["windows-doctor", "Checks what's actually wrong with Windows before repairing, cleaning, or tuning it.", "the machine is slow, blue-screens, loses internet, needs drivers, or Windows Update keeps failing."],
+    ["skillquiver-doctor", "Finds installed skills, plugins, and hooks that clash with these skills, and removes them only if you say yes — with backups.", "skills fire at the wrong time, a skill name shows up twice, or another plugin fights this one."],
   ]],
   ["Prompt engineering", [
     ["engineer-prompts", "Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.", "you're writing a prompt that other people will reuse."],

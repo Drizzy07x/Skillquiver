@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Skillquiver — 22 Agent Skills for Claude Code" width="800">
+<img src="assets/banner.svg" alt="Skillquiver — 23 Agent Skills for Claude Code" width="800">
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-8B929E)](LICENSE)
-![Skills](https://img.shields.io/badge/skills-22-C87941)
+![Skills](https://img.shields.io/badge/skills-23-C87941)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-E0A458)
 
-A curated library of 22 Agent Skills for Claude Code, installable as a plugin or as project skills under [`.claude/skills/`](.claude/skills/).
+A curated library of 23 Agent Skills for Claude Code, installable as a plugin or as project skills under [`.claude/skills/`](.claude/skills/).
 
 **[What each skill does, and when it steps in →](https://drizzy07x.github.io/Skillquiver/)**
 
@@ -30,7 +30,7 @@ claude plugin marketplace add Drizzy07x/Skillquiver
 claude plugin install skillquiver@skillquiver --scope user
 ```
 
-All 22 skills load globally (every project). Update later with `/plugin update skillquiver` or `claude plugin update skillquiver`.
+All 23 skills load globally (every project). Update later with `/plugin update skillquiver` or `claude plugin update skillquiver`.
 
 > **Note:** `/plugin` slash commands only exist in the interactive Claude Code CLI. In other environments (IDE integrations, non-interactive sessions), use the `claude plugin` terminal commands above or the manual install below.
 
@@ -92,6 +92,7 @@ All 22 skills load globally (every project). Update later with `/plugin update s
 | Skill | What it does |
 |-------|--------------|
 | [windows-doctor](.claude/skills/windows-doctor/SKILL.md) | Diagnoses a Windows machine with read-only checks, then repairs and optimizes on evidence, with restore points and confirmation gates. |
+| [skillquiver-doctor](.claude/skills/skillquiver-doctor/SKILL.md) | Detects foreign skills, plugins, and hooks that duplicate or contradict Skillquiver's skills, and removes them only with per-item consent and backups. |
 
 ### Prompt engineering
 
