@@ -54,10 +54,11 @@ controllers that lost their place have re-dispatched entire completed task
 sequences — the single most expensive failure observed. Track progress in
 a ledger file, not only in todos.
 
-On Windows, invoke this skill's scripts through Git Bash:
+Invoke this skill's scripts through Bash on every platform because plugin
+packaging may not preserve executable bits:
 `bash <skill-dir>/scripts/task-brief ...` — the same applies to
-`sdd-workspace` and `review-package`; all three are extensionless bash
-scripts.
+`sdd-workspace` and `review-package`; all three are extensionless Bash
+scripts. On Windows, use Git Bash.
 
 - Each plan owns a workspace: at skill start, run this skill's
   `scripts/sdd-workspace PLAN_FILE` — it prints the plan's git-ignored

@@ -25,9 +25,14 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 
 **1. Get git SHAs:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+# Prefer the commit recorded before implementation. If it was not recorded,
+# derive it from the confirmed base branch.
+BASE_SHA=$(git merge-base <base-branch> HEAD)
 HEAD_SHA=$(git rev-parse HEAD)
 ```
+
+Never default to `HEAD~1`: a multi-commit task would review only its final
+commit and silently omit the rest of the implementation.
 
 Commands in this skill are Git Bash / Bash-tool syntax — on Windows, run them via the Bash tool, not PowerShell.
 
@@ -52,7 +57,7 @@ Process reviewer findings per the receiving-code-review skill — verify before 
 
 You: Let me request code review before proceeding.
 
-BASE_SHA=$(git rev-parse HEAD~1)  # or: git merge-base origin/main HEAD
+BASE_SHA=$(git merge-base main HEAD)
 HEAD_SHA=$(git rev-parse HEAD)
 
 [Dispatch code reviewer subagent]

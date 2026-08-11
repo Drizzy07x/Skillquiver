@@ -56,7 +56,26 @@ If a real kill is still wanted:
    Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Sense'     Start 4 -Type DWord
    ```
 
-   If access is denied, the only reliable route is editing the same keys from **Safe Mode** (`bcdedit /set {current} safeboot minimal` → reboot). Guide the user; don't fake it.
+   If access is denied, the only reliable route is editing the same keys from
+   **Safe Mode**. Before entering Safe Mode, use an elevated PowerShell session
+   and quote the boot entry:
+
+   ```powershell
+   bcdedit /set "{current}" safeboot minimal
+   Restart-Computer
+   ```
+
+   In Safe Mode, edit the service keys. Then clear the persistent flag and
+   verify it is absent before restarting again:
+
+   ```powershell
+   bcdedit /deletevalue "{current}" safeboot
+   bcdedit /enum "{current}"   # must not list safeboot
+   Restart-Computer
+   ```
+
+   Never leave the flag set: it forces every subsequent boot into Safe Mode.
+   Guide the user; don't fake it.
 4. Reboot, then verify: `Get-MpComputerStatus` → `AMRunningMode` = `Not running`, `RealTimeProtectionEnabled` = `False`.
 
 Never use third-party "Defender remover" tools — they bundle junk and are unnecessary; the steps above are the whole method.
@@ -69,6 +88,9 @@ Reverse every step, then verify:
 Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\WinDefend' Start 2 -Type DWord
 Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Sense'     Start 3 -Type DWord
 Set-MpPreference -DisableRealtimeMonitoring $false -DisableIOAVProtection $false
+if (bcdedit /enum "{current}" | Select-String safeboot) {
+  bcdedit /deletevalue "{current}" safeboot
+}
 ```
 
 Then reboot and turn **Tamper Protection back ON** in the UI (leaving it off is the real risk). Verify healthy: `Get-MpComputerStatus | Select-Object AMRunningMode, RealTimeProtectionEnabled, IsTamperProtected` → `Normal`, `True`, `True`. If Defender won't start (services stripped, app package damaged), repair the Windows Security UI app: `Get-AppxPackage -AllUsers Microsoft.SecHealthUI | Reset-AppxPackage` then reboot (the Defender engine itself is serviced via DISM/SFC); still broken → `references/corruption-update.md` (DISM/SFC).
