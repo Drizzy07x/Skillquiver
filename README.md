@@ -84,7 +84,7 @@ All 23 skills load globally (every project). Update later with `/plugin update s
 
 | Skill | What it does |
 |-------|--------------|
-| [design-ui](.claude/skills/design-ui/SKILL.md) | Turns visual intent into inspectable constraints, implements UI as one coherent system, and verifies the rendered result. |
+| [design-ui](.claude/skills/design-ui/SKILL.md) | Turns visual intent into inspectable constraints, commits to a stated visual direction, builds it as one system, and verifies the rendered result. |
 | [automate-ui](.claude/skills/automate-ui/SKILL.md) | Drives web and desktop UIs adaptively while capturing evidence that separates navigation from behavioral proof. |
 
 ### System
