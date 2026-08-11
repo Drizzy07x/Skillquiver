@@ -3,17 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skillquiver — 23 Agent Skills for Claude Code</title>
-<meta name="description" content="23 Agent Skills for Claude Code. Each skill says when to use it, so Claude picks the right one on its own: writing a plan, finding a bug, checking that work is really done.">
+<title>Skillquiver — 23 skills for Claude Code and Codex</title>
+<meta name="description" content="23 agent skills total, with 22 shared by Claude Code and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
 <meta name="theme-color" content="#0B0E13">
-<meta property="og:title" content="Skillquiver — 23 Agent Skills for Claude Code">
-<meta property="og:description" content="Each skill says when to use it, so Claude picks the right one on its own.">
+<meta property="og:title" content="Skillquiver — 23 skills for Claude Code and Codex">
+<meta property="og:description" content="23 skills total · 22 shared by Claude Code and Codex.">
 <meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/mark.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --ink: #0B0E13;
@@ -24,9 +21,9 @@
   --copper: #C87941;
   --gold: #E0A458;
   --fletch: #7FA6A0;
-  --display: "Syne", "Segoe UI", sans-serif;
-  --body: "Instrument Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --display: "Segoe UI", system-ui, sans-serif;
+  --body: "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Code", SFMono-Regular, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -152,6 +149,14 @@ a { color: inherit; }
 .tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--line); background: var(--panel); }
 .pane[hidden] { display: none; }
 .pane p { color: var(--muted); font-size: 15px; margin: 0 0 14px; }
+.method { margin-top: 28px; }
+.method:first-of-type { margin-top: 0; }
+.method h3 { font: 600 17px var(--display); margin: 0 0 10px; }
+.recommended {
+  margin-left: 7px; font: 500 10px var(--mono); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink); background: var(--fletch);
+  border-radius: 999px; padding: 3px 7px; vertical-align: 2px;
+}
 .cmd {
   position: relative; background: var(--panel); border: 1px solid var(--line);
   border-radius: 10px; padding: 18px 64px 18px 20px; margin: 0 0 12px;
@@ -205,9 +210,16 @@ code { font: 400 .92em var(--mono); color: var(--gold); }
 .arrow:hover::after, .arrow:focus-visible::after { transform: translateX(8px); border-left-color: var(--gold); }
 .arrow:hover::before { background: linear-gradient(to right, var(--line) 10%, var(--copper)); }
 .arrow .id {
-  display: inline-flex; align-items: center; gap: 9px; white-space: nowrap;
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
   font: 500 15px var(--mono); color: var(--bone);
 }
+.compat {
+  font: 500 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 7px;
+  white-space: nowrap;
+}
+.compat.shared { color: var(--fletch); }
+.compat.claude { color: var(--gold); }
 .arrow:hover .id { color: var(--gold); }
 .arrow .fletch { width: 13px; height: 11px; flex: none; color: var(--copper); }
 .arrow .does { color: var(--muted); font-size: 14.5px; line-height: 1.55; }
@@ -290,14 +302,14 @@ footer a:hover { color: var(--gold); }
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow">23 agent skills · claude code</span>
-      <h1>Claude <em>picks</em> the right skill on its own.</h1>
-      <p class="sub">Every skill here says what it does and when to use it. Claude reads those lines, matches them to what you asked for, and opens the one that fits. You never have to remember its name.</p>
+      <span class="eyebrow">23 skills total · 22 shared by Claude Code and Codex</span>
+      <h1>Your agent <em>picks</em> the right skill on its own.</h1>
+      <p class="sub">Every skill says what it does and when to use it. Claude Code and Codex match those lines to your request and open the workflow that fits. You never have to remember its name.</p>
       <div class="actions">
         <a class="btn solid" href="#install">Install</a>
         <a class="btn" href="#quiver">See all 23 skills</a>
       </div>
-      <p class="meta">MIT · <b>23</b> skills · works in every project · nothing to build</p>
+      <p class="meta">MIT · <b>23</b> for Claude Code · <b>22</b> for Codex · nothing to build</p>
     </div>
 
     <div class="quiver">
@@ -318,18 +330,19 @@ footer a:hover { color: var(--gold); }
     <div>
       <span class="eyebrow">How it works</span>
       <h2>A skill is a folder anchored by one instruction file.</h2>
-      <p class="lede">The top of <code>SKILL.md</code> says what the skill does and when to use it. Those are the only lines Claude keeps in mind. It opens the rest only when the moment arrives; some skills also include scripts, templates, or references that load only when needed.</p>
+      <p class="lede">The top of <code>SKILL.md</code> says what the skill does and when to use it. The host keeps that summary in mind and opens the rest only when the moment arrives. Some skills also include scripts, templates, or references that load only when needed.</p>
     </div>
     <div class="tree">
-.claude/skills/<br>
-├── <b>diagnose-systematically/</b><br>
-│&nbsp;&nbsp;&nbsp;└── SKILL.md<br>
-│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>name:</i> diagnose-systematically<br>
-│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>description:</i> … <b>Use when</b> something<br>
-│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fails, crashes, or returns a<br>
-│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wrong result.<br>
-├── verify-work/<br>
-└── … 21 more
+Skillquiver/<br>
+├── <b>skills/</b> <i>22 shared</i><br>
+│&nbsp;&nbsp;&nbsp;├── diagnose-systematically/<br>
+│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── SKILL.md<br>
+│&nbsp;&nbsp;&nbsp;├── verify-work/<br>
+│&nbsp;&nbsp;&nbsp;└── … 20 more<br>
+├── <b>skills-claude/</b><br>
+│&nbsp;&nbsp;&nbsp;└── skillquiver-doctor/<br>
+├── .claude-plugin/plugin.json<br>
+└── .codex-plugin/plugin.json
     </div>
   </div>
 </section>
@@ -337,35 +350,57 @@ footer a:hover { color: var(--gold); }
 <section class="band" id="install">
   <div class="wrap">
     <span class="eyebrow">Install</span>
-    <h2>Three ways to install. Pick one.</h2>
-    <p class="lede">The first one is the easiest: it adds all 23 skills to every project, and one command updates them later.</p>
+    <h2>Choose your host.</h2>
+    <p class="lede">The marketplace is recommended. Claude Code gets all 23 skills; Codex gets the 22 portable skills.</p>
 
-    <div class="tabs" role="tablist" aria-label="Install method">
-      <button role="tab" aria-selected="true" aria-controls="p1" id="t1">In Claude Code</button>
-      <button role="tab" aria-selected="false" aria-controls="p2" id="t2">Terminal</button>
-      <button role="tab" aria-selected="false" aria-controls="p3" id="t3">Manual</button>
+    <div class="tabs" role="tablist" aria-label="Agent host">
+      <button role="tab" aria-selected="true" aria-controls="p1" id="t1" tabindex="0">Claude Code</button>
+      <button role="tab" aria-selected="false" aria-controls="p2" id="t2" tabindex="-1">Codex</button>
     </div>
 
     <div class="pane" id="p1" role="tabpanel" aria-labelledby="t1">
-      <p>Type these two lines inside a Claude Code session:</p>
-      <div class="cmd"><pre><span class="p">/</span>plugin marketplace add Drizzy07x/Skillquiver
+      <div class="method">
+        <h3>Marketplace <span class="recommended">recommended</span></h3>
+        <p>Run inside an interactive Claude Code session:</p>
+        <div class="cmd"><pre><span class="p">/</span>plugin marketplace add Drizzy07x/Skillquiver
 <span class="p">/</span>plugin install skillquiver@skillquiver</pre><button class="copy">copy</button></div>
-      <p class="note">Update later with <code>/plugin update skillquiver@skillquiver</code>.</p>
+        <p>Or run the equivalent commands from a terminal:</p>
+        <div class="cmd"><pre>claude plugin marketplace add Drizzy07x/Skillquiver
+claude plugin install skillquiver@skillquiver --scope user</pre><button class="copy">copy</button></div>
+        <p class="note">Update with <code>/plugin update skillquiver@skillquiver</code> or <code>claude plugin update skillquiver@skillquiver</code>.</p>
+      </div>
+      <div class="method">
+        <h3>Manual</h3>
+        <p>Copy both the shared set and the Claude-only set for all 23 skills:</p>
+        <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
+mkdir -p ~/.claude/skills
+cp -r Skillquiver/skills/* ~/.claude/skills/
+cp -r Skillquiver/skills-claude/* ~/.claude/skills/</pre><button class="copy">copy</button></div>
+        <p class="note">Use a project's <code>.claude/skills/</code> folder instead for a project-only install.</p>
+      </div>
     </div>
 
     <div class="pane" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
-      <p>Use this if <code>/plugin</code> commands aren't available where you are — inside an IDE, for example:</p>
-      <div class="cmd"><pre>claude plugin marketplace add Drizzy07x/Skillquiver
-claude plugin install skillquiver@skillquiver --scope user</pre><button class="copy">copy</button></div>
-      <p class="note"><code>--scope user</code> means every project on this computer gets the skills.</p>
+      <div class="method">
+        <h3>Marketplace <span class="recommended">recommended</span></h3>
+        <p>Run from a terminal:</p>
+        <div class="cmd"><pre>codex plugin marketplace add Drizzy07x/Skillquiver
+codex plugin add skillquiver@skillquiver</pre><button class="copy">copy</button></div>
+        <p>Refresh the marketplace and reinstall to update:</p>
+        <div class="cmd"><pre>codex plugin marketplace upgrade skillquiver
+codex plugin add skillquiver@skillquiver</pre><button class="copy">copy</button></div>
+      </div>
+      <div class="method">
+        <h3>Manual</h3>
+        <p>Copy the 22 shared skills to the global agent directory:</p>
+        <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
+mkdir -p ~/.agents/skills
+cp -r Skillquiver/skills/* ~/.agents/skills/</pre><button class="copy">copy</button></div>
+        <p class="note">Use a project's <code>.agents/skills/</code> folder instead for a project-only install.</p>
+      </div>
     </div>
 
-    <div class="pane" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
-      <p>Download the repo and copy the skill folders where you want them:</p>
-      <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
-cp -r Skillquiver/.claude/skills/* ~/.claude/skills/</pre><button class="copy">copy</button></div>
-      <p class="note">Copy them into a single project's <code>.claude/skills/</code> folder instead, and they only work in that project.</p>
-    </div>
+    <p class="note"><strong>v2 migration:</strong> shared source moved from <code>.claude/skills/</code> to <code>skills/</code>. Marketplace installs update normally. Manual installs must use the new path; Claude users also copy <code>skills-claude/</code>.</p>
   </div>
 </section>
 
@@ -377,7 +412,7 @@ cp -r Skillquiver/.claude/skills/* ~/.claude/skills/</pre><button class="copy">c
       <input id="filter" type="search" placeholder="Search skills…" autocomplete="off" aria-label="Search skills">
       <span id="count"></span>
     </div>
-    <noscript><p class="note">JavaScript is off — <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/.claude/skills">browse the 23 skills on GitHub</a>.</p></noscript>
+    <noscript><p class="note">JavaScript is off — browse the <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills">22 shared skills</a> and <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills-claude/skillquiver-doctor">Claude-only Doctor</a> on GitHub.</p></noscript>
     <div id="list"></div>
     <p class="empty hidden" id="empty">Nothing matches. Try <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
   </div>
@@ -387,58 +422,61 @@ cp -r Skillquiver/.claude/skills/* ~/.claude/skills/</pre><button class="copy">c
   <div class="wrap">
     <span class="eyebrow">Working together</span>
     <h2>One feature, from idea to merge.</h2>
-    <p class="lede">These aren't 23 separate tricks. Almost every step of building something has a skill that fits it. A normal run looks like this:</p>
+    <p class="lede">These aren't 23 separate tricks. Almost every step of building something has a portable skill that fits it. A normal run in Claude Code or Codex looks like this:</p>
     <div class="chain" id="chain"></div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <span>MIT · built for <a href="https://claude.com/product/claude-code">Claude Code</a></span>
-    <a href="https://github.com/Drizzy07x/Skillquiver">github.com/Drizzy07x/Skillquiver</a>
+    <span>MIT · for <a href="https://claude.com/product/claude-code">Claude Code</a> and <a href="https://developers.openai.com/codex/">Codex</a></span>
+    <span><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="https://github.com/Drizzy07x/Skillquiver/issues">Support</a> · <a href="https://github.com/Drizzy07x/Skillquiver">GitHub</a></span>
   </div>
 </footer>
 
 <script>
-const REPO = "https://github.com/Drizzy07x/Skillquiver/blob/main/.claude/skills/";
+const REPO_SHARED = "https://github.com/Drizzy07x/Skillquiver/blob/main/skills/";
+const REPO_CLAUDE = "https://github.com/Drizzy07x/Skillquiver/blob/main/skills-claude/";
+const skillUrl = (id, compatibility = "shared") =>
+  (compatibility === "claude" ? REPO_CLAUDE : REPO_SHARED) + id + "/SKILL.md";
 
 const GROUPS = [
   ["Planning", [
-    ["brainstorming", "Asks what you actually want before a line of code is written.", "you're starting something new and the details aren't settled."],
-    ["writing-plans", "Turns the idea into a written list of tasks, in order.", "you know what to build but nobody has written down the steps."],
-    ["executing-plans", "Works through a written plan one task at a time, stopping only if it gets stuck.", "a plan already exists and you want it carried out."],
-    ["subagent-driven-development", "Hands each task to its own helper agent and reviews the result before moving on.", "the tasks in the plan don't depend on each other."],
-    ["dispatching-parallel-agents", "Sends out several helper agents at once, one per unrelated problem.", "you have two or more separate problems and no reason to fix them in order."],
+    ["brainstorming", "Asks what you actually want before a line of code is written.", "you're starting something new and the details aren't settled.", "shared"],
+    ["writing-plans", "Turns the idea into a written list of tasks, in order.", "you know what to build but nobody has written down the steps.", "shared"],
+    ["executing-plans", "Works through a written plan one task at a time, stopping only if it gets stuck.", "a plan already exists and you want it carried out.", "shared"],
+    ["subagent-driven-development", "Hands each task to its own helper agent and reviews the result before moving on.", "the tasks in the plan don't depend on each other.", "shared"],
+    ["dispatching-parallel-agents", "Sends out several helper agents at once, one per unrelated problem.", "you have two or more separate problems and no reason to fix them in order.", "shared"],
   ]],
   ["Execution", [
-    ["test-driven-development", "Writes the failing test first, then the smallest code that makes it pass.", "you're adding a feature or fixing a bug."],
-    ["solve-efficiently", "Finds the few files that actually matter instead of reading the whole project.", "the change touches several parts of the codebase."],
-    ["execute-durably", "Keeps progress in a file on disk so long work can be picked up where it stopped.", "the job is long and might get interrupted."],
-    ["refactor-safely", "Tidies code without changing what it does, with tests in place first.", "code is messy or duplicated but still has to work exactly the same."],
-    ["using-git-worktrees", "Sets up a separate working copy so your current work stays untouched.", "you're starting a feature and don't want to disturb what's already open."],
-    ["communicate-clearly", "Keeps the answer as short as it can be without dropping the proof.", "you want less noise, or something explained in plain words."],
+    ["test-driven-development", "Writes the failing test first, then the smallest code that makes it pass.", "you're adding a feature or fixing a bug.", "shared"],
+    ["solve-efficiently", "Finds the few files that actually matter instead of reading the whole project.", "the change touches several parts of the codebase.", "shared"],
+    ["execute-durably", "Keeps progress in a file on disk so long work can be picked up where it stopped.", "the job is long and might get interrupted.", "shared"],
+    ["refactor-safely", "Tidies code without changing what it does, with tests in place first.", "code is messy or duplicated but still has to work exactly the same.", "shared"],
+    ["using-git-worktrees", "Sets up a separate working copy so your current work stays untouched.", "you're starting a feature and don't want to disturb what's already open.", "shared"],
+    ["communicate-clearly", "Keeps the answer as short as it can be without dropping the proof.", "you want less noise, or something explained in plain words.", "shared"],
   ]],
   ["Verification & debugging", [
-    ["diagnose-systematically", "Reproduces the failure, shrinks it, then tests one guess at a time.", "something breaks and nobody knows why yet."],
-    ["verification-before-completion", "Runs the command and reads the output before anyone says it works.", "you're about to hear “done”, “fixed”, or “all tests pass”."],
-    ["verify-work", "Checks finished work against real evidence and flags claims with nothing behind them.", "you want a second opinion on something that says it's complete."],
-    ["research-systematically", "Writes the question down first, then backs every answer with a source.", "comparing options, measuring, or checking how a library really behaves."],
+    ["diagnose-systematically", "Reproduces the failure, shrinks it, then tests one guess at a time.", "something breaks and nobody knows why yet.", "shared"],
+    ["verification-before-completion", "Runs the command and reads the output before anyone says it works.", "you're about to hear “done”, “fixed”, or “all tests pass”.", "shared"],
+    ["verify-work", "Checks finished work against real evidence and flags claims with nothing behind them.", "you want a second opinion on something that says it's complete.", "shared"],
+    ["research-systematically", "Writes the question down first, then backs every answer with a source.", "comparing options, measuring, or checking how a library really behaves.", "shared"],
   ]],
   ["Code review", [
-    ["requesting-code-review", "Sends the finished work to a reviewer agent and collects what it finds.", "a task is done and about to be merged."],
-    ["receiving-code-review", "Checks each review comment against the code before changing anything.", "feedback arrives and some of it might be wrong."],
-    ["finishing-a-development-branch", "Runs the tests, asks how you want to land the work, then cleans up after it.", "the feature is finished and needs to go somewhere."],
+    ["requesting-code-review", "Sends the finished work to a reviewer agent and collects what it finds.", "a task is done and about to be merged.", "shared"],
+    ["receiving-code-review", "Checks each review comment against the code before changing anything.", "feedback arrives and some of it might be wrong.", "shared"],
+    ["finishing-a-development-branch", "Runs the tests, asks how you want to land the work, then cleans up after it.", "the feature is finished and needs to go somewhere.", "shared"],
   ]],
   ["UI & automation", [
-    ["design-ui", "Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser.", "a screen looks generic, or you're redesigning one."],
-    ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface."],
+    ["design-ui", "Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser.", "a screen looks generic, or you're redesigning one.", "shared"],
+    ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface.", "shared"],
   ]],
   ["System", [
-    ["windows-doctor", "Checks what's actually wrong with Windows before repairing, cleaning, or tuning it.", "the machine is slow, blue-screens, loses internet, needs drivers, or Windows Update keeps failing."],
-    ["skillquiver-doctor", "Finds skills, plugins, and hooks from other installs that conflict with these, and removes them — always with a backup and your ok.", "the wrong skill activates, a name shows up twice, or another plugin interferes."],
+    ["windows-doctor", "Checks what's actually wrong with Windows before repairing, cleaning, or tuning it.", "the machine is slow, blue-screens, loses internet, needs drivers, or Windows Update keeps failing.", "shared"],
+    ["skillquiver-doctor", "Finds skills, plugins, and hooks from other installs that conflict with these, and removes them — always with a backup and your ok.", "the wrong skill activates, a name shows up twice, or another plugin interferes.", "claude"],
   ]],
   ["Prompt engineering", [
-    ["engineer-prompts", "Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.", "you're writing a prompt that other people will reuse."],
+    ["engineer-prompts", "Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.", "you're writing a prompt that other people will reuse.", "shared"],
   ]],
 ];
 
@@ -450,9 +488,9 @@ document.getElementById("list").innerHTML = GROUPS.map(([group, skills]) => `
     <div class="head">
       <span class="eyebrow">${group}</span><span class="rule"></span><span class="n">${skills.length}</span>
     </div>
-    ${skills.map(([id, does, when]) => `
-      <a class="arrow" href="${REPO}${id}/SKILL.md">
-        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}</span>
+    ${skills.map(([id, does, when, compatibility]) => `
+      <a class="arrow" href="${skillUrl(id, compatibility)}">
+        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}<span class="compat ${compatibility}">${compatibility === "shared" ? "Claude Code + Codex" : "Claude Code only"}</span></span>
         <span class="does">${does}</span>
         <span class="when">${when}</span>
       </a>`).join("")}
@@ -494,7 +532,7 @@ const CHAIN = [
 document.getElementById("chain").innerHTML = CHAIN.map(([id, t], i) => `
   <div class="step">
     <span class="k">${String(i + 1).padStart(2, "0")}</span>
-    <a class="s" href="${REPO}${id}/SKILL.md">${id}</a>
+    <a class="s" href="${skillUrl(id)}">${id}</a>
     <span class="t">${t}</span>
   </div>`).join("");
 
@@ -504,6 +542,7 @@ function selectTab(tab) {
   tabs.forEach(t => {
     const on = t === tab;
     t.setAttribute("aria-selected", on);
+    t.tabIndex = on ? 0 : -1;
     document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
   });
 }
@@ -576,7 +615,7 @@ function paint(i) {
   BARS.forEach((b, k) => b.classList.toggle("lit", k === idx));
   cond.textContent = c;
   fires.textContent = skill;
-  fires.href = REPO + skill + "/SKILL.md";
+  fires.href = skillUrl(skill);
 }
 paint(0);
 

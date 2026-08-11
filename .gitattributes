@@ -1,4 +1,4 @@
 # Scripts must keep LF endings: a CRLF shebang breaks them on macOS and Linux.
 *.sh text eol=lf
 *.py text eol=lf
-.claude/skills/subagent-driven-development/scripts/* text eol=lf
+skills/subagent-driven-development/scripts/* text eol=lf

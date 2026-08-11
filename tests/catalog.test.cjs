@@ -4,14 +4,59 @@ const path = require('node:path');
 const test = require('node:test');
 
 const root = path.resolve(__dirname, '..');
-const skillsRoot = path.join(root, '.claude', 'skills');
+const sharedSkillsRoot = path.join(root, 'skills');
+const claudeSkillsRoot = path.join(root, 'skills-claude');
 
-function skillNames() {
+function skillNames(skillsRoot) {
   return fs.readdirSync(skillsRoot, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
+    .filter(entry => entry.isDirectory() && !entry.name.startsWith('.'))
     .map(entry => entry.name)
     .sort();
 }
+
+function readJson(relativePath) {
+  return JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
+}
+
+function readFrontmatterScalar(rawValue) {
+  const value = rawValue.trim();
+  if (value.startsWith('"')) {
+    const parsed = JSON.parse(value);
+    assert.equal(typeof parsed, 'string', 'frontmatter values must be strings');
+    return parsed;
+  }
+
+  assert.match(value, /^[a-z0-9]/i, 'plain frontmatter values must start with text');
+  assert.doesNotMatch(value, /:(?:\s|$)|(?:^|\s)#|\t/,
+    'plain frontmatter values contain invalid YAML syntax');
+  return value;
+}
+
+function readFrontmatter(content) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  assert.ok(match, 'SKILL.md must start with closed YAML frontmatter');
+
+  const metadata = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const pair = line.match(/^([a-z][a-z0-9_-]*):\s+(.+)$/);
+    assert.ok(pair, `invalid frontmatter line: ${line}`);
+
+    const [, key, rawValue] = pair;
+    assert.equal(key in metadata, false, `duplicate frontmatter key: ${key}`);
+    metadata[key] = readFrontmatterScalar(rawValue);
+  }
+
+  return metadata;
+}
+
+test('frontmatter parser rejects invalid YAML scalars', () => {
+  for (const description of ['broken: value', "'unterminated"]) {
+    assert.throws(() => readFrontmatter(
+      `---\nname: example\ndescription: ${description}\n---\n`
+    ));
+  }
+});
 
 function markdownFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
@@ -21,33 +66,109 @@ function markdownFiles(dir) {
   });
 }
 
-test('catalog surfaces list the same 23 skills', () => {
-  const expected = skillNames();
+test('catalog contains 22 shared skills and one Claude-only skill', () => {
+  const shared = skillNames(sharedSkillsRoot);
+  const claudeOnly = skillNames(claudeSkillsRoot);
+  const all = [...shared, ...claudeOnly];
+
+  assert.equal(shared.length, 22);
+  assert.deepEqual(claudeOnly, ['skillquiver-doctor']);
+  assert.equal(new Set(all).size, 23);
+
+  for (const [skillsRoot, names] of [
+    [sharedSkillsRoot, shared],
+    [claudeSkillsRoot, claudeOnly]
+  ]) {
+    for (const name of names) {
+      const content = fs.readFileSync(path.join(skillsRoot, name, 'SKILL.md'), 'utf8');
+      const frontmatter = readFrontmatter(content);
+      assert.equal(frontmatter.name, name);
+      assert.equal(typeof frontmatter.description, 'string');
+      assert.ok(frontmatter.description.length > 0);
+    }
+  }
+});
+
+test('plugin manifests and marketplaces expose the intended catalogs', () => {
+  const codexPlugin = readJson('.codex-plugin/plugin.json');
+  const claudePlugin = readJson('.claude-plugin/plugin.json');
+  const codexMarketplace = readJson('.agents/plugins/marketplace.json');
+  const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
+
+  assert.equal(codexPlugin.name, 'skillquiver');
+  assert.equal(codexPlugin.version, '2.0.0');
+  assert.equal(codexPlugin.skills, './skills/');
+  assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
+  assert.equal(codexPlugin.interface.category, 'Productivity');
+  assert.equal(codexPlugin.interface.logo, './assets/plugin-logo.png');
+  assert.equal(codexPlugin.interface.composerIcon, './assets/plugin-logo.png');
+  assert.deepEqual(codexPlugin.interface.defaultPrompt, [
+    'Turn this feature idea into a decision-complete implementation plan.',
+    'Diagnose this failing test systematically and verify the root cause.',
+    'Review this code change and report only evidence-backed findings.'
+  ]);
+  assert.ok(codexPlugin.interface.defaultPrompt.every(prompt => prompt.length <= 128));
+  assert.ok(fs.existsSync(path.resolve(root, codexPlugin.interface.logo)));
+  for (const key of ['websiteURL', 'privacyPolicyURL', 'termsOfServiceURL']) {
+    assert.match(codexPlugin.interface[key], /^https:\/\//);
+  }
+  for (const key of ['mcpServers', 'apps', 'hooks']) assert.equal(key in codexPlugin, false);
+
+  assert.equal(claudePlugin.name, 'skillquiver');
+  assert.equal(claudePlugin.version, codexPlugin.version);
+  assert.deepEqual(claudePlugin.skills, ['./skills', './skills-claude']);
+
+  assert.equal(codexMarketplace.name, 'skillquiver');
+  assert.equal(codexMarketplace.interface.displayName, 'Skillquiver');
+  assert.equal(codexMarketplace.plugins.length, 1);
+  assert.deepEqual(codexMarketplace.plugins[0], {
+    name: 'skillquiver',
+    source: { source: 'local', path: './' },
+    policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' },
+    category: 'Productivity'
+  });
+
+  assert.equal(claudeMarketplace.name, 'skillquiver');
+  assert.equal(claudeMarketplace.plugins.length, 1);
+  assert.equal(claudeMarketplace.plugins[0].name, 'skillquiver');
+  assert.equal(claudeMarketplace.plugins[0].source, './');
+});
+
+test('README and website list every skill with matching compatibility', () => {
+  const shared = skillNames(sharedSkillsRoot);
+  const claudeOnly = skillNames(claudeSkillsRoot);
+  const expected = [...shared, ...claudeOnly].sort();
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const groups = html.slice(html.indexOf('const GROUPS'), html.indexOf('const FLAT'));
 
-  const readmeNames = [...readme.matchAll(/\.claude\/skills\/([^/)]+)\/SKILL\.md/g)]
-    .map(match => match[1]);
-  const siteNames = [...groups.matchAll(/^\s+\["([a-z0-9-]+)",/gm)]
-    .map(match => match[1]);
+  const readmeEntries = [...readme.matchAll(
+    /\[([a-z0-9-]+)\]\(((?:skills|skills-claude)\/([a-z0-9-]+)\/SKILL\.md)\)/g
+  )].map(match => ({ label: match[1], target: match[2], id: match[3] }));
+  const siteEntries = [...groups.matchAll(
+    /^\s+\["([a-z0-9-]+)",.*,\s*"(shared|claude)"\],?$/gm
+  )].map(match => ({ id: match[1], compatibility: match[2] }));
 
-  assert.equal(expected.length, 23);
-  assert.deepEqual([...new Set(readmeNames)].sort(), expected);
-  assert.deepEqual([...new Set(siteNames)].sort(), expected);
+  assert.deepEqual([...new Set(readmeEntries.map(entry => entry.id))].sort(), expected);
+  assert.deepEqual([...new Set(siteEntries.map(entry => entry.id))].sort(), expected);
+  assert.ok(readmeEntries.every(entry => entry.label === entry.id));
 
-  for (const name of expected) {
-    const content = fs.readFileSync(path.join(skillsRoot, name, 'SKILL.md'), 'utf8');
-    assert.match(content, new RegExp(`^name: ${name}$`, 'm'));
-    assert.match(content, /^description: .+$/m);
+  for (const name of shared) {
+    const entry = readmeEntries.find(candidate => candidate.id === name);
+    assert.equal(entry.target, `skills/${name}/SKILL.md`);
+    assert.match(readme.split(/\r?\n/).find(line => line.includes(`](${entry.target})`)),
+      /!\[Claude Code \+ Codex\]/);
+    assert.equal(siteEntries.find(candidate => candidate.id === name).compatibility, 'shared');
   }
 
-  assert.doesNotThrow(() => JSON.parse(
-    fs.readFileSync(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8')
-  ));
-  assert.doesNotThrow(() => JSON.parse(
-    fs.readFileSync(path.join(root, '.claude-plugin', 'marketplace.json'), 'utf8')
-  ));
+  const doctor = readmeEntries.find(entry => entry.id === 'skillquiver-doctor');
+  assert.equal(doctor.target, 'skills-claude/skillquiver-doctor/SKILL.md');
+  assert.match(readme.split(/\r?\n/).find(line => line.includes(`](${doctor.target})`)),
+    /!\[Claude Code only\]/);
+  assert.equal(
+    siteEntries.find(entry => entry.id === 'skillquiver-doctor').compatibility,
+    'claude'
+  );
 });
 
 test('local Markdown links resolve', () => {

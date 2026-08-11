@@ -5,8 +5,8 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const test = require('node:test');
 
-const server = require('../.claude/skills/brainstorming/scripts/server.cjs');
-const helper = require('../.claude/skills/brainstorming/scripts/helper.js');
+const server = require('../skills/brainstorming/scripts/server.cjs');
+const helper = require('../skills/brainstorming/scripts/helper.js');
 
 function maskedFrame(payload) {
   const data = Buffer.from(payload);
@@ -74,10 +74,31 @@ test('WebSocket helpers handle protocol boundaries', () => {
   assert.equal(helper.nextReconnectDelay(20000, 30000), 30000);
 });
 
+test('version lookup walks ancestors and accepts either plugin manifest', () => {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-version-'));
+  const nested = path.join(fixtureRoot, 'skills', 'example', 'scripts');
+  const codexManifest = path.join(fixtureRoot, '.codex-plugin', 'plugin.json');
+  const claudeManifest = path.join(fixtureRoot, '.claude-plugin', 'plugin.json');
+
+  try {
+    fs.mkdirSync(nested, { recursive: true });
+    fs.mkdirSync(path.dirname(codexManifest), { recursive: true });
+    fs.writeFileSync(codexManifest, JSON.stringify({ version: '2.0.0' }));
+    assert.equal(server.readSkillquiverVersion(nested), '2.0.0');
+
+    fs.rmSync(codexManifest);
+    fs.mkdirSync(path.dirname(claudeManifest), { recursive: true });
+    fs.writeFileSync(claudeManifest, JSON.stringify({ version: '2.0.0' }));
+    assert.equal(server.readSkillquiverVersion(nested), '2.0.0');
+  } finally {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test('companion rejects unauthenticated and traversal requests', async () => {
   const sessionDir = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-test-'));
   const child = spawn(process.execPath, [
-    '.claude/skills/brainstorming/scripts/server.cjs'
+    'skills/brainstorming/scripts/server.cjs'
   ], {
     cwd: path.resolve(__dirname, '..'),
     env: {
@@ -106,6 +127,7 @@ test('companion rejects unauthenticated and traversal requests', async () => {
     const page = await fetch(`${base}/`, { headers: { cookie } });
     assert.equal(page.status, 200);
     assert.equal(page.headers.get('cache-control'), 'no-store');
+    assert.match(await page.text(), /Skillquiver v2\.0\.0/);
 
     const traversal = await fetch(`${base}/files/..%2Fserver.cjs`, {
       headers: { cookie }
