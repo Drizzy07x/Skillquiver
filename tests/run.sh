@@ -5,12 +5,12 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root"
 
 bash -n \
-  .claude/skills/brainstorming/scripts/start-server.sh \
-  .claude/skills/brainstorming/scripts/stop-server.sh \
-  .claude/skills/diagnose-systematically/find-polluter.sh \
-  .claude/skills/subagent-driven-development/scripts/review-package \
-  .claude/skills/subagent-driven-development/scripts/sdd-workspace \
-  .claude/skills/subagent-driven-development/scripts/task-brief \
+  skills/brainstorming/scripts/start-server.sh \
+  skills/brainstorming/scripts/stop-server.sh \
+  skills/diagnose-systematically/find-polluter.sh \
+  skills/subagent-driven-development/scripts/review-package \
+  skills/subagent-driven-development/scripts/sdd-workspace \
+  skills/subagent-driven-development/scripts/task-brief \
   tests/sdd-scripts.test.sh \
   tests/run.sh
 

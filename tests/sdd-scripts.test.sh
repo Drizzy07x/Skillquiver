@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
-scripts="$repo_root/.claude/skills/subagent-driven-development/scripts"
+scripts="$repo_root/skills/subagent-driven-development/scripts"
 test_root=$(mktemp -d)
 trap 'rm -rf "$test_root"' EXIT
 
