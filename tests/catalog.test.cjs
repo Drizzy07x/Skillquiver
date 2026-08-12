@@ -200,10 +200,16 @@ test('small static UI work has a bounded honest verification path', () => {
   assert.match(designUi, /Route before any tool call/);
   assert.match(designUi, /the bounded path below is mandatory/);
   assert.match(designUi, /Direction:\s+audience .*layout .*palette .*typography .*focus .*responsive/s);
+  assert.match(designUi, /It never means implementing search, filtering, live/);
+  assert.match(designUi, /must add no `script` element or event handler/);
+  assert.match(designUi, /Make the 360px layout safe in the first patch/);
+  assert.match(designUi, /single-column flow below 480px/);
   assert.match(designUi, /Never delete the target file/);
   assert.match(designUi, /capture-static-page\.cjs/);
+  assert.match(designUi, /inspect only the returned `inspectionPath`/);
   assert.match(designUi, /If it fails, stop/);
   assert.match(designUi, /Do not repair, inspect, or recapture after the second run/);
+  assert.match(designUi, /rendered verification failed/);
 });
 
 test('diagnosis examples report secret presence without revealing values', () => {

@@ -28,6 +28,11 @@ new product behavior; add JavaScript only when the prompt explicitly requests
 an interaction. Do not probe the DOM, image pixels, or browser environment with
 extra commands.
 
+For this route, `focus` means the visible keyboard focus treatment and labeling
+of the existing control. It never means implementing search, filtering, live
+status, empty states, or other interaction. When the prompt requests no
+interaction, the finished file must add no `script` element or event handler.
+
 1. Read only that file and directly referenced local assets. Do not inspect
    package files, invoke other skills, or load this skill's references.
 2. Before editing, send one sentence with this complete shape: `Direction:
@@ -37,16 +42,25 @@ extra commands.
    requested.
 3. Apply one focused HTML/CSS patch. Preserve every named ID and constraint.
    Never delete the target file or replace it through a delete/add sequence.
+   Make the 360px layout safe in the first patch: use border-box sizing, give
+   grid or flex children `min-width: 0`, keep controls within `max-width: 100%`,
+   and use a single-column flow below 480px. Put multi-column layout behind a
+   `min-width` media query.
 4. Run `node <this-skill-dir>/scripts/capture-static-page.cjs <page.html>
    <output-dir> <width...>` with every required width. It uses an already
    installed Chrome, Chromium, or Edge and installs nothing. Inspect each saved
    image at most once with the host image viewer, never with another command.
+   For a capture below 480px, inspect only the returned `inspectionPath`; it
+   centers the exact captured pixels on a wider canvas to avoid host-viewer
+   cropping. Report the original `outputPath`, width, and height as evidence.
 5. Report the returned image paths and dimensions. If it fails, stop and state
    that rendered verification is unavailable in the next response. Run no more
    commands after a failed capture. If the first captures expose a concrete
    defect, make one repair and repeat step 4 once. Run the capture command at
    most twice total. Do not repair, inspect, or recapture after the second run;
-   issue the final response immediately even if a defect remains.
+   issue the final response immediately even if a defect remains. A remaining
+   defect at any required width means rendered verification failed; never call
+   that width usable or the task complete.
 
 For applications, multiple pages, uncertain behavior, or design-system work,
 use the full workflow below. Accessibility and honest delivery apply to both.

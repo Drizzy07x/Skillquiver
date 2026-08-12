@@ -54,6 +54,13 @@ function captureArguments(pagePath, outputPath, width) {
   ];
 }
 
+function inspectionFrameHtml(capturePath, width) {
+  return `<!doctype html><meta name="viewport" content="width=device-width"><style>` +
+    `html,body{margin:0;min-height:100%;background:#dce8e0}` +
+    `img{display:block;width:${width}px;height:900px;margin:0 auto}` +
+    `</style><img src="${pathToFileURL(capturePath).href}" alt="">`;
+}
+
 function captureStaticPage(pagePath, outputDirectory, widths, dependencies = {}) {
   const resolvedPage = path.resolve(pagePath);
   if (!fs.existsSync(resolvedPage)) throw new Error(`Page not found: ${resolvedPage}`);
@@ -79,7 +86,30 @@ function captureStaticPage(pagePath, outputDirectory, widths, dependencies = {})
       const detail = result.error?.message || result.stderr?.trim() || `exit ${result.status}`;
       throw new Error(`Capture failed at ${width}px: ${detail}`);
     }
-    return { width, height: 900, outputPath, browser };
+
+    let inspectionPath = null;
+    if (width < 480) {
+      inspectionPath = path.join(resolvedOutput, `${pageName}-${width}-inspect.png`);
+      const framePath = path.join(resolvedOutput, `.${pageName}-${width}-inspect.html`);
+      fs.writeFileSync(framePath, inspectionFrameHtml(outputPath, width));
+      try {
+        const inspection = spawnSyncImpl(
+          browser,
+          captureArguments(framePath, inspectionPath, 720),
+          { encoding: 'utf8', windowsHide: true }
+        );
+        if (inspection.error || inspection.status !== 0 ||
+            !fs.existsSync(inspectionPath) || fs.statSync(inspectionPath).size === 0) {
+          const detail = inspection.error?.message || inspection.stderr?.trim() ||
+            `exit ${inspection.status}`;
+          throw new Error(`Inspection frame failed at ${width}px: ${detail}`);
+        }
+      } finally {
+        fs.rmSync(framePath, { force: true });
+      }
+    }
+
+    return { width, height: 900, outputPath, inspectionPath, browser };
   });
 }
 
@@ -102,5 +132,6 @@ module.exports = {
   captureArguments,
   captureStaticPage,
   findBrowser,
+  inspectionFrameHtml,
   parseWidths
 };
