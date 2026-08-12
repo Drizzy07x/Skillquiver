@@ -164,13 +164,18 @@ The clean Windows worktree at the corrected source commit rebuilt the exact
 same 66,859-byte archive and SHA-256 recorded above. Branch workflow
 `31602597991` and tag workflow `31602600075` both passed the repository suite
 with 30/30 tests, benchmark wrapper checks, and SDD script checks. Pull request
-review, merge, and post-merge checks will be recorded here after they run. No
-unrun check is treated as complete.
+#8 passed push workflow `31602674843` and pull-request workflow `31602697175`,
+then merged into `main` as
+`c81a3f5024360a15e0cf531cdc85051bd10e9d18`. Main workflow `31602757971`
+and Pages workflow `31602756579` both passed.
+
+Fresh HTTP checks returned 200 for the home, privacy, terms, and support URLs.
+Every response contained `Drizzy07x`, and the home page contained `2.0.6`.
 
 ## Remaining gates
 
-The internal artifact and representative-use gate is complete. Remote release
-and repository checks remain pending until recorded above.
+The internal artifact, representative-use, remote tag, and repository gates are
+complete.
 
 The OpenAI Platform account still needs a verified Business identity whose
 public name is exactly `Drizzy07x`. The available Individual identity remains

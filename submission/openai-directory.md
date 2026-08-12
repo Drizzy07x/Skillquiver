@@ -286,7 +286,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The generated 2.0.6 Core passed the bundled `plugin-creator` validator.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
 - [x] Focused 2.0.6 release tests pass locally, and the exact branch and tag pass clean GitHub Actions checks.
-- [ ] The reviewed 2.0.6 candidate is merged into `main` and its required checks pass.
+- [x] The reviewed 2.0.6 candidate is merged into `main` and its required checks pass.
 - [x] A fresh isolated Codex marketplace smoke installed 2.0.6 from the exact archive, exposed exactly six skills, and excluded `skillquiver-doctor`.
 - [x] The website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` as the public publisher.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
@@ -303,8 +303,8 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Submitted by | Pending |
 | Developer identity | `Drizzy07x` Business verification pending; Individual identity intentionally not selected |
 | Apps Management evidence | Enabled skills-only upload dialog |
-| GitHub pull request | Pending |
-| Main merge commit | Pending |
+| GitHub pull request | [#8](https://github.com/Drizzy07x/Skillquiver/pull/8), merged |
+| Main merge commit | `c81a3f5024360a15e0cf531cdc85051bd10e9d18` |
 | Remote tag | `v2.0.6` -> `10bdb634a698ef4368a67e1c99306063d6faffce` |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.6.zip`; 66,859 bytes; 21 files |
 | Upload archive SHA-256 | `6CC27F4E53CC522BA902A4B1838D0EBBD29AD7BB5C2F8FF30908E90FF2296737` |
