@@ -247,6 +247,29 @@ test('README and website list every skill with matching compatibility', () => {
   );
 });
 
+test('website identifies the focused Codex Core candidate honestly', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const core = html.slice(html.indexOf('<section class="band" id="core">'),
+    html.indexOf('<section class="band" id="install">'));
+  const coreSkills = [...core.matchAll(/data-core-skill="([a-z0-9-]+)"/g)]
+    .map(match => match[1]);
+
+  assert.deepEqual(coreSkills, [
+    'writing-plans',
+    'diagnose-systematically',
+    'test-driven-development',
+    'requesting-code-review',
+    'design-ui',
+    'handle-host-boundaries'
+  ]);
+  assert.match(core, /Skillquiver Core v2\.0\.3/);
+  assert.match(core, /not yet approved or published/);
+  assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
+    /Skillquiver Core is the focused six-skill Codex directory bundle/);
+  assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
+    /Skillquiver Core is the focused six-skill Codex directory bundle/);
+});
+
 test('local Markdown links resolve', () => {
   const missing = [];
 
