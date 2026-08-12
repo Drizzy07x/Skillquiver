@@ -7,6 +7,24 @@ description: Turns visual intent into inspectable constraints, commits to a stat
 
 Translate visual intent into inspectable constraints, commit to a direction, implement one coherent system, and verify the rendered result. Taste never overrides the brief; every axis the brief leaves free is a decision owed.
 
+## Bounded path for a small static page
+
+For one existing framework-free page with explicit preservation constraints,
+keep the visual direction in the response and inspect only the page and its
+direct assets. State the audience, layout, palette, type, focus, and responsive
+intent in a compact pass, then implement once. Do not create an intent artifact,
+read the extended direction references, or run component-structure review
+unless the page's complexity requires them.
+
+Use an already available browser for at most one capture attempt per required
+viewport and keep the whole render-verification attempt within 90 seconds. Do
+not install tooling or build an elaborate server solely for evidence. If no
+authorized rendering capability works within that bound, stop and report the
+exact limitation; source inspection may be reported as such but never as
+rendered proof. This bounded path replaces the artifact requirements in
+sections 1 and 3 and skips section 6; accessibility and honest delivery still
+apply.
+
 ## 1. Capture intent as constraints
 
 Inspect the existing application, dependencies, assets, copy, routes, screenshots, and user references before choosing an aesthetic. Record intent in a plain Markdown or JSON file outside the target repository unless the user requests a versioned design specification:

@@ -1,6 +1,6 @@
 ---
 name: requesting-code-review
-description: Dispatches a code-reviewer subagent to check finished work against requirements before it merges. Use when completing tasks, implementing major features, or before merging.
+description: Dispatches a code-reviewer subagent to check finished implementation work against requirements before it merges. Use when coordinating review of work just completed in an implementation workflow or before merging. Handle a user's standalone bounded read-only code review directly.
 ---
 
 # Requesting Code Review
@@ -49,6 +49,15 @@ Dispatch a reviewer using the host's general-purpose worker role or its closest 
 **3. Act on feedback:**
 
 Process reviewer findings per the receiving-code-review skill — verify before implementing, fix Critical and Important issues before proceeding, push back with technical reasoning when the reviewer is wrong.
+
+Keep one accumulator of verified findings across every reviewer message. A
+later response such as "no additional findings" means no new findings and must
+never erase an earlier verified issue. The final user-facing review is the
+ordered synthesis of that accumulator, with exact file and line references;
+do not forward an intermediate reviewer message as the final verdict.
+
+For a single small file, use at most one reviewer. Dispatch another only when
+the first result is incomplete, and explain the missing evidence it must check.
 
 ## Example
 

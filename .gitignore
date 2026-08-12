@@ -2,3 +2,10 @@ __pycache__/
 *.py[cod]
 .DS_Store
 Thumbs.db
+.plugin-eval/runs/
+.plugin-eval/*.generated.json
+.plugin-eval/*-usage*.jsonl
+.plugin-eval/*-result*.json
+.plugin-eval/*-analysis.json
+benchmarks/bin/
+benchmarks/obj/

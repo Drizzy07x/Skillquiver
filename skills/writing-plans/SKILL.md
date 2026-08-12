@@ -13,12 +13,23 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
-- (User preferences for plan location override this default)
+**Plan delivery:** Return the complete plan inline when the user asks only to
+plan, requests read-only work, or says not to write code. Creating a plan file is a workspace change. Save to `docs/plans/YYYY-MM-DD-<feature-name>.md` only
+when the user requests a plan artifact or the active workflow already
+authorizes one; an explicit user location overrides this default.
 
 ## Scope Check
 
 If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
+
+## Decision Boundary
+
+List externally observable product decisions the requirements do not settle,
+such as exit status, output channel, overwrite policy, or partial-success
+semantics. Never silently choose them. If a decision does not block planning,
+record its options and impact as an unresolved decision; ask a focused question
+only when the answer changes the plan's structure. Label engineering
+recommendations as recommendations rather than requirements.
 
 ## File Structure
 

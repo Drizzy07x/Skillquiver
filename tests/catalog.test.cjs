@@ -139,6 +139,42 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.match(claudeMarketplace.plugins[0].description, /Twenty-one shared Agent Skills/);
 });
 
+test('Codex manifest declares unavailable Claude capabilities safely', () => {
+  const codexPlugin = readJson('.codex-plugin/plugin.json');
+  const boundary = `${codexPlugin.description} ${codexPlugin.interface.longDescription}`;
+  const routing = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'solve-efficiently', 'SKILL.md'), 'utf8');
+
+  assert.match(boundary, /Skillquiver Doctor/);
+  assert.match(boundary, /Claude-only tools are unavailable in Codex/);
+  assert.match(boundary, /never alter Codex as a substitute/);
+  assert.match(boundary, /plain chat/);
+  assert.match(routing, /Host capability boundary/);
+  assert.match(routing, /inspect or modify the other host's paths/);
+  assert.match(routing, /ask the question directly in plain chat/);
+});
+
+test('planning and review instructions preserve scope and findings', () => {
+  const planning = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'writing-plans', 'SKILL.md'), 'utf8');
+  const review = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'requesting-code-review', 'SKILL.md'), 'utf8');
+
+  assert.match(planning, /Creating a plan file is a workspace change/);
+  assert.match(planning, /Never silently choose them/);
+  assert.match(review, /standalone bounded read-only code review directly/);
+  assert.match(review, /must\s+never erase an earlier verified issue/);
+});
+
+test('small static UI work has a bounded honest verification path', () => {
+  const designUi = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'design-ui', 'SKILL.md'), 'utf8');
+
+  assert.match(designUi, /Bounded path for a small static page/);
+  assert.match(designUi, /within 90 seconds/);
+  assert.match(designUi, /never as\s+rendered proof/);
+});
+
 test('README and website list every skill with matching compatibility', () => {
   const shared = skillNames(sharedSkillsRoot);
   const claudeOnly = skillNames(claudeSkillsRoot);

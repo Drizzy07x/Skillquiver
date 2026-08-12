@@ -204,3 +204,9 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Final bundle commit | Pending |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
+
+The initial 2026-08-12 representative run is recorded in
+`benchmarks/results/2026-08-12-final.md`; the first remediation is recorded in
+`benchmarks/results/2026-08-12-remediation-1.md`. All eight cases have observed
+evidence, but only six currently pass, so the preflight item above remains
+unchecked.
