@@ -88,12 +88,14 @@ does not claim semantic task success from a zero exit code.
 
 The exact 2.0.4 tag mismatch is recorded in
 [`results/2026-08-12-remediation-9.md`](results/2026-08-12-remediation-9.md),
-and the replacement 2.0.5 gate will be recorded in
+the 2.0.5 tag checkout mismatch is recorded in
 [`results/2026-08-12-remediation-10.md`](results/2026-08-12-remediation-10.md)
+and the replacement 2.0.6 gate is recorded in
+[`results/2026-08-12-remediation-11.md`](results/2026-08-12-remediation-11.md)
 with its structured scorecard in [`results/latest.json`](results/latest.json).
-The exact 2.0.4 tag is retained unchanged, but its planning result is not a
-publication pass. Directory publication still depends on a successful 2.0.5
-gate plus the external identity, portal, and review checks. The prior 2.0.3
+The earlier tags remain unchanged and are not publication passes. The 2.0.6
+artifact and representative-use gate passed; directory publication still
+depends on the external identity, portal, and review checks. The prior 2.0.3
 gate remains in
 [`results/2026-08-12-remediation-8.md`](results/2026-08-12-remediation-8.md).
 The Linux provisioning blocker and environment setup remain recorded in
