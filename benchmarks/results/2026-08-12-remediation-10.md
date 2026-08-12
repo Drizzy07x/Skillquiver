@@ -166,8 +166,10 @@ SDD script tests passed
 Windows release tool tests passed
 ```
 
-Clean GitHub Actions results will be recorded after the evidence commit and
-immutable tag are pushed.
+The evidence branch workflow `31599304552` and the exact `v2.0.5` tag workflow
+`31599306047` both passed. The annotated tag resolves to
+`e762d8fa10c2322c0583dac8705d484bd3a90493`, the source commit used for the
+archive and all eight benchmark outcomes.
 
 ## Remaining external gates
 
