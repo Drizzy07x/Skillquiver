@@ -174,6 +174,12 @@ archive and all eight benchmark outcomes.
 Pull request #7 is the reviewed merge candidate. Its final pre-merge branch
 workflow `31599360023` and pull-request workflow `31599394818` both passed.
 
+Pull request #7 merged into `main` as
+`e318d79d92bc36efffeb23d97cc55841ee045ce7`. Main workflow `31599488472` and
+Pages workflow `31599487194` passed. Fresh HTTP checks returned 200 for the
+home, privacy, terms, and support URLs; each response contained `Drizzy07x`,
+and the home page contained the 2.0.5 release statement.
+
 ## Remaining external gates
 
 The OpenAI Platform account still needs a verified Business identity whose
