@@ -278,7 +278,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The OpenAI Platform account can open the enabled `Create plugin` > `Skills only` upload flow. The official submission documentation states that creating drafts requires `Apps Management: Write`; this was observed in the Personal organization on 2026-08-12.
 - [x] The submission form exposes a verified Individual developer identity. Its legal name is intentionally not stored in this public repository.
 - [ ] The public publisher name and URLs match the selected verified identity. The current listing uses `Drizzy07x`; the owner must choose whether to publish under the verified individual name or a separately verified business identity before submission.
-- [ ] The remote `v2.0.2` tag resolves to the reviewed release commit. Do not move the preflight-only `v2.0.1` tag.
+- [x] The remote `v2.0.2` tag resolves to reviewed release commit `d12d97d0d98c652382bf80bb1555e6b5b935911d`. The preflight-only `v2.0.1` tag remains unchanged.
 - [x] The local 2.0.2 upload archive passed the bundled validator after extraction, contained the same 21 files with zero content differences, and has SHA-256 `611BA80422EA81CC57B11A0CA3C020A9C11713882AC298B15D04F59CA3517B62`.
 - [x] The generated Core passed the bundled `plugin-creator` validator on 2026-08-12.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
@@ -301,10 +301,10 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Developer identity | Verified Individual available; legal name intentionally omitted |
 | Apps Management evidence | Enabled skills-only upload dialog |
 | GitHub pull request | https://github.com/Drizzy07x/Skillquiver/pull/3 |
-| Remote tag | `v2.0.2` pending |
+| Remote tag | `v2.0.2` -> `d12d97d0d98c652382bf80bb1555e6b5b935911d` |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.2.zip` |
 | Upload archive SHA-256 | `611BA80422EA81CC57B11A0CA3C020A9C11713882AC298B15D04F59CA3517B62` |
-| Final bundle commit | Pending 2.0.2 release commit |
+| Final bundle commit | `d12d97d0d98c652382bf80bb1555e6b5b935911d` |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 
