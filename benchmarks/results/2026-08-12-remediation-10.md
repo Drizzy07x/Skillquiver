@@ -1,10 +1,10 @@
-# Skillquiver 2.0.5 exact-release gate
+# Skillquiver 2.0.5 candidate and tag checkout audit
 
 Date: 2026-08-12
 
 ## Outcome
 
-The Skillquiver Core 2.0.5 exact release candidate passed the complete
+The Skillquiver Core 2.0.5 pre-tag candidate passed the complete
 representative benchmark under the public publisher name `Drizzy07x`:
 
 - Processes completed: 8/8.
@@ -14,15 +14,21 @@ representative benchmark under the public publisher name `Drizzy07x`:
 
 No scenario result carried forward from 2.0.4 or from an earlier 2.0.5
 candidate. All eight scenarios ran against the same Core built from commit
-`e762d8fa10c2322c0583dac8705d484bd3a90493`. The release archive was created
-before the run and remained the immutable package identifier.
+`e762d8fa10c2322c0583dac8705d484bd3a90493` before a clean tag checkout.
+
+That candidate is not the immutable release artifact. A subsequent Windows
+worktree checkout of the annotated `v2.0.5` tag rebuilt to SHA-256
+`5C523F1F847B88502932EBF474208BCFF28B151AED2D117773EA4B9431DD1FC9`
+and 67,253 compressed bytes instead of the candidate hash and 66,965 bytes.
+The builder copied checkout-dependent CRLF bytes, so 2.0.5 fails the exact-tag
+reproducibility gate and is superseded by 2.0.6. The tag remains unchanged.
 
 The available OpenAI Platform Individual identity was not selected because the
 owner prohibited publishing an individual legal name. Portal upload remains
 blocked until a verified Business identity named exactly `Drizzy07x` is
 available.
 
-## Artifact identity
+## Pre-tag candidate artifact
 
 Artifact: `.plugin-eval/codex-core/skillquiver-2.0.5.zip`
 
@@ -42,7 +48,8 @@ SHA-256:
 | Case or Unicode-normalized collisions | 0 | 0 | Pass |
 | Source-to-extracted content differences | 0 | 0 | Pass |
 
-Two independent builds produced the same SHA-256. The generated Core, the
+Two builds from the same pre-tag working tree produced the candidate SHA-256.
+The generated Core, the
 second generated Core, and the extracted archive all passed the bundled
 `plugin-creator` validator. The bundle contains no symlinks or reparse points.
 
@@ -73,7 +80,7 @@ absolute-path, unsafe-path, normalized-collision, or symlink matches.
 
 A fresh isolated Codex profile registered the local
 `skillquiver-core-release-smoke` marketplace and installed
-`skillquiver@skillquiver-core-release-smoke` version 2.0.5 from the exact
+`skillquiver@skillquiver-core-release-smoke` version 2.0.5 from the pre-tag
 archive. The installed cache contains exactly these six skills:
 
 - `design-ui`
@@ -85,7 +92,7 @@ archive. The installed cache contains exactly these six skills:
 
 `skillquiver-doctor` is absent.
 
-## Representative benchmark results
+## Pre-tag representative benchmark results
 
 All scenarios used `gpt-5.4`, Codex CLI 0.147.0, and the same generated
 `.plugin-eval/codex-core/skillquiver` package. Positive cases and N1/N3 used a
@@ -166,10 +173,10 @@ SDD script tests passed
 Windows release tool tests passed
 ```
 
-The evidence branch workflow `31599304552` and the exact `v2.0.5` tag workflow
-`31599306047` both passed. The annotated tag resolves to
-`e762d8fa10c2322c0583dac8705d484bd3a90493`, the source commit used for the
-archive and all eight benchmark outcomes.
+The evidence branch workflow `31599304552` and the `v2.0.5` tag workflow
+`31599306047` both passed the repository tests. Those workflows did not compare
+the archive built from a clean Windows checkout, so they do not close the
+reproducibility failure above.
 
 Pull request #7 is the reviewed merge candidate. Its final pre-merge branch
 workflow `31599360023` and pull-request workflow `31599394818` both passed.
@@ -180,7 +187,11 @@ Pages workflow `31599487194` passed. Fresh HTTP checks returned 200 for the
 home, privacy, terms, and support URLs; each response contained `Drizzy07x`,
 and the home page contained the 2.0.5 release statement.
 
-## Remaining external gates
+## Remaining gates
+
+The internal gate is open: 2.0.6 must normalize generated text independently
+of checkout line endings and pass all eight scenarios against its exact final
+artifact.
 
 The OpenAI Platform account still needs a verified Business identity whose
 public name is exactly `Drizzy07x`. The available Individual identity remains

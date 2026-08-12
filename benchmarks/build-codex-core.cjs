@@ -9,6 +9,9 @@ const CORE_CAPABILITIES = [
   'Run host-approved local development commands and tests.',
   'Use optional host-provided browser, UI automation, or subagent capabilities when available.'
 ];
+const PORTABLE_TEXT_EXTENSIONS = new Set([
+  '.cjs', '.js', '.json', '.md', '.ps1', '.sh', '.txt', '.yaml', '.yml'
+]);
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -40,6 +43,20 @@ function isInside(parent, candidate) {
   const relative = path.relative(parent, candidate);
   return relative !== '' && !relative.startsWith(`..${path.sep}`) &&
     relative !== '..' && !path.isAbsolute(relative);
+}
+
+function normalizePortableText(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      normalizePortableText(entryPath);
+    }
+    else if (entry.name === 'LICENSE' ||
+      PORTABLE_TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+      const content = fs.readFileSync(entryPath, 'utf8').replace(/\r\n?/g, '\n');
+      fs.writeFileSync(entryPath, content);
+    }
+  }
 }
 
 function buildCodexCore(root, outputRoot) {
@@ -92,6 +109,8 @@ function buildCodexCore(root, outputRoot) {
     );
   }
 
+  normalizePortableText(resolvedOutput);
+
   return { outputRoot: resolvedOutput, skills: config.skills };
 }
 
@@ -108,5 +127,6 @@ module.exports = {
   CORE_LONG_DESCRIPTION,
   buildCodexCore,
   isInside,
+  normalizePortableText,
   readCoreConfig
 };

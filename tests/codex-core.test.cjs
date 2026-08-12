@@ -44,7 +44,7 @@ test('Codex Core build contains only selected skills and a consistent manifest',
 
   assert.deepEqual(builtSkills, [...result.skills].sort());
   assert.equal(manifest.name, 'skillquiver');
-  assert.equal(manifest.version, '2.0.5');
+  assert.equal(manifest.version, '2.0.6');
   assert.equal(manifest.skills, './skills/');
   assert.match(manifest.description, /6 portable Agent Skills/);
   assert.equal(manifest.interface.displayName, 'Skillquiver Core');
@@ -66,6 +66,17 @@ test('Codex Core build contains only selected skills and a consistent manifest',
   ));
   assert.ok(fs.existsSync(path.join(outputRoot, manifest.interface.logo)));
   assert.ok(fs.existsSync(path.join(outputRoot, manifest.interface.composerIcon)));
+  assert.equal(
+    fs.readFileSync(path.join(outputRoot, 'assets', 'plugin-logo.png')).compare(
+      fs.readFileSync(path.join(root, 'assets', 'plugin-logo.png'))
+    ),
+    0
+  );
+  for (const file of filesUnder(outputRoot).filter(file =>
+    !file.endsWith('.png')
+  )) {
+    assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /\r/);
+  }
 
   const dossier = fs.readFileSync(
     path.join(root, 'submission', 'openai-directory.md'), 'utf8'
