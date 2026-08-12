@@ -33,6 +33,17 @@ node benchmarks/collect-usage.cjs .
 plugin-eval analyze . --observed-usage .plugin-eval/benchmark-usage.jsonl --metric-pack benchmarks/metric-pack/manifest.json --format markdown
 ```
 
+For the Linux gate, run from WSL after building the Core:
+
+```text
+export PLUGIN_EVAL_CODEX_EXECUTABLE="$PWD/benchmarks/codex-with-local-plugin.sh"
+export PLUGIN_EVAL_CODEX_HOME_SOURCE=/mnt/c/Users/<user>/.codex
+export SKILLQUIVER_BENCHMARK_TIMEOUT_SECONDS=300
+plugin-eval benchmark .plugin-eval/codex-core/skillquiver --config .plugin-eval/positive.generated.json --format markdown
+plugin-eval benchmark .plugin-eval/codex-core/skillquiver --config .plugin-eval/boundary.generated.json --format markdown
+plugin-eval benchmark .plugin-eval/codex-core/skillquiver --config .plugin-eval/destructive.generated.json --format markdown
+```
+
 Build and inspect the focused Codex Core release artifact with:
 
 ```text
@@ -73,14 +84,13 @@ away by positive cases.
 The metric pack reports deterministic setup, execution, and usage coverage. It
 does not claim semantic task success from a zero exit code.
 
-The latest Linux N2 attempt is recorded in
-[`results/2026-08-12-remediation-4.md`](results/2026-08-12-remediation-4.md).
-It did not reach model execution because Linux exposed a case-sensitive plugin
-identity mismatch in benchmark provisioning. The latest scored Core outcome is
-recorded in
-[`results/2026-08-12-remediation-2.md`](results/2026-08-12-remediation-2.md),
+The final eight-case Core gate is recorded in
+[`results/2026-08-12-remediation-5.md`](results/2026-08-12-remediation-5.md),
 with its structured scorecard in [`results/latest.json`](results/latest.json).
-The assembled Core currently passes 6 of 8 outcomes and is not submission-ready.
+The assembled Core passes all eight outcomes. Directory publication still
+depends on the remaining external preflight and submission checks.
+The Linux provisioning blocker and environment setup remain recorded in
+[`results/2026-08-12-remediation-4.md`](results/2026-08-12-remediation-4.md).
 The first remediation remains in
 [`results/2026-08-12-remediation-1.md`](results/2026-08-12-remediation-1.md).
 The original final evaluation remains in

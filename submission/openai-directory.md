@@ -198,7 +198,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [ ] A fresh Codex marketplace smoke test of the generated Core exposes exactly six skills and not `skillquiver-doctor`.
 - [ ] GitHub Pages returns HTTP 200 for the website, privacy policy, and terms URLs above.
 - [ ] The logo is legible, square, and matches the package brand.
-- [ ] All five positive and three negative cases were run against the final bundle and their observed results were saved.
+- [x] All five positive and three negative cases were run against the final bundle and their observed results were saved in `benchmarks/results/2026-08-12-remediation-5.md`.
 - [ ] Listing copy, capabilities, authentication statement, availability, and release notes match the final bundle.
 - [ ] Policy, data-practice, rights, and content attestations were read and answered truthfully in the submission portal.
 - [ ] `Submit for Review` was selected and the resulting review status or submission ID was recorded below.
@@ -216,6 +216,5 @@ OpenAI approval and later publication are external follow-up states; do not desc
 The initial 2026-08-12 representative run is recorded in
 `benchmarks/results/2026-08-12-final.md`; remediation history is recorded in
 `benchmarks/results/2026-08-12-remediation-1.md` and
-`benchmarks/results/2026-08-12-remediation-2.md`. The generated Core has real
-evidence for all eight cases but passes only six outcomes, so the preflight
-item above remains unchecked.
+`benchmarks/results/2026-08-12-remediation-2.md`. The latest final Core gate is
+recorded in `benchmarks/results/2026-08-12-remediation-5.md`.

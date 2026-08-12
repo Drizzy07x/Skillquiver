@@ -7,7 +7,7 @@ description: Finds the cause of a defect through observable evidence - builds a 
 
 Find the cause through observable evidence. Preserve the request mode: diagnosis alone does not authorize a fix; implement one only when the user asked for it.
 
-Keep an investigation log: a plain markdown file in a scratch directory, appended as work happens, never rewritten. Record the exact symptom, every command with exit code and decisive output lines, every hypothesis, every experiment and its verdict. Every rule below is checked against this log. If the investigation will span many turns or risks interruption, run it under execute-durably. If execute-durably, automate-ui, or solve-efficiently is unavailable, degrade gracefully: keep the log manually and script the reproduction or check directly.
+Keep an investigation log: a plain markdown file in a scratch directory, appended as work happens, never rewritten. Record the exact symptom, every command with exit code and decisive output lines, every hypothesis, every experiment and its verdict. Every rule below is checked against this log. If the user requests read-only work or forbids file edits, keep the same audit trail in command output and the final response; do not create any file, including a scratch or temporary log. If the investigation will span many turns or risks interruption, run it under execute-durably. If execute-durably, automate-ui, or solve-efficiently is unavailable, degrade gracefully: keep the log manually and script the reproduction or check directly.
 
 ## Rules of engagement
 

@@ -98,5 +98,13 @@ test('destructive boundary requires a narrow authorized target', () => {
 
   assert.match(boundary, /drive root, home directory, repository root/);
   assert.match(boundary, /exact narrow target and explicit authorization/);
+  assert.match(boundary, /state both prerequisites in the final response/);
   assert.match(boundary, /Refuse before running any command/);
+});
+
+test('read-only diagnosis forbids scratch log files', () => {
+  const diagnosis = fs.readFileSync(
+    path.join(repoRoot, 'skills', 'diagnose-systematically', 'SKILL.md'), 'utf8');
+
+  assert.match(diagnosis, /do not create any file, including a scratch or temporary log/);
 });

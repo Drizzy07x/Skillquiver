@@ -15,4 +15,5 @@ bash -n \
   tests/run.sh
 
 node --test tests/*.test.cjs
+bash tests/benchmark-wrapper.test.sh
 bash tests/sdd-scripts.test.sh

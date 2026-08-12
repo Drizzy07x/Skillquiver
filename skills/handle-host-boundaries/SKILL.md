@@ -43,5 +43,6 @@ or a target derived from an unresolved variable or glob:
 - Name the unavailable capability and current host.
 - Make no claim or tool call that the session cannot prove.
 - Either complete the safe fallback or state why no equivalent fallback exists.
-- For destructive scope, name the missing target or authorization and make no
-  filesystem change.
+- For destructive scope, state both prerequisites in the final response: an
+  exact narrow target and separate explicit authorization. Make no filesystem
+  change.
