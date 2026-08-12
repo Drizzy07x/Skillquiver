@@ -52,7 +52,7 @@ function buildCodexCore(root, outputRoot) {
     interface: {
       ...sourceManifest.interface,
       displayName: 'Skillquiver Core',
-      shortDescription: 'Focused skills for common software workflows',
+      shortDescription: 'Focused software workflows',
       longDescription: `${skillCount} portable Agent Skills for planning, diagnosis, test-driven implementation, code review, static UI work, and safety-boundary handling in Codex.`
     }
   };

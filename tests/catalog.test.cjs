@@ -97,10 +97,14 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.0.1');
+  assert.equal(codexPlugin.version, '2.0.2');
   assert.equal(codexPlugin.skills, './skills/');
   assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
   assert.equal(codexPlugin.interface.category, 'Productivity');
+  assert.ok(codexPlugin.interface.displayName.length <= 30);
+  assert.ok(codexPlugin.interface.shortDescription.length <= 30);
+  assert.ok(codexPlugin.interface.longDescription.length <= 4_000);
+  assert.equal(codexPlugin.author.name, codexPlugin.interface.developerName);
   assert.equal(codexPlugin.interface.logo, './assets/plugin-logo.png');
   assert.equal(codexPlugin.interface.composerIcon, './assets/plugin-logo.png');
   assert.deepEqual(codexPlugin.interface.defaultPrompt, [
@@ -112,6 +116,7 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.ok(fs.existsSync(path.resolve(root, codexPlugin.interface.logo)));
   for (const key of ['websiteURL', 'privacyPolicyURL', 'termsOfServiceURL']) {
     assert.match(codexPlugin.interface[key], /^https:\/\//);
+    assert.ok(codexPlugin.interface[key].length <= 1_024);
   }
   for (const key of ['mcpServers', 'apps', 'hooks']) assert.equal(key in codexPlugin, false);
 
@@ -192,6 +197,17 @@ test('small static UI work has a bounded honest verification path', () => {
   assert.match(designUi, /Never delete the target file/);
   assert.match(designUi, /capture-static-page\.cjs/);
   assert.match(designUi, /If it fails, stop/);
+});
+
+test('diagnosis examples report secret presence without revealing values', () => {
+  const tracing = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'diagnose-systematically', 'root-cause-tracing.md'), 'utf8');
+
+  assert.match(tracing, /API_KEY: SET/);
+  assert.match(tracing, /API_KEY propagated: SET/);
+  assert.match(tracing, /Never print the credential itself/);
+  assert.doesNotMatch(tracing, /\$\{API_KEY:-UNSET\}/);
+  assert.doesNotMatch(tracing, /env \| grep API_KEY/);
 });
 
 test('README and website list every skill with matching compatibility', () => {

@@ -41,7 +41,20 @@ test('Codex Core build contains only selected skills and a consistent manifest',
   assert.equal(manifest.name, 'skillquiver');
   assert.equal(manifest.skills, './skills/');
   assert.match(manifest.description, /6 portable Agent Skills/);
+  assert.ok(manifest.interface.displayName.length <= 30);
+  assert.ok(manifest.interface.shortDescription.length <= 30);
+  assert.ok(manifest.interface.longDescription.length <= 4_000);
+  assert.equal(manifest.author.name, manifest.interface.developerName);
+  assert.ok(manifest.interface.capabilities.length <= 20);
+  assert.ok(manifest.interface.capabilities.every(value =>
+    value.length <= 120 && !/[\r\n]/.test(value)
+  ));
+  assert.ok(manifest.interface.defaultPrompt.length <= 3);
+  assert.ok(manifest.interface.defaultPrompt.every(prompt =>
+    prompt.length <= 128 && !/[\r\n]/.test(prompt) && !prompt.includes('@')
+  ));
   assert.ok(fs.existsSync(path.join(outputRoot, manifest.interface.logo)));
+  assert.ok(fs.existsSync(path.join(outputRoot, manifest.interface.composerIcon)));
 });
 
 test('Codex Core refuses output outside its artifact or temp roots', () => {

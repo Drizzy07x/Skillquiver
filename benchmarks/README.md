@@ -84,11 +84,14 @@ away by positive cases.
 The metric pack reports deterministic setup, execution, and usage coverage. It
 does not claim semantic task success from a zero exit code.
 
-The final 2.0.1 eight-case Core gate is recorded in
-[`results/2026-08-12-remediation-6.md`](results/2026-08-12-remediation-6.md),
+The final 2.0.2 archive and delta benchmark gate is recorded in
+[`results/2026-08-12-remediation-7.md`](results/2026-08-12-remediation-7.md),
 with its structured scorecard in [`results/latest.json`](results/latest.json).
-The assembled Core passes all eight outcomes. Directory publication still
-depends on the remaining external preflight and submission checks.
+P2 was rerun after its diagnosis reference changed; the other seven accepted
+results carry forward only because their scenario skills are unchanged from the
+complete 2.0.1 gate. The assembled Core passes all eight outcomes. Directory
+publication still depends on the remaining external preflight and submission
+checks.
 The Linux provisioning blocker and environment setup remain recorded in
 [`results/2026-08-12-remediation-4.md`](results/2026-08-12-remediation-4.md).
 The first remediation remains in

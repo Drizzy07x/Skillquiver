@@ -1,6 +1,6 @@
 {
   "name": "skillquiver",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Twenty-two portable Agent Skills for planning, implementation, review, verification, UI, and system work.",
   "author": {
     "name": "Drizzy07x",
@@ -18,7 +18,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Skillquiver",
-    "shortDescription": "Practical Agent Skills for software work",
+    "shortDescription": "Practical software workflows",
     "longDescription": "A curated collection of 22 portable Agent Skills for planning, implementation, debugging, review, verification, host boundaries, and UI work in Claude Code and Codex. The Codex package excludes Skillquiver Doctor.",
     "developerName": "Drizzy07x",
     "category": "Productivity",

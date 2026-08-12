@@ -1,9 +1,9 @@
-# OpenAI Plugin Directory Submission — Skillquiver 2.0.1
+# OpenAI Plugin Directory Submission — Skillquiver 2.0.2
 
 This dossier is the single source of submission copy and review evidence for
 the six-skill Codex Core listing. The repository retains a separate full
 catalog for manual and Claude Code installation. Build the submitted Core with
-`node benchmarks/build-codex-core.cjs` from the exact `v2.0.1` tag, and submit
+`node benchmarks/build-codex-core.cjs` from the exact `v2.0.2` tag, and submit
 only after every preflight item is verified.
 
 ## Listing metadata
@@ -12,10 +12,10 @@ only after every preflight item is verified.
 |---|---|
 | Submission type | Skills only |
 | Plugin name | Skillquiver |
-| Version | 2.0.1 |
+| Version | 2.0.2 |
 | Developer / publisher | Drizzy07x |
 | Category | Productivity |
-| Short description | Focused development workflows for Codex. |
+| Short description | Focused software workflows |
 | Website | https://drizzy07x.github.io/Skillquiver/ |
 | Support | https://github.com/Drizzy07x/Skillquiver/issues |
 | Privacy policy | https://drizzy07x.github.io/Skillquiver/privacy.html |
@@ -256,17 +256,20 @@ repository, or credentials are required.
 
 ## Release notes
 
-### Skillquiver 2.0.1
+### Skillquiver 2.0.2
 
-Initial public directory submission. Version 2.0.1 supersedes the existing
-source-only `v2.0.0` tag so the reviewed six-skill Core can be tagged and built
-from an exact, distinct commit.
+Initial public directory submission. Version 2.0.2 supersedes the preflight-only
+`v2.0.1` tag after the final directory metadata limits and secret-safe
+diagnostic examples were corrected. Build the six-skill Core from the exact
+`v2.0.2` tag.
 
 - Added a focused six-skill Codex Core directory bundle.
 - Included planning, diagnosis, TDD, review, static UI, and safety-boundary workflows.
 - Added deterministic static-page capture at 360px and 1280px without installing a browser.
 - Excluded Claude-only Skillquiver Doctor and the broader source catalog from the directory bundle.
 - Added Codex marketplace, privacy, terms, benchmark, and usage evidence.
+- Shortened listing metadata to the final 30-character directory limit.
+- Prevented diagnostic examples from printing credential values.
 
 ## Preflight and submission record
 
@@ -275,17 +278,17 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The OpenAI Platform account can open the enabled `Create plugin` > `Skills only` upload flow. The official submission documentation states that creating drafts requires `Apps Management: Write`; this was observed in the Personal organization on 2026-08-12.
 - [x] The submission form exposes a verified Individual developer identity. Its legal name is intentionally not stored in this public repository.
 - [ ] The public publisher name and URLs match the selected verified identity. The current listing uses `Drizzy07x`; the owner must choose whether to publish under the verified individual name or a separately verified business identity before submission.
-- [x] The remote `v2.0.1` tag resolves to reviewed commit `70fc23391ae1585c78ca8fd17519af1207ee5512`.
-- [x] The local upload archive was rebuilt from that commit, passed the bundled validator after extraction, contained the same 21 files with zero content differences, and has SHA-256 `AADCC501D2A597E5FB0BEF15CD369A8F88363892003436A2BDE81BF53B382B23`.
+- [ ] The remote `v2.0.2` tag resolves to the reviewed release commit. Do not move the preflight-only `v2.0.1` tag.
+- [x] The local 2.0.2 upload archive passed the bundled validator after extraction, contained the same 21 files with zero content differences, and has SHA-256 `611BA80422EA81CC57B11A0CA3C020A9C11713882AC298B15D04F59CA3517B62`.
 - [x] The generated Core passed the bundled `plugin-creator` validator on 2026-08-12.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
-- [x] The focused and full repository test commands pass. The final `bash tests/run.sh` run passed 26/26 Node tests plus the benchmark wrapper and SDD script stages on 2026-08-12.
+- [x] The focused and full repository test commands pass. The final 2.0.2 `bash tests/run.sh` run passed 27/27 Node tests plus the benchmark wrapper and SDD script stages on 2026-08-12.
 - [x] GitHub PR #3 is open as a draft, reports a clean merge state, and all three recorded `test` checks passed.
 - [x] A fresh isolated Codex marketplace smoke exposed exactly six skills and not `skillquiver-doctor` on 2026-08-12.
 - [x] The website, support, privacy policy, and terms URLs returned HTTP 200 on 2026-08-12.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
-- [x] All five positive and three negative cases passed against the final `2.0.1` bundle; results are saved in `benchmarks/results/2026-08-12-remediation-6.md`.
-- [x] Listing copy, capabilities, authentication statement, availability, and release notes match the generated `2.0.1` bundle.
+- [x] All five positive and three negative cases pass for the final 2.0.2 bundle. P2 was rerun after its diagnosis reference changed; the seven byte-identical scenario skills retain their accepted 2.0.1 results. Delta evidence is saved in `benchmarks/results/2026-08-12-remediation-7.md`.
+- [x] Listing copy, capabilities, authentication statement, availability, and release notes match the generated `2.0.2` bundle and the final directory metadata limits.
 - [ ] Policy, data-practice, rights, and content attestations were read and answered truthfully in the submission portal.
 - [ ] `Submit for Review` was selected and the resulting review status or submission ID was recorded below.
 
@@ -298,15 +301,17 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Developer identity | Verified Individual available; legal name intentionally omitted |
 | Apps Management evidence | Enabled skills-only upload dialog |
 | GitHub pull request | https://github.com/Drizzy07x/Skillquiver/pull/3 |
-| Remote tag | `v2.0.1` -> `70fc23391ae1585c78ca8fd17519af1207ee5512` |
-| Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.1.zip` |
-| Upload archive SHA-256 | `AADCC501D2A597E5FB0BEF15CD369A8F88363892003436A2BDE81BF53B382B23` |
-| Final bundle commit | `70fc23391ae1585c78ca8fd17519af1207ee5512` |
+| Remote tag | `v2.0.2` pending |
+| Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.2.zip` |
+| Upload archive SHA-256 | `611BA80422EA81CC57B11A0CA3C020A9C11713882AC298B15D04F59CA3517B62` |
+| Final bundle commit | Pending 2.0.2 release commit |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 
 The initial 2026-08-12 representative run is recorded in
 `benchmarks/results/2026-08-12-final.md`; remediation history is recorded in
 `benchmarks/results/2026-08-12-remediation-1.md` and
-`benchmarks/results/2026-08-12-remediation-2.md`. The latest 2.0.1 Core gate is
-recorded in `benchmarks/results/2026-08-12-remediation-6.md`.
+`benchmarks/results/2026-08-12-remediation-2.md`. The complete 2.0.1 Core gate
+is recorded in `benchmarks/results/2026-08-12-remediation-6.md`; the final 2.0.2
+archive and delta gate is recorded in
+`benchmarks/results/2026-08-12-remediation-7.md`.
