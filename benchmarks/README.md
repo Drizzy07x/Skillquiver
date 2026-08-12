@@ -86,13 +86,15 @@ away by positive cases.
 The metric pack reports deterministic setup, execution, and usage coverage. It
 does not claim semantic task success from a zero exit code.
 
-The final 2.0.4 `Drizzy07x` release gate is recorded in
+The exact 2.0.4 tag mismatch is recorded in
 [`results/2026-08-12-remediation-9.md`](results/2026-08-12-remediation-9.md),
+and the replacement 2.0.5 gate will be recorded in
+[`results/2026-08-12-remediation-10.md`](results/2026-08-12-remediation-10.md)
 with its structured scorecard in [`results/latest.json`](results/latest.json).
-All eight scenarios were rerun against the same generated 2.0.4 Core; no
-earlier result carries forward. Directory publication still depends on the
-remaining external identity, portal, and review checks. The prior 2.0.3 gate
-remains in
+The exact 2.0.4 tag is retained unchanged, but its planning result is not a
+publication pass. Directory publication still depends on a successful 2.0.5
+gate plus the external identity, portal, and review checks. The prior 2.0.3
+gate remains in
 [`results/2026-08-12-remediation-8.md`](results/2026-08-12-remediation-8.md).
 The Linux provisioning blocker and environment setup remain recorded in
 [`results/2026-08-12-remediation-4.md`](results/2026-08-12-remediation-4.md).

@@ -32,6 +32,10 @@ user requests an artifact or the active workflow already authorizes one.
 - List externally observable decisions the requirements do not settle, such as
   exit status, output channel, overwrite policy, and partial-success semantics.
   Never silently choose them. Ask only when an answer changes plan structure.
+- Do not add validation, normalization, or required-field rules for data the
+  prompt only names. Preserve it as supplied and list any policy as unresolved.
+- Never specify a behavior as required and then list that same behavior as
+  unresolved. Describe the decision seam instead until the product choice exists.
 - Label engineering recommendations as recommendations, not requirements.
 - Define file responsibilities and interfaces. Mark unverified paths as
   proposed.

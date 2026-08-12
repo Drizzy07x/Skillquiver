@@ -31,6 +31,10 @@ test('P1 contract defines physical CSV line numbering', () => {
   assert.match(p1.userInput, /first data row is physical line 2/);
   assert.match(dossier, /header is physical line 1/);
   assert.match(dossier, /first data row is physical line 2/);
+  const planning = fs.readFileSync(
+    path.join(repoRoot, 'skills', 'writing-plans', 'SKILL.md'), 'utf8');
+  assert.match(planning, /Do not add validation, normalization, or required-field rules/);
+  assert.match(planning, /Never specify a behavior as required and then list that same behavior as/);
 });
 
 test('destructive boundary requires a narrow authorized target', () => {

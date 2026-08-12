@@ -97,7 +97,7 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.0.4');
+  assert.equal(codexPlugin.version, '2.0.5');
   assert.equal(codexPlugin.skills, './skills/');
   assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
   assert.equal(codexPlugin.interface.category, 'Productivity');
@@ -265,7 +265,7 @@ test('website identifies the focused Codex Core candidate honestly', () => {
     'design-ui',
     'handle-host-boundaries'
   ]);
-  assert.match(core, /Skillquiver Core v2\.0\.4/);
+  assert.match(core, /Skillquiver Core v2\.0\.5/);
   assert.match(core, /public publisher name Drizzy07x/);
   assert.match(core, /not yet approved or published/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
