@@ -2,6 +2,14 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
+const CORE_LONG_DESCRIPTION = 'Skillquiver Core is a focused set of six reusable Codex workflows for decision-complete planning, evidence-first diagnosis, test-driven implementation, actionable code review, accessible static UI work, and safe host or destructive boundaries. It has no hosted backend, account, or authentication requirement; workflows run through Codex and user-approved local tools. The broader Skillquiver source catalog is distributed separately and is not part of this directory bundle.';
+const CORE_CAPABILITIES = [
+  'Read project files and relevant local context.',
+  "Write project files when the user's task authorizes changes.",
+  'Run host-approved local development commands and tests.',
+  'Use optional host-provided browser, UI automation, or subagent capabilities when available.'
+];
+
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
@@ -53,7 +61,8 @@ function buildCodexCore(root, outputRoot) {
       ...sourceManifest.interface,
       displayName: 'Skillquiver Core',
       shortDescription: 'Focused software workflows',
-      longDescription: `${skillCount} portable Agent Skills for planning, diagnosis, test-driven implementation, code review, static UI work, and safety-boundary handling in Codex.`
+      longDescription: CORE_LONG_DESCRIPTION,
+      capabilities: CORE_CAPABILITIES
     }
   };
 
@@ -94,4 +103,10 @@ if (require.main === module) {
   process.stdout.write(`${JSON.stringify(buildCodexCore(root, outputRoot), null, 2)}\n`);
 }
 
-module.exports = { buildCodexCore, isInside, readCoreConfig };
+module.exports = {
+  CORE_CAPABILITIES,
+  CORE_LONG_DESCRIPTION,
+  buildCodexCore,
+  isInside,
+  readCoreConfig
+};

@@ -5,7 +5,12 @@ const path = require('node:path');
 const test = require('node:test');
 
 const root = path.resolve(__dirname, '..');
-const { buildCodexCore, readCoreConfig } = require('../benchmarks/build-codex-core.cjs');
+const {
+  CORE_CAPABILITIES,
+  CORE_LONG_DESCRIPTION,
+  buildCodexCore,
+  readCoreConfig
+} = require('../benchmarks/build-codex-core.cjs');
 
 function filesUnder(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
@@ -39,8 +44,13 @@ test('Codex Core build contains only selected skills and a consistent manifest',
 
   assert.deepEqual(builtSkills, [...result.skills].sort());
   assert.equal(manifest.name, 'skillquiver');
+  assert.equal(manifest.version, '2.0.3');
   assert.equal(manifest.skills, './skills/');
   assert.match(manifest.description, /6 portable Agent Skills/);
+  assert.equal(manifest.interface.displayName, 'Skillquiver Core');
+  assert.equal(manifest.interface.shortDescription, 'Focused software workflows');
+  assert.equal(manifest.interface.longDescription, CORE_LONG_DESCRIPTION);
+  assert.deepEqual(manifest.interface.capabilities, CORE_CAPABILITIES);
   assert.ok(manifest.interface.displayName.length <= 30);
   assert.ok(manifest.interface.shortDescription.length <= 30);
   assert.ok(manifest.interface.longDescription.length <= 4_000);
@@ -55,6 +65,16 @@ test('Codex Core build contains only selected skills and a consistent manifest',
   ));
   assert.ok(fs.existsSync(path.join(outputRoot, manifest.interface.logo)));
   assert.ok(fs.existsSync(path.join(outputRoot, manifest.interface.composerIcon)));
+
+  const dossier = fs.readFileSync(
+    path.join(root, 'submission', 'openai-directory.md'), 'utf8'
+  );
+  assert.match(dossier, /\| Plugin name \| Skillquiver Core \|/);
+  assert.match(dossier, /\| Short description \| Focused software workflows \|/);
+  assert.ok(dossier.includes(CORE_LONG_DESCRIPTION));
+  for (const capability of CORE_CAPABILITIES) {
+    assert.ok(dossier.includes(`- ${capability}`));
+  }
 });
 
 test('Codex Core refuses output outside its artifact or temp roots', () => {

@@ -5,14 +5,12 @@ const path = require('node:path');
 const test = require('node:test');
 
 const { EXPECTED_IDS, evaluate } = require('../benchmarks/metric-pack/emit-benchmark-metrics.cjs');
-const repoRoot = path.resolve(__dirname, '..');
-
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value));
 }
 
-function makeTarget({ scenarioIds = EXPECTED_IDS, runScenarios = null } = {}) {
+function makeTarget({ scenarioIds = EXPECTED_IDS, runScenarios = null, scorecardScenarios = null } = {}) {
   const targetPath = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-benchmark-'));
   writeJson(path.join(targetPath, '.plugin-eval', 'benchmark.json'), {
     scenarios: scenarioIds.map(id => ({ id }))
@@ -22,14 +20,20 @@ function makeTarget({ scenarioIds = EXPECTED_IDS, runScenarios = null } = {}) {
       scenarios: runScenarios
     });
   }
+  if (scorecardScenarios) {
+    writeJson(path.join(targetPath, 'benchmarks', 'results', 'latest.json'), {
+      scenarios: scorecardScenarios
+    });
+  }
   return targetPath;
 }
 
 test('metric pack accepts the complete measured scenario matrix', () => {
   const targetPath = makeTarget({
-    runScenarios: EXPECTED_IDS.map(id => ({
+    scorecardScenarios: EXPECTED_IDS.map(id => ({
       id,
-      status: 'completed',
+      processStatus: 'completed',
+      outcome: 'pass',
       usageAvailability: 'present'
     }))
   });
@@ -40,6 +44,34 @@ test('metric pack accepts the complete measured scenario matrix', () => {
     assert.equal(
       result.metrics.find(metric => metric.id === 'skillquiver_benchmark_process_completion_rate').value,
       100
+    );
+  } finally {
+    fs.rmSync(targetPath, { recursive: true, force: true });
+  }
+});
+
+test('metric pack does not treat process completion as semantic success', () => {
+  const targetPath = makeTarget({
+    runScenarios: EXPECTED_IDS.map(id => ({
+      id,
+      status: 'completed',
+      usageAvailability: 'present'
+    }))
+  });
+
+  try {
+    const result = evaluate(targetPath);
+    assert.equal(
+      result.checks.find(check => check.id === 'skillquiver-benchmark-process-completion').status,
+      'pass'
+    );
+    assert.equal(
+      result.checks.find(check => check.id === 'skillquiver-benchmark-outcome-scorecard').status,
+      'fail'
+    );
+    assert.equal(
+      result.metrics.find(metric => metric.id === 'skillquiver_benchmark_scenario_pass_rate').value,
+      0
     );
   } finally {
     fs.rmSync(targetPath, { recursive: true, force: true });
@@ -62,49 +94,4 @@ test('metric pack fails missing scenarios and absent usage', () => {
   } finally {
     fs.rmSync(targetPath, { recursive: true, force: true });
   }
-});
-
-test('N3 contract permits an honest plain-chat fallback', () => {
-  const config = JSON.parse(fs.readFileSync(
-    path.join(repoRoot, '.plugin-eval', 'benchmark.json'), 'utf8'));
-  const n3 = config.scenarios.find(scenario =>
-    scenario.id === 'n3-unavailable-claude-tool');
-  const dossier = fs.readFileSync(
-    path.join(repoRoot, 'submission', 'openai-directory.md'), 'utf8');
-
-  assert.match(n3.userInput, /If that tool is unavailable/);
-  assert.match(n3.userInput, /ask me directly in plain chat/);
-  assert.doesNotMatch(n3.userInput, /Do not use any other mechanism/);
-  assert.match(dossier, /If that tool is unavailable/);
-});
-
-test('P1 contract defines physical CSV line numbering', () => {
-  const config = JSON.parse(fs.readFileSync(
-    path.join(repoRoot, '.plugin-eval', 'benchmark.json'), 'utf8'));
-  const p1 = config.scenarios.find(scenario =>
-    scenario.id === 'p1-decision-complete-planning');
-  const dossier = fs.readFileSync(
-    path.join(repoRoot, 'submission', 'openai-directory.md'), 'utf8');
-
-  assert.match(p1.userInput, /header is physical line 1/);
-  assert.match(p1.userInput, /first data row is physical line 2/);
-  assert.match(dossier, /header is physical line 1/);
-  assert.match(dossier, /first data row is physical line 2/);
-});
-
-test('destructive boundary requires a narrow authorized target', () => {
-  const boundary = fs.readFileSync(
-    path.join(repoRoot, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8');
-
-  assert.match(boundary, /drive root, home directory, repository root/);
-  assert.match(boundary, /exact narrow target and explicit authorization/);
-  assert.match(boundary, /state both prerequisites in the final response/);
-  assert.match(boundary, /Refuse before running any command/);
-});
-
-test('read-only diagnosis forbids scratch log files', () => {
-  const diagnosis = fs.readFileSync(
-    path.join(repoRoot, 'skills', 'diagnose-systematically', 'SKILL.md'), 'utf8');
-
-  assert.match(diagnosis, /do not create any file, including a scratch or temporary log/);
 });

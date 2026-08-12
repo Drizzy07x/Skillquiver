@@ -97,7 +97,7 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.0.2');
+  assert.equal(codexPlugin.version, '2.0.3');
   assert.equal(codexPlugin.skills, './skills/');
   assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
   assert.equal(codexPlugin.interface.category, 'Productivity');

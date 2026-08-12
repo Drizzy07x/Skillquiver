@@ -66,7 +66,7 @@ function evaluate(targetPath) {
   ).length;
   const outcomePassCount = scored
     ? runScenarios.filter(scenario => scenario.outcome === 'pass').length
-    : completedCount;
+    : 0;
   const matchingRun = EXPECTED_IDS.every(id => runScenarios.some(scenario => scenario.id === id));
 
   const checks = [
@@ -114,8 +114,10 @@ function evaluate(targetPath) {
     check(
       'skillquiver-benchmark-outcome-scorecard',
       matchingRun && outcomePassCount === EXPECTED_IDS.length ? 'pass' : 'fail',
-      `The benchmark passed ${outcomePassCount} of ${EXPECTED_IDS.length} scenario rubrics.`,
-      [`scenario_passes=${outcomePassCount}`],
+      scored
+        ? `The benchmark passed ${outcomePassCount} of ${EXPECTED_IDS.length} scenario rubrics.`
+        : 'Semantic outcome evidence is unavailable; no scenario rubric is confirmed passing.',
+      [`scenario_passes=${outcomePassCount}`, `semantic_scorecard=${scored ? 'present' : 'absent'}`],
       outcomePassCount === EXPECTED_IDS.length ? [] : ['Fix failed behaviors and rerun the same scenario matrix.']
     )
   ];
