@@ -162,8 +162,24 @@ the test still required 2.0.3. That assertion was updated without weakening it.
 The one isolated rerun then passed 2/3 before Windows rejected its random port
 with `EACCES 127.0.0.1:49802`; the active exclusion table confirmed that 49802
 falls inside the reserved 49774–49873 range. No additional local retry or full
-suite is reported. The clean GitHub Actions result remains pending and is not
-assumed from the focused checks.
+suite is reported.
+
+The exact release commit and annotated tag each passed the clean GitHub Actions
+workflow:
+
+```text
+$ bash tests/run.sh
+tests 29
+pass 29
+fail 0
+benchmark wrapper tests passed
+SDD script tests passed
+Windows release tool tests skipped (pwsh.exe unavailable)
+```
+
+The Windows release tools passed separately in the focused local PowerShell
+run above. GitHub Actions run IDs: `31589237221` for the branch and
+`31589238896` for `v2.0.4`.
 
 ## Remaining external gates
 

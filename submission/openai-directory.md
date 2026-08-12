@@ -278,11 +278,11 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The OpenAI Platform account can open the enabled `Create plugin` > `Skills only` upload flow. The official submission documentation states that creating drafts requires `Apps Management: Write`; this was observed in the Personal organization on 2026-08-12.
 - [x] The owner explicitly selected `Drizzy07x` as the public publisher and prohibited publishing an individual legal name. The available Individual identity is intentionally not selected or stored in this repository.
 - [ ] A verified Business identity named `Drizzy07x` is available and selected, and the public publisher name and URLs match it.
-- [ ] The remote annotated `v2.0.4` tag resolves to the reviewed final release commit. The earlier `v2.0.1`, `v2.0.2`, and `v2.0.3` tags remain unchanged.
+- [x] The remote annotated `v2.0.4` tag resolves to the reviewed final release commit. The earlier `v2.0.1`, `v2.0.2`, and `v2.0.3` tags remain unchanged.
 - [x] The local 2.0.4 upload archive passed the bundled validator after extraction, contained the same files with zero content differences, and has a recorded SHA-256.
 - [x] The generated 2.0.4 Core passed the bundled `plugin-creator` validator.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
-- [ ] Focused 2.0.4 release tests pass locally and in clean GitHub Actions runs.
+- [x] Focused 2.0.4 release tests pass locally, and the exact branch and tag each pass 29/29 Node tests plus the Bash wrapper and SDD script checks in clean GitHub Actions runs.
 - [ ] The reviewed 2.0.4 candidate is merged into `main` and its required checks pass.
 - [x] A fresh isolated Codex marketplace smoke installed 2.0.4, exposed exactly six skills, and excluded `skillquiver-doctor`.
 - [ ] GitHub Pages deployed the 2.0.4 publisher update; the website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` as the public publisher.
@@ -300,12 +300,12 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Submitted by | Pending |
 | Developer identity | `Drizzy07x` Business verification pending; Individual identity intentionally not selected |
 | Apps Management evidence | Enabled skills-only upload dialog |
-| GitHub pull request | Pending |
+| GitHub pull request | https://github.com/Drizzy07x/Skillquiver/pull/5 |
 | Main merge commit | Pending |
-| Remote tag | `v2.0.4` pending |
+| Remote tag | `v2.0.4` -> `618adfa237ec6bc5f235d1988126cefdd5a8637c` |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.4.zip`, 65,441 bytes, validated |
 | Upload archive SHA-256 | `44D9910D3C0A6F3B8DE98B0703E754C55318C1EC1DF36FA8ECD77F070D6D6902` |
-| Final bundle commit | Pending |
+| Final bundle commit | `618adfa237ec6bc5f235d1988126cefdd5a8637c` |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 
