@@ -197,9 +197,13 @@ test('small static UI work has a bounded honest verification path', () => {
     path.join(sharedSkillsRoot, 'design-ui', 'SKILL.md'), 'utf8');
 
   assert.match(designUi, /Bounded path for a small static page/);
+  assert.match(designUi, /Route before any tool call/);
+  assert.match(designUi, /the bounded path below is mandatory/);
+  assert.match(designUi, /Direction:\s+audience .*layout .*palette .*typography .*focus .*responsive/s);
   assert.match(designUi, /Never delete the target file/);
   assert.match(designUi, /capture-static-page\.cjs/);
   assert.match(designUi, /If it fails, stop/);
+  assert.match(designUi, /Do not repair, inspect, or recapture after the second run/);
 });
 
 test('diagnosis examples report secret presence without revealing values', () => {

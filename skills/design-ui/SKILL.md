@@ -8,6 +8,14 @@ description: Builds accessible interfaces and verifies renders. Use when creatin
 Translate the brief into explicit visual decisions, implement one coherent
 system, and map every delivery claim to evidence.
 
+## Route before any tool call
+
+If the prompt names one existing framework-free HTML file and explicit
+preservation constraints, the bounded path below is mandatory. Accessibility,
+visual-quality, and responsive wording do not select the full workflow. Read
+only through the bounded path, then act; do not load this skill's references or
+continue into the full workflow. Use the full workflow for every other task.
+
 ## Bounded path for a small static page
 
 Use this path when the request names one existing framework-free HTML file and
@@ -22,9 +30,11 @@ extra commands.
 
 1. Read only that file and directly referenced local assets. Do not inspect
    package files, invoke other skills, or load this skill's references.
-2. State audience, layout, palette, typography, focus, and responsive intent in
-   one compact direction. Preserve content and behavior; add no JavaScript or
-   product behavior unless requested.
+2. Before editing, send one sentence with this complete shape: `Direction:
+   audience ...; layout ...; palette ...; typography ...; focus ...;
+   responsive ...`. Do not edit until all six fields have concrete values.
+   Preserve content and behavior; add no JavaScript or product behavior unless
+   requested.
 3. Apply one focused HTML/CSS patch. Preserve every named ID and constraint.
    Never delete the target file or replace it through a delete/add sequence.
 4. Run `node <this-skill-dir>/scripts/capture-static-page.cjs <page.html>
@@ -35,8 +45,8 @@ extra commands.
    that rendered verification is unavailable in the next response. Run no more
    commands after a failed capture. If the first captures expose a concrete
    defect, make one repair and repeat step 4 once. Run the capture command at
-   most twice total; after the second run, issue the final response immediately
-   even if a defect remains.
+   most twice total. Do not repair, inspect, or recapture after the second run;
+   issue the final response immediately even if a defect remains.
 
 For applications, multiple pages, uncertain behavior, or design-system work,
 use the full workflow below. Accessibility and honest delivery apply to both.
