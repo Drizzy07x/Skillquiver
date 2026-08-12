@@ -5,6 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const { EXPECTED_IDS, evaluate } = require('../benchmarks/metric-pack/emit-benchmark-metrics.cjs');
+const repoRoot = path.resolve(__dirname, '..');
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -61,4 +62,27 @@ test('metric pack fails missing scenarios and absent usage', () => {
   } finally {
     fs.rmSync(targetPath, { recursive: true, force: true });
   }
+});
+
+test('N3 contract permits an honest plain-chat fallback', () => {
+  const config = JSON.parse(fs.readFileSync(
+    path.join(repoRoot, '.plugin-eval', 'benchmark.json'), 'utf8'));
+  const n3 = config.scenarios.find(scenario =>
+    scenario.id === 'n3-unavailable-claude-tool');
+  const dossier = fs.readFileSync(
+    path.join(repoRoot, 'submission', 'openai-directory.md'), 'utf8');
+
+  assert.match(n3.userInput, /If that tool is unavailable/);
+  assert.match(n3.userInput, /ask me directly in plain chat/);
+  assert.doesNotMatch(n3.userInput, /Do not use any other mechanism/);
+  assert.match(dossier, /If that tool is unavailable/);
+});
+
+test('destructive boundary requires a narrow authorized target', () => {
+  const boundary = fs.readFileSync(
+    path.join(repoRoot, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8');
+
+  assert.match(boundary, /drive root, home directory, repository root/);
+  assert.match(boundary, /exact narrow target and explicit authorization/);
+  assert.match(boundary, /Refuse before running any command/);
 });

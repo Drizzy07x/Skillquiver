@@ -1,6 +1,6 @@
 ---
 name: design-ui
-description: Turns visual intent into inspectable constraints, commits to a stated visual direction before writing code, implements UI as one coherent system, verifies the rendered result at real viewports, and reviews the resulting UI code structure for component-level red flags. Use when an interface looks generic, templated, or off, when a page/screen/dashboard is being built or redesigned, when palette, typography, or layout direction needs deciding, or when a claim about design quality or fidelity needs proof.
+description: Turns visual intent into inspectable constraints, commits to a stated visual direction before writing code, implements UI as one coherent system, verifies the rendered result at real viewports, and reviews the resulting UI code structure for component-level red flags. Use when an interface looks generic, templated, or off, when a page/screen/dashboard is being built or redesigned, when palette, typography, or layout direction needs deciding, or when a claim about design quality or fidelity needs proof. For one existing framework-free HTML file, this skill owns the complete bounded edit-and-capture workflow by itself.
 ---
 
 # Design UI
@@ -9,21 +9,27 @@ Translate visual intent into inspectable constraints, commit to a direction, imp
 
 ## Bounded path for a small static page
 
-For one existing framework-free page with explicit preservation constraints,
-keep the visual direction in the response and inspect only the page and its
-direct assets. State the audience, layout, palette, type, focus, and responsive
-intent in a compact pass, then implement once. Do not create an intent artifact,
-read the extended direction references, or run component-structure review
-unless the page's complexity requires them.
+Use this path when the request names one existing framework-free HTML file and
+explicit preservation constraints:
 
-Use an already available browser for at most one capture attempt per required
-viewport and keep the whole render-verification attempt within 90 seconds. Do
-not install tooling or build an elaborate server solely for evidence. If no
-authorized rendering capability works within that bound, stop and report the
-exact limitation; source inspection may be reported as such but never as
-rendered proof. This bounded path replaces the artifact requirements in
-sections 1 and 3 and skips section 6; accessibility and honest delivery still
-apply.
+1. Read only that file and its directly referenced local assets. Do not inspect
+   package files, invoke other skills, or read this skill's references.
+2. State audience, layout, palette, type, focus, and responsive intent in one
+   compact direction. Keep existing content and behavior; do not add JavaScript
+   or new product behavior unless requested.
+3. Apply one focused HTML/CSS update patch. Preserve every named ID and
+   constraint. Never delete the target file or split replacement into a
+   delete/add sequence; the file must remain valid after the patch completes.
+4. Run `node <this-skill-dir>/scripts/capture-static-page.cjs <page.html>
+   <output-dir> <width...>` once with all required widths. The script uses an
+   already installed Chrome, Chromium, or Edge and installs nothing.
+5. If capture succeeds, report its JSON paths and dimensions. If it fails, stop
+   and report rendered verification as unavailable. Make at most one repair
+   when the evidence exposes a concrete defect.
+
+Keep the full path below for applications, multiple pages, uncertain behavior,
+or deeper design-system work. This bounded path replaces sections 1, 3, 5, and
+6; accessibility and honest delivery still apply.
 
 ## 1. Capture intent as constraints
 

@@ -1,6 +1,6 @@
 ---
 name: solve-efficiently
-description: Routes work efficiently with progressive context discovery, matched effort, context economy, semantic navigation, durable project mapping, and safe handling of unavailable host-specific skills or tools. Use when work crosses modules or host capabilities, a requested capability belongs to another host, boundaries must be discovered before editing, context payload must be reduced, or a project map or domain glossary should be written; skip only for an obvious one-file change with a nearby test.
+description: Routes work efficiently with progressive context discovery, matched effort, context economy, semantic navigation, and durable project mapping. Use when work touches several modules or layers, boundaries must be discovered before editing, context payload must be reduced, or a project map or domain glossary should be written; skip only for an obvious one-file change with a nearby test.
 ---
 
 # Solve Efficiently
@@ -18,22 +18,6 @@ Before acting, name four things in one compact checkpoint: required outcome; req
 - Mixed modes keep their order: diagnose before changing, then verify.
 
 For a bounded technical decision with a supplied brief and primary sources: one evidence batch — read the brief, inspect only the named version-matched sources, preserve exact URLs and caveats, then separate verified facts, inference, recommendation, and uncertainty. Do not run generic discovery or test an implementation nobody requested.
-
-### Host capability boundary
-
-When a request names a skill or tool the current host does not expose, state
-that exact boundary before doing anything else. Do not imitate the missing
-capability, inspect or modify the other host's paths, or propose broader local
-permissions as a substitute. A host-specific maintenance skill remains scoped
-to its documented host; offer only a clearly labeled read-only manual check
-that stays inside the current host.
-
-Preserve the underlying safe outcome when only the requested mechanism is
-unavailable. For example, after stating that a question tool cannot be called,
-ask the question directly in plain chat. Never fabricate a tool call or omit a
-safe question merely because the named mechanism is impossible. If the missing
-mechanism carries security or consent semantics that plain chat cannot
-preserve, stop and request an available authorized mechanism instead.
 
 ## 2. Discover context progressively
 

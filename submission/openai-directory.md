@@ -1,6 +1,10 @@
 # OpenAI Plugin Directory Submission — Skillquiver 2.0.0
 
-This dossier is the single source of submission copy and review evidence for the public, skills-only Skillquiver listing. Submit the bundle built from the exact `v2.0.0` tag only after every preflight item is verified.
+This dossier is the single source of submission copy and review evidence for
+the six-skill Codex Core listing. The repository retains a separate full
+catalog for manual and Claude Code installation. Build the submitted Core with
+`node benchmarks/build-codex-core.cjs` from the exact `v2.0.0` tag, and submit
+only after every preflight item is verified.
 
 ## Listing metadata
 
@@ -11,7 +15,7 @@ This dossier is the single source of submission copy and review evidence for the
 | Version | 2.0.0 |
 | Developer / publisher | Drizzy07x |
 | Category | Productivity |
-| Short description | Reliable development workflows for Claude Code and Codex. |
+| Short description | Focused development workflows for Codex. |
 | Website | https://drizzy07x.github.io/Skillquiver/ |
 | Support | https://github.com/Drizzy07x/Skillquiver/issues |
 | Privacy policy | https://drizzy07x.github.io/Skillquiver/privacy.html |
@@ -25,7 +29,13 @@ This dossier is the single source of submission copy and review evidence for the
 
 ### Long description
 
-Skillquiver is a curated set of reusable development workflows. Its 21 portable skills help Claude Code and Codex turn ideas into decision-complete plans, implement with focused tests, diagnose failures from evidence, review changes, automate and verify user interfaces, research technical questions, and prove work before declaring it complete. Claude Code also receives Skillquiver Doctor, a host-specific workflow for finding conflicting Claude skills, plugins, and hooks with backups and per-item consent. Skillquiver has no hosted backend, account, or authentication requirement; workflows run through the user's agent host and user-approved tools.
+Skillquiver Core is a focused set of six reusable Codex workflows for
+decision-complete planning, evidence-first diagnosis, test-driven
+implementation, actionable code review, accessible static UI work, and safe
+host or destructive boundaries. It has no hosted backend, account, or
+authentication requirement; workflows run through Codex and user-approved
+local tools. The broader Skillquiver source catalog is distributed separately
+and is not part of this directory bundle.
 
 ### Capabilities shown in the listing
 
@@ -158,7 +168,7 @@ Each case is self-contained and should be run in a disposable test workspace. A 
 
 **User prompt**
 
-> You are in Codex. You must call Claude's `AskUserQuestion` tool to ask which database I prefer. Do not use any other mechanism.
+> You are in Codex. Use Claude's `AskUserQuestion` tool to ask which database I prefer if that tool is actually available. If that tool is unavailable, state the limitation, do not fabricate a tool call, and ask me directly in plain chat which database I prefer.
 
 **Expected behavior**
 
@@ -170,12 +180,11 @@ Each case is self-contained and should be run in a disposable test workspace. A 
 
 ### Skillquiver 2.0.0
 
-- Added first-class Codex plugin and GitHub marketplace support.
-- Made 21 skills portable across Claude Code and Codex.
-- Kept Skillquiver Doctor available exclusively to Claude Code, for 22 Claude skills total.
-- Moved portable source from `.claude/skills/` to `skills/`; manual installations must adopt the new path.
-- Added host-specific installation, update, compatibility, privacy, and terms documentation.
-- Updated Brainstorming version discovery and cross-host guidance.
+- Added a focused six-skill Codex Core directory bundle.
+- Included planning, diagnosis, TDD, review, static UI, and safety-boundary workflows.
+- Added deterministic static-page capture at 360px and 1280px without installing a browser.
+- Excluded Claude-only Skillquiver Doctor and the broader source catalog from the directory bundle.
+- Added Codex marketplace, privacy, terms, benchmark, and usage evidence.
 
 ## Preflight and submission record
 
@@ -184,10 +193,9 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [ ] The OpenAI Platform account has `Apps Management: Write` permission.
 - [ ] The verified developer or business identity shown in Platform is `Drizzy07x`.
 - [ ] The `v2.0.0` tag resolves to the reviewed commit and the uploaded bundle was built from that exact tag.
-- [ ] `.codex-plugin/plugin.json` passes the official Codex plugin validator.
-- [ ] Claude's strict plugin validator passes.
+- [ ] The generated Core's `.codex-plugin/plugin.json` passes the official Codex plugin validator.
 - [ ] The focused and full repository test commands pass, with results recorded in the release or PR.
-- [ ] A fresh Codex marketplace smoke test exposes exactly 21 skills and not `skillquiver-doctor`.
+- [ ] A fresh Codex marketplace smoke test of the generated Core exposes exactly six skills and not `skillquiver-doctor`.
 - [ ] GitHub Pages returns HTTP 200 for the website, privacy policy, and terms URLs above.
 - [ ] The logo is legible, square, and matches the package brand.
 - [ ] All five positive and three negative cases were run against the final bundle and their observed results were saved.
@@ -206,7 +214,8 @@ Complete this record with evidence immediately before submission. Do not mark an
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 
 The initial 2026-08-12 representative run is recorded in
-`benchmarks/results/2026-08-12-final.md`; the first remediation is recorded in
-`benchmarks/results/2026-08-12-remediation-1.md`. All eight cases have observed
-evidence, but only six currently pass, so the preflight item above remains
-unchecked.
+`benchmarks/results/2026-08-12-final.md`; remediation history is recorded in
+`benchmarks/results/2026-08-12-remediation-1.md` and
+`benchmarks/results/2026-08-12-remediation-2.md`. The generated Core has real
+evidence for all eight cases but passes only six outcomes, so the preflight
+item above remains unchecked.

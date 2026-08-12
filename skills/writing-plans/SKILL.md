@@ -18,6 +18,25 @@ plan, requests read-only work, or says not to write code. Creating a plan file i
 when the user requests a plan artifact or the active workflow already
 authorizes one; an explicit user location overrides this default.
 
+## Bounded inline planning
+
+Use this path when the user explicitly requests planning only and provides the
+behavior, constraints, and required interfaces in the prompt:
+
+1. Treat those supplied facts as the planning contract. Do not inspect the
+   workspace unless the user asks for repository alignment or names an existing
+   path whose contents affect the plan.
+2. Mark proposed paths as proposed rather than presenting them as observed.
+3. Return at most four implementation tasks. Each task names files,
+   interfaces, behavior, and focused tests; omit code samples and commit steps
+   unless requested.
+4. Cover parsing, validation, success and failure flow, integration boundaries,
+   edge cases, and tests where applicable. End with unresolved externally
+   observable decisions only.
+
+This bounded path replaces File Structure through Execution Handoff below.
+Run the Self-Review, but keep its corrections inside the final response.
+
 ## Scope Check
 
 If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans — one per subsystem. Each plan should produce working, testable software on its own.

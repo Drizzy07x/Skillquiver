@@ -1,6 +1,6 @@
 ---
 name: automate-ui
-description: Drives web and desktop UIs adaptively — explores unfamiliar interfaces, verifies known browser behavior, operates native applications — while capturing evidence that separates navigation from behavioral proof. Use when a task requires navigating a site, reproducing or verifying web UI behavior, or clicking through a desktop application and proving what happened.
+description: Drives web and desktop UIs adaptively — explores unfamiliar interfaces, verifies known browser behavior, operates native applications — while capturing evidence that separates navigation from behavioral proof. Use when a task requires navigating a site, reproducing or verifying web UI behavior, or clicking through a desktop application and proving what happened. Do not use for one existing framework-free HTML file when design-ui's bounded static-page capture applies.
 ---
 
 # Automate UI

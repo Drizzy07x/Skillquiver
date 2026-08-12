@@ -20,6 +20,21 @@ internal static class Program
     private static ProcessStartInfo StartInfo(string codex, IEnumerable<string> arguments)
     {
         var info = new ProcessStartInfo(codex) { UseShellExecute = false };
+        var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME");
+        var isolatedHome = string.IsNullOrWhiteSpace(codexHome)
+            ? null
+            : Directory.GetParent(codexHome)?.FullName;
+        if (!string.IsNullOrWhiteSpace(isolatedHome))
+        {
+            info.Environment["HOME"] = isolatedHome;
+            info.Environment["USERPROFILE"] = isolatedHome;
+            var root = Path.GetPathRoot(isolatedHome);
+            if (!string.IsNullOrWhiteSpace(root))
+            {
+                info.Environment["HOMEDRIVE"] = root.TrimEnd(Path.DirectorySeparatorChar);
+                info.Environment["HOMEPATH"] = isolatedHome[root.Length..];
+            }
+        }
         foreach (var argument in arguments) info.ArgumentList.Add(argument);
         return info;
     }

@@ -66,14 +66,15 @@ function markdownFiles(dir) {
   });
 }
 
-test('catalog contains 21 shared skills and one Claude-only skill', () => {
+test('catalog contains 22 shared skills and one Claude-only skill', () => {
   const shared = skillNames(sharedSkillsRoot);
   const claudeOnly = skillNames(claudeSkillsRoot);
   const all = [...shared, ...claudeOnly];
 
-  assert.equal(shared.length, 21);
+  assert.equal(shared.length, 22);
+  assert.ok(shared.includes('handle-host-boundaries'));
   assert.deepEqual(claudeOnly, ['skillquiver-doctor']);
-  assert.equal(new Set(all).size, 22);
+  assert.equal(new Set(all).size, 23);
 
   for (const [skillsRoot, names] of [
     [sharedSkillsRoot, shared],
@@ -117,9 +118,9 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.equal(claudePlugin.name, 'skillquiver');
   assert.equal(claudePlugin.version, codexPlugin.version);
   assert.deepEqual(claudePlugin.skills, ['./skills', './skills-claude']);
-  assert.match(codexPlugin.description, /Twenty-one portable Agent Skills/);
-  assert.match(codexPlugin.interface.longDescription, /21 portable Agent Skills/);
-  assert.match(claudePlugin.description, /Twenty-one Agent Skills shared/);
+  assert.match(codexPlugin.description, /Twenty-two portable Agent Skills/);
+  assert.match(codexPlugin.interface.longDescription, /22 portable Agent Skills/);
+  assert.match(claudePlugin.description, /Twenty-two Agent Skills shared/);
 
   assert.equal(codexMarketplace.name, 'skillquiver');
   assert.equal(codexMarketplace.interface.displayName, 'Skillquiver');
@@ -132,26 +133,24 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   });
 
   assert.equal(claudeMarketplace.name, 'skillquiver');
-  assert.match(claudeMarketplace.description, /Twenty-one Agent Skills shared/);
+  assert.match(claudeMarketplace.description, /Twenty-two Agent Skills shared/);
   assert.equal(claudeMarketplace.plugins.length, 1);
   assert.equal(claudeMarketplace.plugins[0].name, 'skillquiver');
   assert.equal(claudeMarketplace.plugins[0].source, './');
-  assert.match(claudeMarketplace.plugins[0].description, /Twenty-one shared Agent Skills/);
+  assert.match(claudeMarketplace.plugins[0].description, /Twenty-two shared Agent Skills/);
 });
 
 test('Codex manifest declares unavailable Claude capabilities safely', () => {
   const codexPlugin = readJson('.codex-plugin/plugin.json');
   const boundary = `${codexPlugin.description} ${codexPlugin.interface.longDescription}`;
   const routing = fs.readFileSync(
-    path.join(sharedSkillsRoot, 'solve-efficiently', 'SKILL.md'), 'utf8');
+    path.join(sharedSkillsRoot, 'handle-host-boundaries', 'SKILL.md'), 'utf8');
 
   assert.match(boundary, /Skillquiver Doctor/);
-  assert.match(boundary, /Claude-only tools are unavailable in Codex/);
-  assert.match(boundary, /never alter Codex as a substitute/);
-  assert.match(boundary, /plain chat/);
-  assert.match(routing, /Host capability boundary/);
-  assert.match(routing, /inspect or modify the other host's paths/);
-  assert.match(routing, /ask the question directly in plain chat/);
+  assert.match(routing, /Skillquiver Doctor/);
+  assert.match(routing, /Claude Code-only/);
+  assert.match(routing, /Do not inspect or modify another host's configuration/);
+  assert.match(routing, /ask it directly in plain chat/);
 });
 
 test('planning and review instructions preserve scope and findings', () => {
@@ -162,6 +161,9 @@ test('planning and review instructions preserve scope and findings', () => {
 
   assert.match(planning, /Creating a plan file is a workspace change/);
   assert.match(planning, /Never silently choose them/);
+  assert.match(planning, /Bounded inline planning/);
+  assert.match(planning, /Do not inspect the\s+workspace/);
+  assert.match(planning, /at most four implementation tasks/);
   assert.match(review, /standalone bounded read-only code review directly/);
   assert.match(review, /must\s+never erase an earlier verified issue/);
 });
@@ -171,8 +173,9 @@ test('small static UI work has a bounded honest verification path', () => {
     path.join(sharedSkillsRoot, 'design-ui', 'SKILL.md'), 'utf8');
 
   assert.match(designUi, /Bounded path for a small static page/);
-  assert.match(designUi, /within 90 seconds/);
-  assert.match(designUi, /never as\s+rendered proof/);
+  assert.match(designUi, /Never delete the target file/);
+  assert.match(designUi, /capture-static-page\.cjs/);
+  assert.match(designUi, /If it fails, stop/);
 });
 
 test('README and website list every skill with matching compatibility', () => {

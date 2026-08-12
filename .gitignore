@@ -6,6 +6,8 @@ Thumbs.db
 .plugin-eval/*.generated.json
 .plugin-eval/*-usage*.jsonl
 .plugin-eval/*-result*.json
+.plugin-eval/*-report.json
 .plugin-eval/*-analysis.json
+.plugin-eval/codex-core/
 benchmarks/bin/
 benchmarks/obj/
