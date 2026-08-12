@@ -281,11 +281,11 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The OpenAI Platform account can open the enabled `Create plugin` > `Skills only` upload flow. The official submission documentation states that creating drafts requires `Apps Management: Write`; this was observed in the Personal organization on 2026-08-12.
 - [x] The owner explicitly selected `Drizzy07x` as the public publisher and prohibited publishing an individual legal name. The available Individual identity is intentionally not selected or stored in this repository.
 - [ ] A verified Business identity named `Drizzy07x` is available and selected, and the public publisher name and URLs match it.
-- [ ] The remote annotated `v2.0.6` tag resolves to the reviewed final release commit. The earlier release tags remain unchanged.
+- [x] The remote annotated `v2.0.6` tag resolves to the reviewed final release commit. The earlier release tags remain unchanged.
 - [x] The local 2.0.6 upload archive passed the bundled validator after extraction, contained the same files with zero content differences, and has a recorded SHA-256.
 - [x] The generated 2.0.6 Core passed the bundled `plugin-creator` validator.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
-- [ ] Focused 2.0.6 release tests pass locally, and the exact branch and tag pass clean GitHub Actions checks.
+- [x] Focused 2.0.6 release tests pass locally, and the exact branch and tag pass clean GitHub Actions checks.
 - [ ] The reviewed 2.0.6 candidate is merged into `main` and its required checks pass.
 - [x] A fresh isolated Codex marketplace smoke installed 2.0.6 from the exact archive, exposed exactly six skills, and excluded `skillquiver-doctor`.
 - [x] The website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` as the public publisher.
@@ -305,7 +305,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Apps Management evidence | Enabled skills-only upload dialog |
 | GitHub pull request | Pending |
 | Main merge commit | Pending |
-| Remote tag | `v2.0.6` pending |
+| Remote tag | `v2.0.6` -> `10bdb634a698ef4368a67e1c99306063d6faffce` |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.6.zip`; 66,859 bytes; 21 files |
 | Upload archive SHA-256 | `6CC27F4E53CC522BA902A4B1838D0EBBD29AD7BB5C2F8FF30908E90FF2296737` |
 | Final bundle commit | `10bdb634a698ef4368a67e1c99306063d6faffce` |

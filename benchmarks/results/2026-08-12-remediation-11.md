@@ -161,9 +161,11 @@ affected server test file passed 3/3. The full suite was not rerun because the
 repository policy permits it only once at the final gate.
 
 The clean Windows worktree at the corrected source commit rebuilt the exact
-same 66,859-byte archive and SHA-256 recorded above. Branch and tag workflows,
-pull request review, merge, and post-merge checks will be recorded here after
-they run. No unrun check is treated as complete.
+same 66,859-byte archive and SHA-256 recorded above. Branch workflow
+`31602597991` and tag workflow `31602600075` both passed the repository suite
+with 30/30 tests, benchmark wrapper checks, and SDD script checks. Pull request
+review, merge, and post-merge checks will be recorded here after they run. No
+unrun check is treated as complete.
 
 ## Remaining gates
 
