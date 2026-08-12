@@ -281,16 +281,16 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The owner explicitly selected `Drizzy07x` as the public publisher and prohibited publishing an individual legal name. The available Individual identity is intentionally not selected or stored in this repository.
 - [ ] A verified Business identity named `Drizzy07x` is available and selected, and the public publisher name and URLs match it.
 - [ ] The remote annotated `v2.0.5` tag resolves to the reviewed final release commit. The earlier release tags remain unchanged.
-- [ ] The local 2.0.5 upload archive passed the bundled validator after extraction, contained the same files with zero content differences, and has a recorded SHA-256.
-- [ ] The generated 2.0.5 Core passed the bundled `plugin-creator` validator.
+- [x] The local 2.0.5 upload archive passed the bundled validator after extraction, contained the same 21 files with zero content differences, and has SHA-256 `AF78E61E2D3D408A67BB87760D957A1D4063B3B7728DB9E4758771A830038649`.
+- [x] The generated 2.0.5 Core passed the bundled `plugin-creator` validator.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
 - [ ] Focused 2.0.5 release tests pass locally, and the exact branch and tag pass the clean GitHub Actions checks.
 - [ ] The reviewed 2.0.5 candidate is merged into `main` and its required checks pass.
-- [ ] A fresh isolated Codex marketplace smoke installed 2.0.5, exposed exactly six skills, and excluded `skillquiver-doctor`.
+- [x] A fresh isolated Codex marketplace smoke installed 2.0.5 from the exact archive, exposed exactly six skills, and excluded `skillquiver-doctor`.
 - [x] The website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` as the public publisher.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
-- [ ] All five positive and three negative cases pass against the exact final 2.0.5 bundle, with complete checklist and usage evidence.
-- [ ] Listing copy, capabilities, authentication statement, availability, publisher, and release notes match the generated 2.0.5 bundle and the final directory metadata limits.
+- [x] All five positive and three negative cases pass against the exact final 2.0.5 bundle, with 29/29 checklist items and 8/8 usage samples.
+- [x] Listing copy, capabilities, authentication statement, availability, publisher, and release notes match the generated 2.0.5 bundle and the final directory metadata limits.
 - [ ] Policy, data-practice, rights, and content attestations were read and answered truthfully in the submission portal.
 - [ ] `Submit for Review` was selected and the resulting review status or submission ID was recorded below.
 
@@ -305,9 +305,9 @@ Complete this record with evidence immediately before submission. Do not mark an
 | GitHub pull request | Pending |
 | Main merge commit | Pending |
 | Remote tag | `v2.0.5` pending |
-| Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.5.zip` pending validation |
-| Upload archive SHA-256 | Pending |
-| Final bundle commit | Pending |
+| Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.5.zip` validated; 66,965 bytes; 21 files |
+| Upload archive SHA-256 | `AF78E61E2D3D408A67BB87760D957A1D4063B3B7728DB9E4758771A830038649` |
+| Final bundle commit | `e762d8fa10c2322c0583dac8705d484bd3a90493` |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 
@@ -320,5 +320,6 @@ archive and delta gate is recorded in
 `benchmarks/results/2026-08-12-remediation-7.md`. The exact 2.0.3 release gate
 is recorded in `benchmarks/results/2026-08-12-remediation-8.md`; the complete
 2.0.4 exact-tag mismatch is recorded in
-`benchmarks/results/2026-08-12-remediation-9.md`; the 2.0.5 replacement gate
-will be recorded in `benchmarks/results/2026-08-12-remediation-10.md`.
+`benchmarks/results/2026-08-12-remediation-9.md`; the complete 2.0.5 exact
+release gate is recorded in
+`benchmarks/results/2026-08-12-remediation-10.md`.
