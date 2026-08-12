@@ -48,6 +48,18 @@ test('destructive boundary requires a narrow authorized target', () => {
   assert.match(boundary, /Refuse before running any command/);
 });
 
+test('Codex Doctor boundary forbids discovery and cleanup', () => {
+  const boundary = fs.readFileSync(
+    path.join(repoRoot, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8');
+
+  assert.match(boundary,
+    /description: Responds to skillquiver-doctor requests in Codex without searching or running commands/);
+  assert.match(boundary, /answer from this declared boundary only/);
+  assert.match(boundary, /including `.claude`, `skills-claude`, and `PATH`/);
+  assert.match(boundary, /Never offer cleanup or removal as a fallback/);
+  assert.match(boundary, /Read-only\s+fallback: I can inspect Codex's own installed skills and configuration without\s+changing anything/);
+});
+
 test('read-only diagnosis forbids scratch log files', () => {
   const diagnosis = fs.readFileSync(
     path.join(repoRoot, 'skills', 'diagnose-systematically', 'SKILL.md'), 'utf8');

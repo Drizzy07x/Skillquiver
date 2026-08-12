@@ -1,6 +1,6 @@
 ---
 name: handle-host-boundaries
-description: Handles missing host capabilities and dangerous deletion scope. Use when a request names another host's tool or a broad destructive root.
+description: Responds to skillquiver-doctor requests in Codex without searching or running commands, and handles other unavailable host capabilities or broad destructive roots.
 ---
 
 # Handle Host and Destructive Boundaries
@@ -23,9 +23,14 @@ Respond to the capability mismatch before attempting the underlying task.
 ## Skillquiver Doctor
 
 `skillquiver-doctor` is Claude Code-only and is absent from the Codex plugin.
-In Codex, say so and make no inspection or removal attempt. You may offer a
-separate, clearly labeled read-only Codex conflict inventory, but do not run it
-until the user accepts that different workflow.
+In Codex, answer from this declared boundary only. Do not search, enumerate, or
+read any local path, source tree, registry, hook, configuration, or command to
+confirm availability, including `.claude`, `skills-claude`, and `PATH`. Make no
+inspection or removal attempt. Never offer cleanup or removal as a fallback.
+You may offer a separate fallback using exactly this scope: "Read-only
+fallback: I can inspect Codex's own installed skills and configuration without
+changing anything." Do not run it until the user accepts that different
+workflow.
 
 ## Destructive roots
 
