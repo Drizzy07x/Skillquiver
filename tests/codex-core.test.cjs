@@ -44,7 +44,7 @@ test('Codex Core build contains only selected skills and a consistent manifest',
 
   assert.deepEqual(builtSkills, [...result.skills].sort());
   assert.equal(manifest.name, 'skillquiver');
-  assert.equal(manifest.version, '2.0.3');
+  assert.equal(manifest.version, '2.0.4');
   assert.equal(manifest.skills, './skills/');
   assert.match(manifest.description, /6 portable Agent Skills/);
   assert.equal(manifest.interface.displayName, 'Skillquiver Core');
@@ -55,6 +55,7 @@ test('Codex Core build contains only selected skills and a consistent manifest',
   assert.ok(manifest.interface.shortDescription.length <= 30);
   assert.ok(manifest.interface.longDescription.length <= 4_000);
   assert.equal(manifest.author.name, manifest.interface.developerName);
+  assert.equal(manifest.author.name, 'Drizzy07x');
   assert.ok(manifest.interface.capabilities.length <= 20);
   assert.ok(manifest.interface.capabilities.every(value =>
     value.length <= 120 && !/[\r\n]/.test(value)
