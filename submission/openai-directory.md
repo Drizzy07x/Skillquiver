@@ -272,12 +272,15 @@ from an exact, distinct commit.
 
 Complete this record with evidence immediately before submission. Do not mark an item complete from assumption.
 
-- [ ] The OpenAI Platform account has `Apps Management: Write` permission.
-- [ ] The verified developer or business identity shown in Platform is `Drizzy07x`.
-- [ ] The `v2.0.1` tag resolves to the reviewed commit and the uploaded bundle was built from that exact tag.
+- [x] The OpenAI Platform account can open the enabled `Create plugin` > `Skills only` upload flow. The official submission documentation states that creating drafts requires `Apps Management: Write`; this was observed in the Personal organization on 2026-08-12.
+- [x] The submission form exposes a verified Individual developer identity. Its legal name is intentionally not stored in this public repository.
+- [ ] The public publisher name and URLs match the selected verified identity. The current listing uses `Drizzy07x`; the owner must choose whether to publish under the verified individual name or a separately verified business identity before submission.
+- [x] The remote `v2.0.1` tag resolves to reviewed commit `70fc23391ae1585c78ca8fd17519af1207ee5512`.
+- [x] The local upload archive was rebuilt from that commit, passed the bundled validator after extraction, contained the same 21 files with zero content differences, and has SHA-256 `AADCC501D2A597E5FB0BEF15CD369A8F88363892003436A2BDE81BF53B382B23`.
 - [x] The generated Core passed the bundled `plugin-creator` validator on 2026-08-12.
-- [ ] The uploaded bundle passes the submission portal's automated policy and security scan.
+- [ ] The portal accepted that exact archive and its automated policy and security scan passed.
 - [x] The focused and full repository test commands pass. The final `bash tests/run.sh` run passed 26/26 Node tests plus the benchmark wrapper and SDD script stages on 2026-08-12.
+- [x] GitHub PR #3 is open as a draft, reports a clean merge state, and all three recorded `test` checks passed.
 - [x] A fresh isolated Codex marketplace smoke exposed exactly six skills and not `skillquiver-doctor` on 2026-08-12.
 - [x] The website, support, privacy policy, and terms URLs returned HTTP 200 on 2026-08-12.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
@@ -292,7 +295,13 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Submission ID | Pending |
 | Review status | Pending |
 | Submitted by | Pending |
-| Final bundle commit | Pending |
+| Developer identity | Verified Individual available; legal name intentionally omitted |
+| Apps Management evidence | Enabled skills-only upload dialog |
+| GitHub pull request | https://github.com/Drizzy07x/Skillquiver/pull/3 |
+| Remote tag | `v2.0.1` -> `70fc23391ae1585c78ca8fd17519af1207ee5512` |
+| Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.1.zip` |
+| Upload archive SHA-256 | `AADCC501D2A597E5FB0BEF15CD369A8F88363892003436A2BDE81BF53B382B23` |
+| Final bundle commit | `70fc23391ae1585c78ca8fd17519af1207ee5512` |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 
