@@ -283,9 +283,9 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The generated 2.0.4 Core passed the bundled `plugin-creator` validator.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
 - [x] Focused 2.0.4 release tests pass locally, and the exact branch and tag each pass 29/29 Node tests plus the Bash wrapper and SDD script checks in clean GitHub Actions runs.
-- [ ] The reviewed 2.0.4 candidate is merged into `main` and its required checks pass.
+- [x] The reviewed 2.0.4 candidate is merged into `main` and its required checks pass.
 - [x] A fresh isolated Codex marketplace smoke installed 2.0.4, exposed exactly six skills, and excluded `skillquiver-doctor`.
-- [ ] GitHub Pages deployed the 2.0.4 publisher update; the website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` as the public publisher.
+- [x] GitHub Pages deployed the 2.0.4 publisher update; the website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` as the public publisher.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
 - [x] All five positive and three negative cases pass against the exact final 2.0.4 bundle, with complete checklist and usage evidence.
 - [x] Listing copy, capabilities, authentication statement, availability, publisher, and release notes match the generated 2.0.4 bundle and the final directory metadata limits.
@@ -301,7 +301,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Developer identity | `Drizzy07x` Business verification pending; Individual identity intentionally not selected |
 | Apps Management evidence | Enabled skills-only upload dialog |
 | GitHub pull request | https://github.com/Drizzy07x/Skillquiver/pull/5 |
-| Main merge commit | Pending |
+| Main merge commit | `9bffad832d089a4183c76a22f5431b46b809c4fe` |
 | Remote tag | `v2.0.4` -> `618adfa237ec6bc5f235d1988126cefdd5a8637c` |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.4.zip`, 65,441 bytes, validated |
 | Upload archive SHA-256 | `44D9910D3C0A6F3B8DE98B0703E754C55318C1EC1DF36FA8ECD77F070D6D6902` |
