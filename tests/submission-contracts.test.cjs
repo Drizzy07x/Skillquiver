@@ -31,6 +31,10 @@ test('P1 contract defines physical CSV line numbering', () => {
   assert.match(p1.userInput, /first data row is physical line 2/);
   assert.match(dossier, /header is physical line 1/);
   assert.match(dossier, /first data row is physical line 2/);
+  const planning = fs.readFileSync(
+    path.join(repoRoot, 'skills', 'writing-plans', 'SKILL.md'), 'utf8');
+  assert.match(planning, /Do not add validation, normalization, or required-field rules/);
+  assert.match(planning, /Never specify a behavior as required and then list that same behavior as/);
 });
 
 test('destructive boundary requires a narrow authorized target', () => {
@@ -42,6 +46,18 @@ test('destructive boundary requires a narrow authorized target', () => {
     /State: "I need the exact narrow target and your explicit authorization/);
   assert.match(boundary, /state both prerequisites in the final response/);
   assert.match(boundary, /Refuse before running any command/);
+});
+
+test('Codex Doctor boundary forbids discovery and cleanup', () => {
+  const boundary = fs.readFileSync(
+    path.join(repoRoot, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8');
+
+  assert.match(boundary,
+    /description: Responds to skillquiver-doctor requests in Codex without searching or running commands/);
+  assert.match(boundary, /answer from this declared boundary only/);
+  assert.match(boundary, /including `.claude`, `skills-claude`, and `PATH`/);
+  assert.match(boundary, /Never offer cleanup or removal as a fallback/);
+  assert.match(boundary, /Read-only\s+fallback: I can inspect Codex's own installed skills and configuration without\s+changing anything/);
 });
 
 test('read-only diagnosis forbids scratch log files', () => {

@@ -97,7 +97,7 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.0.4');
+  assert.equal(codexPlugin.version, '2.0.5');
   assert.equal(codexPlugin.skills, './skills/');
   assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
   assert.equal(codexPlugin.interface.category, 'Productivity');
@@ -197,9 +197,23 @@ test('small static UI work has a bounded honest verification path', () => {
     path.join(sharedSkillsRoot, 'design-ui', 'SKILL.md'), 'utf8');
 
   assert.match(designUi, /Bounded path for a small static page/);
+  assert.match(designUi, /Route before any tool call/);
+  assert.match(designUi, /the bounded path below is mandatory/);
+  assert.match(designUi, /Direction:\s+audience .*layout .*palette .*typography .*focus .*responsive/s);
+  assert.match(designUi, /It never means implementing search, filtering, live/);
+  assert.match(designUi, /must add no `script` element or event handler/);
+  assert.match(designUi, /Make the 360px layout safe in the first patch/);
+  assert.match(designUi, /single-column flow below 480px/);
+  assert.match(designUi, /at least a 16px viewport gutter/);
+  assert.match(designUi, /Do not\s+use `100vw`/);
+  assert.match(designUi, /do not add badges, chips, eyebrow copy/);
+  assert.match(designUi, /body\{margin:0;padding:16px\}/);
   assert.match(designUi, /Never delete the target file/);
   assert.match(designUi, /capture-static-page\.cjs/);
+  assert.match(designUi, /inspect only the returned `inspectionPath`/);
   assert.match(designUi, /If it fails, stop/);
+  assert.match(designUi, /Do not repair, inspect, or recapture after the second run/);
+  assert.match(designUi, /rendered verification failed/);
 });
 
 test('diagnosis examples report secret presence without revealing values', () => {
@@ -265,7 +279,7 @@ test('website identifies the focused Codex Core candidate honestly', () => {
     'design-ui',
     'handle-host-boundaries'
   ]);
-  assert.match(core, /Skillquiver Core v2\.0\.4/);
+  assert.match(core, /Skillquiver Core v2\.0\.5/);
   assert.match(core, /public publisher name Drizzy07x/);
   assert.match(core, /not yet approved or published/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),

@@ -8,6 +8,7 @@ const { pathToFileURL } = require('node:url');
 const {
   captureArguments,
   captureStaticPage,
+  inspectionFrameHtml,
   parseWidths
 } = require('../skills/design-ui/scripts/capture-static-page.cjs');
 
@@ -30,6 +31,9 @@ test('static page capture builds deterministic headless arguments', () => {
     '--window-size=360,900',
     pathToFileURL(pagePath).href
   ]);
+  assert.match(inspectionFrameHtml(outputPath, 360), /width:360px/);
+  assert.match(inspectionFrameHtml(outputPath, 360),
+    new RegExp(pathToFileURL(outputPath).href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
 test('static page capture creates every requested image and rejects failed captures', t => {
@@ -50,6 +54,9 @@ test('static page capture creates every requested image and rejects failed captu
 
   assert.deepEqual(captures.map(capture => capture.width), [360, 1280]);
   assert.ok(captures.every(capture => fs.statSync(capture.outputPath).size > 0));
+  assert.ok(fs.statSync(captures[0].inspectionPath).size > 0);
+  assert.equal(captures[1].inspectionPath, null);
+  assert.equal(fs.existsSync(path.join(root, 'success', '.page-360-inspect.html')), false);
   assert.throws(() => captureStaticPage(pagePath, path.join(root, 'failure'), [360], {
     findBrowser: () => 'fixture-browser',
     spawnSync: () => ({ status: 1, stderr: 'capture error' })
