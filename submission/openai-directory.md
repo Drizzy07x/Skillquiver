@@ -272,12 +272,12 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The OpenAI Platform account can open the enabled `Create plugin` > `Skills only` upload flow. The official submission documentation states that creating drafts requires `Apps Management: Write`; this was observed in the Personal organization on 2026-08-12.
 - [x] The submission form exposes a verified Individual developer identity. Its legal name is intentionally not stored in this public repository.
 - [ ] The public publisher name and URLs match the selected verified identity. The current listing uses `Drizzy07x`; the owner must choose whether to publish under the verified individual name or a separately verified business identity before submission.
-- [ ] The remote `v2.0.3` tag resolves to the reviewed release commit. The earlier `v2.0.1` and `v2.0.2` tags remain unchanged.
+- [x] The remote annotated `v2.0.3` tag resolves to reviewed release commit `bcdd79e25d4138ff0f42dc907f35f0a8b538b9c2`. The earlier `v2.0.1` and `v2.0.2` tags remain unchanged.
 - [x] The local 2.0.3 upload archive passed the bundled validator after extraction, contained the same 21 files with zero content differences, and has SHA-256 `A990927D00317B15DD2CE640BBC21AFE55F0FB27717EF72ECB6A9EEA8534399E`.
 - [x] The generated 2.0.3 Core passed the bundled `plugin-creator` validator under WSL Python with PyYAML 6.0.1.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
-- [ ] The focused release tests and the final full repository test command pass for 2.0.3.
-- [ ] GitHub PR #3 contains the 2.0.3 candidate, reports a clean merge state, and its checks pass.
+- [x] Focused release tests pass locally, including the Windows wrapper/configuration test. Three clean GitHub Actions runs for commit `bcdd79e` and tag `v2.0.3` each passed `bash tests/run.sh` with 28/28 Node tests plus the benchmark wrapper and SDD stages.
+- [x] GitHub PR #3 contains the 2.0.3 candidate, reports `MERGEABLE` / `CLEAN`, and all recorded `test` checks plus CodeRabbit pass.
 - [x] A fresh isolated Codex marketplace smoke installed 2.0.3, exposed exactly six skills, and excluded `skillquiver-doctor`.
 - [x] The website, support, privacy policy, and terms URLs returned HTTP 200 on 2026-08-12.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
@@ -295,10 +295,10 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Developer identity | Verified Individual available; legal name intentionally omitted |
 | Apps Management evidence | Enabled skills-only upload dialog |
 | GitHub pull request | https://github.com/Drizzy07x/Skillquiver/pull/3 |
-| Remote tag | Pending `v2.0.3` |
+| Remote tag | `v2.0.3` -> `bcdd79e25d4138ff0f42dc907f35f0a8b538b9c2` |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.3.zip` |
 | Upload archive SHA-256 | `A990927D00317B15DD2CE640BBC21AFE55F0FB27717EF72ECB6A9EEA8534399E` |
-| Final bundle commit | Pending |
+| Final bundle commit | `bcdd79e25d4138ff0f42dc907f35f0a8b538b9c2` |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 

@@ -169,8 +169,24 @@ pass 3
 fail 0
 ```
 
-The clean full-suite result remains pending from the pull-request CI run; the
-failed local attempt is not reported as a full-suite pass.
+The failed local attempt is not reported as a full-suite pass. Three clean
+GitHub Actions runs for release commit
+`bcdd79e25d4138ff0f42dc907f35f0a8b538b9c2` and annotated tag `v2.0.3` each
+passed the full command:
+
+```text
+$ bash tests/run.sh
+tests 28
+pass 28
+fail 0
+benchmark wrapper tests passed
+SDD script tests passed
+Windows release tool tests skipped (pwsh.exe unavailable)
+```
+
+The Windows release tools were verified separately in the local focused
+PowerShell run recorded above. GitHub Actions run IDs: `31582662100`,
+`31582664703`, and `31582724748`.
 
 ## Remaining external gates
 
