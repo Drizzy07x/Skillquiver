@@ -204,6 +204,10 @@ test('small static UI work has a bounded honest verification path', () => {
   assert.match(designUi, /must add no `script` element or event handler/);
   assert.match(designUi, /Make the 360px layout safe in the first patch/);
   assert.match(designUi, /single-column flow below 480px/);
+  assert.match(designUi, /at least a 16px viewport gutter/);
+  assert.match(designUi, /Do not\s+use `100vw`/);
+  assert.match(designUi, /do not add badges, chips, eyebrow copy/);
+  assert.match(designUi, /body\{margin:0;padding:16px\}/);
   assert.match(designUi, /Never delete the target file/);
   assert.match(designUi, /capture-static-page\.cjs/);
   assert.match(designUi, /inspect only the returned `inspectionPath`/);

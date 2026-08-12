@@ -45,7 +45,15 @@ interaction, the finished file must add no `script` element or event handler.
    Make the 360px layout safe in the first patch: use border-box sizing, give
    grid or flex children `min-width: 0`, keep controls within `max-width: 100%`,
    and use a single-column flow below 480px. Put multi-column layout behind a
-   `min-width` media query.
+   `min-width` media query. At widths below 480px, use normal block flow with
+   at least a 16px viewport gutter and borders instead of outer shadows. Do not
+   use `100vw`, fixed or absolute positioning, transforms, decorative pseudo
+   elements, grids, or flex containers there. Add only the visible label and,
+   if needed, one short helper line; do not add badges, chips, eyebrow copy, or
+   other content. Start from these shell invariants and keep their effect:
+   `*,*::before,*::after{box-sizing:border-box}`, `body{margin:0;padding:16px}`,
+   `main{width:100%;max-width:72rem;margin-inline:auto}`, and
+   `input{display:block;width:100%;min-width:0;max-width:100%}`.
 4. Run `node <this-skill-dir>/scripts/capture-static-page.cjs <page.html>
    <output-dir> <width...>` with every required width. It uses an already
    installed Chrome, Chromium, or Edge and installs nothing. Inspect each saved
