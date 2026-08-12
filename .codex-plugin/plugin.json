@@ -1,7 +1,7 @@
 {
   "name": "skillquiver",
   "version": "2.0.0",
-  "description": "Twenty-two portable Agent Skills for planning, implementation, review, verification, UI, and system work.",
+  "description": "Twenty-one portable Agent Skills for planning, implementation, review, verification, UI, and system work.",
   "author": {
     "name": "Drizzy07x",
     "url": "https://github.com/Drizzy07x"
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Skillquiver",
     "shortDescription": "Practical Agent Skills for software work",
-    "longDescription": "A curated collection of 22 portable Agent Skills for planning, implementation, debugging, review, verification, UI work, and system maintenance in Claude Code and Codex.",
+    "longDescription": "A curated collection of 21 portable Agent Skills for planning, implementation, debugging, review, verification, and UI work in Claude Code and Codex.",
     "developerName": "Drizzy07x",
     "category": "Productivity",
     "capabilities": [

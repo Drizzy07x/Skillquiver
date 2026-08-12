@@ -117,6 +117,9 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.equal(claudePlugin.name, 'skillquiver');
   assert.equal(claudePlugin.version, codexPlugin.version);
   assert.deepEqual(claudePlugin.skills, ['./skills', './skills-claude']);
+  assert.match(codexPlugin.description, /Twenty-one portable Agent Skills/);
+  assert.match(codexPlugin.interface.longDescription, /21 portable Agent Skills/);
+  assert.match(claudePlugin.description, /Twenty-one Agent Skills shared/);
 
   assert.equal(codexMarketplace.name, 'skillquiver');
   assert.equal(codexMarketplace.interface.displayName, 'Skillquiver');
@@ -129,9 +132,11 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   });
 
   assert.equal(claudeMarketplace.name, 'skillquiver');
+  assert.match(claudeMarketplace.description, /Twenty-one Agent Skills shared/);
   assert.equal(claudeMarketplace.plugins.length, 1);
   assert.equal(claudeMarketplace.plugins[0].name, 'skillquiver');
   assert.equal(claudeMarketplace.plugins[0].source, './');
+  assert.match(claudeMarketplace.plugins[0].description, /Twenty-one shared Agent Skills/);
 });
 
 test('README and website list every skill with matching compatibility', () => {

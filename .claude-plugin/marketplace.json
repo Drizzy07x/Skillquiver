@@ -1,12 +1,12 @@
 {
   "name": "skillquiver",
-  "description": "Twenty-two Agent Skills shared by Claude Code and Codex, plus Skillquiver Doctor for Claude Code",
+  "description": "Twenty-one Agent Skills shared by Claude Code and Codex, plus Skillquiver Doctor for Claude Code",
   "owner": { "name": "Drizzy07x", "url": "https://github.com/Drizzy07x" },
   "plugins": [
     {
       "name": "skillquiver",
       "source": "./",
-      "description": "Twenty-two shared Agent Skills plus Skillquiver Doctor for Claude Code"
+      "description": "Twenty-one shared Agent Skills plus Skillquiver Doctor for Claude Code"
     }
   ]
 }

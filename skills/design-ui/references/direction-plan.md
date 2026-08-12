@@ -140,7 +140,7 @@ Reasons built on the subject's own institutional facts do not transfer, because 
 ### Gates 2–4
 
 2. **Cluster check** — walk the table above. Every match gets a written reason or a replacement. An anti-default reason ("the category does X, so I did the opposite") is not a subject reason: it explains why not X, never why this.
-3. **Free-axis check** — every axis section 1 recorded as free resolves to a stated decision *and* to the kind of reason behind it: brief-pinned, subject-derived, downstream consequence, or bare convention. Bare convention is allowed and must be counted — an axis with no entry at all resolved to a default silently. Radius, ground colour, and iconography are where these hide, and ground is the largest area on the page.
+3. **Free-axis check** — every axis section 1 recorded as free resolves to a stated decision *and* to the kind of reason behind it: brief-pinned, subject-derived, downstream consequence, or bare convention. Bare convention is allowed and must be counted — an axis with no entry at all resolved to a default silently. Radius, ground colour, and iconography are where these hide, and ground is the largest area on the page. Cross-check every bare-convention value against the cluster tells from gate 2; derive or move any value that matches one.
 4. **Concentration check** — test by removal. Remove the signature: the page should lose its identity. Remove each other candidate device: the page should lose detail only. Reclassifying a second device as "part of" the signature is a definitional move that resolves nothing — subordinate it visually or cut it.
 
 Skip the critique only when the brief pins every axis.

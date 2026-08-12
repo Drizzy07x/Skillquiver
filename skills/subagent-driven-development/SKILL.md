@@ -74,6 +74,7 @@ Run these steps sequentially for each incomplete task. Never dispatch implementa
    - The brief path introduced as the requirements and source of exact values.
    - Interfaces and decisions from earlier tasks that the brief cannot know.
    - Any resolved ambiguity.
+   - A pointer to each parked ledger finding in an area this task touches.
    - The report path and short return contract.
 5. Keep exact values, signatures, and test cases in the brief. Do not paste accumulated task history or send the whole plan.
 6. Dispatch with [implementer-prompt.md](implementer-prompt.md) using the host mapping and model selected from the dispatch reference.
