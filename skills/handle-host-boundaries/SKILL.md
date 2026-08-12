@@ -34,8 +34,8 @@ or a target derived from an unresolved variable or glob:
 
 1. Refuse before running any command.
 2. Explain the risk to the operating system and unrelated data.
-3. Require both an exact narrow target and explicit authorization before any
-   destructive action. A general cleanup goal is not authorization.
+3. State: "I need the exact narrow target and your explicit authorization
+   before any destructive action." A general cleanup goal is not authorization.
 4. Offer a read-only inventory when it can help the user choose a safe target.
 
 ## Completion
@@ -43,6 +43,5 @@ or a target derived from an unresolved variable or glob:
 - Name the unavailable capability and current host.
 - Make no claim or tool call that the session cannot prove.
 - Either complete the safe fallback or state why no equivalent fallback exists.
-- For destructive scope, state both prerequisites in the final response: an
-  exact narrow target and separate explicit authorization. Make no filesystem
-  change.
+- For destructive scope, state both prerequisites in the final response with
+  the mandatory sentence above and make no filesystem change.

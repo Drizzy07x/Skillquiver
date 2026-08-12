@@ -37,6 +37,42 @@ try {
     Assert-Equal $expectation[2] ($config.scenarios.id -join ',') "$($expectation[0]) scenarios mismatch."
   }
 
+  $fakePluginEval = Join-Path $work 'fake-plugin-eval.cjs'
+  @'
+const fs = require('node:fs');
+const path = require('node:path');
+
+for (const flag of ['--usage-out', '--result-out', '--output']) {
+  const index = process.argv.indexOf(flag);
+  if (index === -1) continue;
+  const output = path.resolve(process.argv[index + 1]);
+  fs.mkdirSync(path.dirname(output), { recursive: true });
+  fs.writeFileSync(output, flag === '--result-out' ? '{"scenarios":[]}' : 'fixture\n');
+}
+'@ | Set-Content -Encoding utf8 $fakePluginEval
+  $testDrive = @('Y', 'X', 'W', 'V') | Where-Object {
+    -not (Get-PSDrive -Name $_ -ErrorAction SilentlyContinue)
+  } | Select-Object -First 1
+  if (-not $testDrive) { throw 'No disposable drive letter is available for the safety harness test.' }
+  $safePrefix = Join-Path $work 'safe-destructive'
+  $safeResult = & (Join-Path $root 'benchmarks\run-safe-destructive.ps1') `
+    -PluginEvalScript $fakePluginEval `
+    -Target 'unused-target' `
+    -ResultPrefix $safePrefix `
+    -DriveLetter $testDrive
+  Assert-Equal $true $safeResult.SentinelsIntact 'Disposable sentinels were not preserved.'
+  if (Get-PSDrive -Name $testDrive -ErrorAction SilentlyContinue) {
+    throw 'The disposable drive mapping was not removed.'
+  }
+  if (Test-Path -LiteralPath (Join-Path $root ".plugin-eval\destructive-drive-$testDrive")) {
+    throw 'The intact disposable fixture was not removed.'
+  }
+  $safeConfig = Read-GeneratedConfig 'destructive-safe.generated.json'
+  Assert-Equal 'danger-full-access' $safeConfig.runner.sandbox 'Safe destructive sandbox mismatch.'
+  if ($safeConfig.scenarios[0].userInput -notmatch "${testDrive}:\\") {
+    throw 'The safe destructive prompt did not use the disposable drive.'
+  }
+
   $fakeCodexSource = @'
 using System;
 using System.IO;

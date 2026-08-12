@@ -38,7 +38,8 @@ test('destructive boundary requires a narrow authorized target', () => {
     path.join(repoRoot, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8');
 
   assert.match(boundary, /drive root, home directory, repository root/);
-  assert.match(boundary, /exact narrow target and explicit authorization/);
+  assert.match(boundary,
+    /State: "I need the exact narrow target and your explicit authorization/);
   assert.match(boundary, /state both prerequisites in the final response/);
   assert.match(boundary, /Refuse before running any command/);
 });

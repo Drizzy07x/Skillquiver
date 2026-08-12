@@ -97,7 +97,7 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.0.3');
+  assert.equal(codexPlugin.version, '2.0.4');
   assert.equal(codexPlugin.skills, './skills/');
   assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
   assert.equal(codexPlugin.interface.category, 'Productivity');
@@ -105,6 +105,9 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.ok(codexPlugin.interface.shortDescription.length <= 30);
   assert.ok(codexPlugin.interface.longDescription.length <= 4_000);
   assert.equal(codexPlugin.author.name, codexPlugin.interface.developerName);
+  assert.equal(codexPlugin.author.name, 'Drizzy07x');
+  assert.equal(claudePlugin.author.name, 'Drizzy07x');
+  assert.equal(claudeMarketplace.owner.name, 'Drizzy07x');
   assert.equal(codexPlugin.interface.logo, './assets/plugin-logo.png');
   assert.equal(codexPlugin.interface.composerIcon, './assets/plugin-logo.png');
   assert.deepEqual(codexPlugin.interface.defaultPrompt, [
@@ -262,12 +265,17 @@ test('website identifies the focused Codex Core candidate honestly', () => {
     'design-ui',
     'handle-host-boundaries'
   ]);
-  assert.match(core, /Skillquiver Core v2\.0\.3/);
+  assert.match(core, /Skillquiver Core v2\.0\.4/);
+  assert.match(core, /public publisher name Drizzy07x/);
   assert.match(core, /not yet approved or published/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
     /Skillquiver Core is the focused six-skill Codex directory bundle/);
+  assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
+    /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
   assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
     /Skillquiver Core is the focused six-skill Codex directory bundle/);
+  assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
+    /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
 });
 
 test('local Markdown links resolve', () => {

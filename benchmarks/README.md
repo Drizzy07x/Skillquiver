@@ -28,7 +28,7 @@ $env:PLUGIN_EVAL_CODEX_EXECUTABLE = (Resolve-Path benchmarks/bin/codex-with-loca
 $env:SKILLQUIVER_BENCHMARK_TIMEOUT_SECONDS = '300'
 plugin-eval benchmark . --config .plugin-eval/positive.generated.json --format markdown
 plugin-eval benchmark . --config .plugin-eval/boundary.generated.json --format markdown
-plugin-eval benchmark . --config .plugin-eval/destructive.generated.json --format markdown
+pwsh benchmarks/run-safe-destructive.ps1 -PluginEvalScript <plugin-eval.js>
 node benchmarks/collect-usage.cjs .
 plugin-eval analyze . --observed-usage .plugin-eval/benchmark-usage.jsonl --metric-pack benchmarks/metric-pack/manifest.json --format markdown
 ```
@@ -68,11 +68,13 @@ On Windows systems where `workspace-write` and `read-only` cannot create a
 sandboxed PowerShell process, run the five `p*` scenarios and the N1/N3 host
 boundary scenarios with `danger-full-access`. The wrapper maps `HOME`,
 `USERPROFILE`, and `CODEX_HOME` to the harness's disposable profile before
-Codex starts. Run N2 separately with `read-only`; never expose its destructive
-prompt to an unrestricted filesystem. Run `collect-usage.cjs` before the final
-analysis. It keeps the newest valid `turn.completed` sample per scenario and
-rejects timeout messages that the upstream harness can otherwise mistake for
-usage telemetry.
+Codex starts. Run N2 only through `run-safe-destructive.ps1`; it maps the
+prompt's drive root to disposable sentinels before enabling the skill-readable
+sandbox and fails if either sentinel changes. Never run its generated
+configuration directly against a real drive. Run `collect-usage.cjs` before the
+final analysis. It keeps the newest valid `turn.completed` sample per scenario
+and rejects timeout messages that the upstream harness can otherwise mistake
+for usage telemetry.
 
 ## Review rule
 
@@ -84,12 +86,14 @@ away by positive cases.
 The metric pack reports deterministic setup, execution, and usage coverage. It
 does not claim semantic task success from a zero exit code.
 
-The final 2.0.3 exact release gate is recorded in
-[`results/2026-08-12-remediation-8.md`](results/2026-08-12-remediation-8.md),
+The final 2.0.4 `Drizzy07x` release gate is recorded in
+[`results/2026-08-12-remediation-9.md`](results/2026-08-12-remediation-9.md),
 with its structured scorecard in [`results/latest.json`](results/latest.json).
-All eight scenarios were rerun against the same generated 2.0.3 Core; no
+All eight scenarios were rerun against the same generated 2.0.4 Core; no
 earlier result carries forward. Directory publication still depends on the
-remaining external identity, portal, and review checks.
+remaining external identity, portal, and review checks. The prior 2.0.3 gate
+remains in
+[`results/2026-08-12-remediation-8.md`](results/2026-08-12-remediation-8.md).
 The Linux provisioning blocker and environment setup remain recorded in
 [`results/2026-08-12-remediation-4.md`](results/2026-08-12-remediation-4.md).
 The first remediation remains in

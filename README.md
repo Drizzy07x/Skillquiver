@@ -165,6 +165,7 @@ Claude-only badge: ![Claude Code only](https://img.shields.io/badge/Claude%20Cod
 
 ## Support and legal
 
+- Publisher: **Drizzy07x**
 - [Support](https://github.com/Drizzy07x/Skillquiver/issues)
 - [Privacy policy](https://drizzy07x.github.io/Skillquiver/privacy.html)
 - [Terms of use](https://drizzy07x.github.io/Skillquiver/terms.html)
