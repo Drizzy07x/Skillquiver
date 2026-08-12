@@ -156,14 +156,27 @@ test('Codex manifest declares unavailable Claude capabilities safely', () => {
 test('planning and review instructions preserve scope and findings', () => {
   const planning = fs.readFileSync(
     path.join(sharedSkillsRoot, 'writing-plans', 'SKILL.md'), 'utf8');
+  const fullPlanning = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'writing-plans', 'references', 'full-plan.md'), 'utf8');
   const review = fs.readFileSync(
     path.join(sharedSkillsRoot, 'requesting-code-review', 'SKILL.md'), 'utf8');
 
   assert.match(planning, /Creating a plan file is a workspace change/);
   assert.match(planning, /Never silently choose them/);
   assert.match(planning, /Bounded inline planning/);
+  assert.match(planning, /Bounded inline planning takes precedence/);
+  assert.match(planning, /interface without a repository path/);
   assert.match(planning, /Do not inspect the\s+workspace/);
   assert.match(planning, /at most four implementation tasks/);
+  assert.ok(planning.split(/\r?\n/).length < 100);
+  assert.match(planning, /references\/full-plan\.md/);
+  assert.doesNotMatch(planning, /### Task N:/);
+  assert.match(fullPlanning, /Every plan MUST start with this header/);
+  assert.match(fullPlanning, /## No Placeholders/);
+  assert.match(fullPlanning, /## Execution Handoff/);
+  assert.match(fullPlanning, /Commit the independently passing deliverable/);
+  assert.match(fullPlanning, /subagent-driven-development/);
+  assert.match(fullPlanning, /executing-plans/);
   assert.match(review, /standalone bounded read-only code review directly/);
   assert.match(review, /must\s+never erase an earlier verified issue/);
 });

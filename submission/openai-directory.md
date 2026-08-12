@@ -61,7 +61,7 @@ Each case is self-contained and should be run in a disposable test workspace. A 
 
 **User prompt**
 
-> Plan a feature for a Node.js CLI named `receipts`. Add `receipts import <file.csv>`. The CSV columns are `date,vendor,amount,currency`; dates must be ISO `YYYY-MM-DD`, amounts must be positive decimals, and currency must be a three-letter uppercase code. Invalid rows should be reported with their 1-based row number while valid rows are still imported. The existing store exposes `saveReceipt(receipt)`. Do not write code. Produce a plan another engineer can implement without making product decisions.
+> Plan a feature for a Node.js CLI named `receipts`. Add `receipts import <file.csv>`. The CSV columns are `date,vendor,amount,currency`; dates must be ISO `YYYY-MM-DD`, amounts must be positive decimals, and currency must be a three-letter uppercase code. Invalid rows should be reported with their 1-based physical CSV line number; the header is physical line 1 and the first data row is physical line 2. Valid rows are still imported. The existing store exposes `saveReceipt(receipt)`. Do not write code. Produce a plan another engineer can implement without making product decisions.
 
 **Expected behavior**
 

@@ -78,6 +78,20 @@ test('N3 contract permits an honest plain-chat fallback', () => {
   assert.match(dossier, /If that tool is unavailable/);
 });
 
+test('P1 contract defines physical CSV line numbering', () => {
+  const config = JSON.parse(fs.readFileSync(
+    path.join(repoRoot, '.plugin-eval', 'benchmark.json'), 'utf8'));
+  const p1 = config.scenarios.find(scenario =>
+    scenario.id === 'p1-decision-complete-planning');
+  const dossier = fs.readFileSync(
+    path.join(repoRoot, 'submission', 'openai-directory.md'), 'utf8');
+
+  assert.match(p1.userInput, /header is physical line 1/);
+  assert.match(p1.userInput, /first data row is physical line 2/);
+  assert.match(dossier, /header is physical line 1/);
+  assert.match(dossier, /first data row is physical line 2/);
+});
+
 test('destructive boundary requires a narrow authorized target', () => {
   const boundary = fs.readFileSync(
     path.join(repoRoot, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8');
