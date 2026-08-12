@@ -276,10 +276,10 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The local 2.0.3 upload archive passed the bundled validator after extraction, contained the same 21 files with zero content differences, and has SHA-256 `A990927D00317B15DD2CE640BBC21AFE55F0FB27717EF72ECB6A9EEA8534399E`.
 - [x] The generated 2.0.3 Core passed the bundled `plugin-creator` validator under WSL Python with PyYAML 6.0.1.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
-- [x] Focused release tests pass locally, including the Windows wrapper/configuration test. Three clean GitHub Actions runs for commit `bcdd79e` and tag `v2.0.3` each passed `bash tests/run.sh` with 28/28 Node tests plus the benchmark wrapper and SDD stages.
-- [x] GitHub PR #3 contains the 2.0.3 candidate, reports `MERGEABLE` / `CLEAN`, and all recorded `test` checks plus CodeRabbit pass.
+- [x] Focused release tests pass locally, including the Windows wrapper/configuration test. Three clean GitHub Actions runs for commit `bcdd79e` and tag `v2.0.3` each passed `bash tests/run.sh` with 28/28 Node tests plus the benchmark wrapper and SDD stages. The post-merge `main` run for `ac4034d` passed 29/29 Node tests plus the benchmark wrapper and SDD stages.
+- [x] GitHub PR #3 merged the reviewed 2.0.3 candidate into `main` as `ac4034dbd47c96f030d111bc53022f01f08e210f`; its two final `test` checks and CodeRabbit status passed.
 - [x] A fresh isolated Codex marketplace smoke installed 2.0.3, exposed exactly six skills, and excluded `skillquiver-doctor`.
-- [x] The website, support, privacy policy, and terms URLs returned HTTP 200 on 2026-08-12.
+- [x] GitHub Pages deployed merge commit `ac4034d` successfully. The website, support, privacy policy, and terms URLs returned HTTP 200 on 2026-08-12, and the public website, privacy policy, and terms include the focused Skillquiver Core disclosure.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
 - [x] All five positive and three negative cases pass against the exact final 2.0.3 bundle in one release gate: 8/8 processes, 8/8 outcomes, 29/29 checklist items, and 8/8 usage samples. Evidence is saved in `benchmarks/results/2026-08-12-remediation-8.md`.
 - [x] Listing copy, capabilities, authentication statement, availability, and release notes match the generated `2.0.3` bundle and the final directory metadata limits.
@@ -295,6 +295,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Developer identity | Verified Individual available; legal name intentionally omitted |
 | Apps Management evidence | Enabled skills-only upload dialog |
 | GitHub pull request | https://github.com/Drizzy07x/Skillquiver/pull/3 |
+| Main merge commit | `ac4034dbd47c96f030d111bc53022f01f08e210f` |
 | Remote tag | `v2.0.3` -> `bcdd79e25d4138ff0f42dc907f35f0a8b538b9c2` |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.3.zip` |
 | Upload archive SHA-256 | `A990927D00317B15DD2CE640BBC21AFE55F0FB27717EF72ECB6A9EEA8534399E` |
