@@ -181,6 +181,13 @@ The Windows release tools passed separately in the focused local PowerShell
 run above. GitHub Actions run IDs: `31589237221` for the branch and
 `31589238896` for `v2.0.4`.
 
+Pull request #5 merged as
+`9bffad832d089a4183c76a22f5431b46b809c4fe`. The resulting `main` workflow
+`31589536674` passed the same 29/29 Node suite. Pages workflow `31589535787`
+deployed successfully. Fresh HTTP checks returned 200 for the home, privacy,
+terms, and support URLs; each response contained `Drizzy07x`, and the home page
+contained the 2.0.4 public-directory candidate statement.
+
 ## Remaining external gates
 
 The OpenAI Platform account still needs a verified Business identity whose
