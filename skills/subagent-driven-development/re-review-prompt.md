@@ -8,10 +8,10 @@ new breakage. It is not a fresh review — the full review already happened.
 that the fix itself broke nothing.
 
 ```
-Host-neutral worker template (translate with SKILL.md Host Dispatch Mapping):
+Host-neutral worker template (translate with references/dispatch-and-model-selection.md):
   task_label: "Re-review Task N fix round R"
   model_override: [MODEL — include only when the host supports explicit overrides;
-                   choose per SKILL.md Model Selection]
+                   choose per references/dispatch-and-model-selection.md]
   message: |
     You are re-reviewing one task's fix round. A previous review produced
     findings; an implementer has attempted to fix them. Your job is to
@@ -92,7 +92,7 @@ Host-neutral worker template (translate with SKILL.md Host Dispatch Mapping):
 ```
 
 **Placeholders:**
-- `[MODEL]` — reviewer model per SKILL.md Model Selection when the host supports explicit overrides; scoped
+- `[MODEL]` — reviewer model selected from [dispatch-and-model-selection.md](references/dispatch-and-model-selection.md) when the host supports explicit overrides; scoped
   re-reviews of small fix diffs take a cheap-to-mid tier
 - `[BRIEF_FILE]` — the task brief file (same file the implementer worked from)
 - `[FINDINGS]` — the Critical/Important findings and spec gaps from the

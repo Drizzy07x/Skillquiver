@@ -1,0 +1,6 @@
+{
+  "name": "skillquiver-real-usage",
+  "version": "1.0.0",
+  "supportedTargetKinds": ["plugin"],
+  "command": ["node", "./emit-benchmark-metrics.cjs"]
+}

@@ -87,16 +87,17 @@ When the path runs through several components (CI → build → deploy, API → 
 
 ```bash
 # Layer 1: entry point - is the value present at all?
-echo "API_KEY: ${API_KEY:+SET}${API_KEY:-UNSET}"
+if [ -n "${API_KEY:-}" ]; then echo "API_KEY: SET"; else echo "API_KEY: UNSET"; fi
 
 # Layer 2: intermediate script - did it propagate?
-env | grep API_KEY || echo "API_KEY not in environment"
+if [ "${API_KEY+x}" = x ]; then echo "API_KEY propagated: SET"; else echo "API_KEY propagated: UNSET"; fi
 
 # Layer 3: consumer - what does the application actually see?
 node -e "console.log('key seen by app:', process.env.API_KEY ? 'SET' : 'UNSET')"
 ```
 
 This reveals which hop drops the value (entry ✓, intermediate ✗) instead of guessing at the whole chain.
+Log only presence or absence. Never print the credential itself while tracing propagation.
 
 ## Finding Which Test Causes Pollution
 

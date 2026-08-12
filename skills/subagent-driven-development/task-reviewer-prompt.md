@@ -8,10 +8,10 @@ code quality.
 more, nothing less) and is well-built (clean, tested, maintainable)
 
 ```
-Host-neutral worker template (translate with SKILL.md Host Dispatch Mapping):
+Host-neutral worker template (translate with references/dispatch-and-model-selection.md):
   task_label: "Review Task N (spec + quality)"
   model_override: [MODEL — include only when the host supports explicit overrides;
-                   choose per SKILL.md Model Selection]
+                   choose per references/dispatch-and-model-selection.md]
   message: |
     You are reviewing one task's implementation: first whether it matches its
     requirements, then whether it is well-built. This is a task-scoped gate,
@@ -166,7 +166,7 @@ Host-neutral worker template (translate with SKILL.md Host Dispatch Mapping):
 ```
 
 **Placeholders:**
-- `[MODEL]` — reviewer model per SKILL.md Model Selection; include only when the host supports explicit overrides
+- `[MODEL]` — reviewer model selected from [dispatch-and-model-selection.md](references/dispatch-and-model-selection.md); include only when the host supports explicit overrides
 - `[BRIEF_FILE]` — REQUIRED: the task brief file (`scripts/task-brief PLAN N`
   prints the path; same file the implementer worked from)
 - `[GLOBAL_CONSTRAINTS]` — the binding requirements copied verbatim from

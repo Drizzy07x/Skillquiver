@@ -121,6 +121,7 @@ Claude-only badge: ![Claude Code only](https://img.shields.io/badge/Claude%20Cod
 |-------|---------------|--------------|
 | [test-driven-development](skills/test-driven-development/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Enforces test-first red-green-refactor: failing test, minimal code to pass, verify green. |
 | [solve-efficiently](skills/solve-efficiently/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Routes work efficiently with progressive context discovery, matched effort, and durable project mapping. |
+| [handle-host-boundaries](skills/handle-host-boundaries/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Handles unavailable host-specific skills and tools without fabricating capabilities or crossing host boundaries. |
 | [execute-durably](skills/execute-durably/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Runs long or interruption-prone work against an external state file with falsifiable criteria and an append-only evidence log. |
 | [refactor-safely](skills/refactor-safely/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Refactors working code and lands changes in untested legacy code without altering observable behavior. |
 | [using-git-worktrees](skills/using-git-worktrees/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Ensures an isolated workspace exists via native tools or git worktree fallback before feature work. |
@@ -154,7 +155,6 @@ Claude-only badge: ![Claude Code only](https://img.shields.io/badge/Claude%20Cod
 
 | Skill | Compatibility | What it does |
 |-------|---------------|--------------|
-| [windows-doctor](skills/windows-doctor/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Diagnoses a Windows machine with read-only checks, then repairs and optimizes on evidence, with restore points and confirmation gates. |
 | [skillquiver-doctor](skills-claude/skillquiver-doctor/SKILL.md) | ![Claude Code only](https://img.shields.io/badge/Claude%20Code-only-E0A458) | Finds skills, plugins, and hooks from other installs that conflict with Skillquiver's, and removes them — always with a backup and per-item consent. |
 
 ### Prompt engineering

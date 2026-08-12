@@ -293,6 +293,7 @@ footer a:hover { color: var(--gold); }
     <svg class="mark" aria-hidden="true"><use href="#quivermark"/></svg>
     <span class="name">Skillquiver</span>
     <a class="link" href="#skill">How it works</a>
+    <a class="link" href="#core">Codex Core</a>
     <a class="link" href="#install">Install</a>
     <a class="link" href="#quiver">All 23 skills</a>
     <a class="gh" href="https://github.com/Drizzy07x/Skillquiver">GitHub</a>
@@ -343,6 +344,26 @@ Skillquiver/<br>
 │&nbsp;&nbsp;&nbsp;└── skillquiver-doctor/<br>
 ├── .claude-plugin/plugin.json<br>
 └── .codex-plugin/plugin.json
+    </div>
+  </div>
+</section>
+
+<section class="band" id="core">
+  <div class="wrap explain">
+    <div>
+      <span class="eyebrow">Public directory candidate</span>
+      <h2>Skillquiver Core: six focused Codex workflows.</h2>
+      <p class="lede">The OpenAI Plugin Directory candidate is a deliberately smaller bundle for planning, diagnosis, test-driven implementation, code review, static UI work, and safe host boundaries. It runs through Codex and user-approved local tools, with no hosted backend, account, authentication, bundled MCP server, or app UI.</p>
+      <p class="note">Version 2.0.3 is prepared for review but is not yet approved or published. See the <a href="privacy.html">privacy policy</a>, <a href="terms.html">terms</a>, and <a href="https://github.com/Drizzy07x/Skillquiver/issues">support</a>.</p>
+    </div>
+    <div class="tree" data-core-skills>
+<b>Skillquiver Core v2.0.3/</b><br>
+├── <span data-core-skill="writing-plans">writing-plans</span><br>
+├── <span data-core-skill="diagnose-systematically">diagnose-systematically</span><br>
+├── <span data-core-skill="test-driven-development">test-driven-development</span><br>
+├── <span data-core-skill="requesting-code-review">requesting-code-review</span><br>
+├── <span data-core-skill="design-ui">design-ui</span><br>
+└── <span data-core-skill="handle-host-boundaries">handle-host-boundaries</span>
     </div>
   </div>
 </section>
@@ -451,6 +472,7 @@ const GROUPS = [
   ["Execution", [
     ["test-driven-development", "Writes the failing test first, then the smallest code that makes it pass.", "you're adding a feature or fixing a bug.", "shared"],
     ["solve-efficiently", "Finds the few files that actually matter instead of reading the whole project.", "the change touches several parts of the codebase.", "shared"],
+    ["handle-host-boundaries", "Handles a skill or tool that belongs to another agent host without pretending it exists.", "a request names a Claude-only or Codex-only capability.", "shared"],
     ["execute-durably", "Keeps progress in a file on disk so long work can be picked up where it stopped.", "the job is long and might get interrupted.", "shared"],
     ["refactor-safely", "Tidies code without changing what it does, with tests in place first.", "code is messy or duplicated but still has to work exactly the same.", "shared"],
     ["using-git-worktrees", "Sets up a separate working copy so your current work stays untouched.", "you're starting a feature and don't want to disturb what's already open.", "shared"],
@@ -472,7 +494,6 @@ const GROUPS = [
     ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface.", "shared"],
   ]],
   ["System", [
-    ["windows-doctor", "Checks what's actually wrong with Windows before repairing, cleaning, or tuning it.", "the machine is slow, blue-screens, loses internet, needs drivers, or Windows Update keeps failing.", "shared"],
     ["skillquiver-doctor", "Finds skills, plugins, and hooks from other installs that conflict with these, and removes them — always with a backup and your ok.", "the wrong skill activates, a name shows up twice, or another plugin interferes.", "claude"],
   ]],
   ["Prompt engineering", [
