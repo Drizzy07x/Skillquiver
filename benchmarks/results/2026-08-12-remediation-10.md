@@ -171,6 +171,9 @@ The evidence branch workflow `31599304552` and the exact `v2.0.5` tag workflow
 `e762d8fa10c2322c0583dac8705d484bd3a90493`, the source commit used for the
 archive and all eight benchmark outcomes.
 
+Pull request #7 is the reviewed merge candidate. Its final pre-merge branch
+workflow `31599360023` and pull-request workflow `31599394818` both passed.
+
 ## Remaining external gates
 
 The OpenAI Platform account still needs a verified Business identity whose

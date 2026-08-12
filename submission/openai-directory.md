@@ -302,7 +302,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Submitted by | Pending |
 | Developer identity | `Drizzy07x` Business verification pending; Individual identity intentionally not selected |
 | Apps Management evidence | Enabled skills-only upload dialog |
-| GitHub pull request | Pending |
+| GitHub pull request | [#7](https://github.com/Drizzy07x/Skillquiver/pull/7); required checks passed |
 | Main merge commit | Pending |
 | Remote tag | `v2.0.5` annotated at `e762d8fa10c2322c0583dac8705d484bd3a90493`; workflow `31599306047` passed |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.5.zip` validated; 66,965 bytes; 21 files |
