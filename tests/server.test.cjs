@@ -127,7 +127,7 @@ test('companion rejects unauthenticated and traversal requests', async () => {
     const page = await fetch(`${base}/`, { headers: { cookie } });
     assert.equal(page.status, 200);
     assert.equal(page.headers.get('cache-control'), 'no-store');
-    assert.match(await page.text(), /Skillquiver v2\.0\.0/);
+    assert.match(await page.text(), /Skillquiver v2\.0\.1/);
 
     const traversal = await fetch(`${base}/files/..%2Fserver.cjs`, {
       headers: { cookie }

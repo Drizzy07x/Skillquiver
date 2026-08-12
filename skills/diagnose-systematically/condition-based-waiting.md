@@ -68,7 +68,9 @@ async function waitFor<T>(
 }
 ```
 
-For a complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`), read `condition-based-waiting-example.md` and adapt its project-specific types.
+Build domain-specific helpers such as `waitForEvent`, `waitForEventCount`, or
+`waitForEventMatch` from the same polling contract; keep their event types and
+failure messages specific to the project.
 
 ## Common Mistakes
 

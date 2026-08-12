@@ -1,104 +1,70 @@
 ---
 name: requesting-code-review
-description: Dispatches a code-reviewer subagent to check finished implementation work against requirements before it merges. Use when coordinating review of work just completed in an implementation workflow or before merging. Handle a user's standalone bounded read-only code review directly.
+description: Dispatches a bounded reviewer and preserves verified findings. Use when completed work needs read-only review before merge.
 ---
 
 # Requesting Code Review
 
-Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history.
+Review completed work against its requirements before it cascades. Give the
+reviewer the work product and exact review range, never the whole session
+history.
 
-**Core principle:** Review early, review often.
+## Choose the path
 
-## When to Request Review
+Handle a standalone bounded read-only code review directly.
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+- For a user's standalone bounded read-only review, inspect and report it
+  directly. Read only the named file and directly required context. Do not edit
+  the code. Do not enumerate the workspace.
+- For completed implementation work, dispatch a reviewer after a meaningful
+  task, major feature, complex fix, or before merge.
+- For one small file, use at most one reviewer unless its result lacks named
+  evidence; explain the missing evidence to any follow-up reviewer.
 
-**Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
+For the direct path, format each finding as
+`- <Severity>: <path>:<line> - <defect>. <impact and reasoning>.` Use a plain
+`path:line` when a valid clickable absolute path is unavailable.
+Every finding must name the defect, impact, and reasoning.
+Never output a placeholder, empty link, or unfinished finding.
 
-## How to Request
+## Define the review range
 
-**1. Get git SHAs:**
+Prefer the base commit recorded before implementation. Otherwise derive it from
+the confirmed base branch:
+
 ```bash
-# Prefer the commit recorded before implementation. If it was not recorded,
-# derive it from the confirmed base branch.
 BASE_SHA=$(git merge-base <base-branch> HEAD)
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
-Never default to `HEAD~1`: a multi-commit task would review only its final
-commit and silently omit the rest of the implementation.
+Never default to `HEAD~1`; it silently omits earlier commits in a multi-commit
+task. On Windows, run these Bash commands in a Bash-capable shell or use their
+PowerShell equivalents.
 
-Commands in this skill use Bash syntax — on Windows, run them in a Bash-capable shell such as Git Bash, not PowerShell.
+## Dispatch
 
-**2. Dispatch code reviewer subagent:**
+Fill [code-reviewer.md](code-reviewer.md) with:
 
-Dispatch a reviewer using the host's general-purpose worker role or its closest equivalent, filling the template at [code-reviewer.md](code-reviewer.md).
+- `[DESCRIPTION]`: concise summary of the completed work;
+- `[PLAN_OR_REQUIREMENTS]`: authoritative behavior and constraints;
+- `[BASE_SHA]` and `[HEAD_SHA]`: complete range to inspect.
 
-**Placeholders:**
-- `[DESCRIPTION]` - Brief summary of what you built
-- `[PLAN_OR_REQUIREMENTS]` - What it should do
-- `[BASE_SHA]` - Starting commit
-- `[HEAD_SHA]` - Ending commit
+Use the host's general-purpose worker or closest equivalent. Keep the review
+read-only and require exact file/line evidence, calibrated severity, reasoning,
+and a merge verdict.
 
-**3. Act on feedback:**
+## Preserve and resolve findings
 
-Process reviewer findings per the receiving-code-review skill — verify before implementing, fix Critical and Important issues before proceeding, push back with technical reasoning when the reviewer is wrong.
+Maintain one accumulator of verified findings across every reviewer response.
+A later "no additional findings" must never erase an earlier verified issue.
 
-Keep one accumulator of verified findings across every reviewer message. A
-later response such as "no additional findings" means no new findings and must
-never erase an earlier verified issue. The final user-facing review is the
-ordered synthesis of that accumulator, with exact file and line references;
-do not forward an intermediate reviewer message as the final verdict.
+Verify each finding against the code and requirements before acting. Fix
+Critical and Important defects before continuing. When a finding is wrong,
+respond with technical evidence from code or tests rather than deference. After
+a material fix, request a focused re-review of the changed evidence, not an
+unbounded restart.
 
-For a single small file, use at most one reviewer. Dispatch another only when
-the first result is incomplete, and explain the missing evidence it must check.
-
-## Example
-
-```
-[Just completed Task 2: Add verification function]
-
-You: Let me request code review before proceeding.
-
-BASE_SHA=$(git merge-base main HEAD)
-HEAD_SHA=$(git rev-parse HEAD)
-
-[Dispatch code reviewer subagent]
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
-
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
-
-## Common Rationalizations
-
-| Excuse | Reality |
-|--------|---------|
-| "I'll just review the diff myself instead of dispatching a reviewer" | You're the coordinator — reviewing the diff inline burns the context window you need to keep driving the work. Dispatch a reviewer subagent: the diff and the evaluation live in its context, and only the findings come back to you. |
-| "The reviewer needs my whole session history to understand the change" | Hand it precisely crafted context, never your session's history. That keeps the reviewer on the work product, not your thought process. |
-
-## Red Flags
-
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
-
-**If reviewer wrong:** process the finding per receiving-code-review (push back with technical reasoning, show code/tests that prove it works).
+The final user-facing review is the severity-ordered synthesis of the
+accumulator with exact file and line references. Do not forward an intermediate
+reviewer message as the final verdict. State reviewed scope and any unverified
+surface explicitly.

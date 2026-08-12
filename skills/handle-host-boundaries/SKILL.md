@@ -1,6 +1,6 @@
 ---
 name: handle-host-boundaries
-description: Handles unavailable host-specific capabilities and unsafe destructive scope without fabrication or boundary crossing. Use when a user requests a Claude-only capability in Codex, a Codex-only capability in another host, Skillquiver Doctor from Codex, an unavailable host-specific question tool, or deletion at a drive, home, repository, or other unresolved broad root.
+description: Handles missing host capabilities and dangerous deletion scope. Use when a request names another host's tool or a broad destructive root.
 ---
 
 # Handle Host and Destructive Boundaries

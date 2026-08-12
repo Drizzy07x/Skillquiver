@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: Produces decision-complete implementation plans from supplied specifications or repository requirements. Use when a multi-step task needs planning before code changes, especially for a read-only plan, an implementation handoff, or a saved plan artifact.
+description: Creates implementation plans with interfaces, tests, and open decisions. Use when a multi-step change needs planning.
 ---
 
 # Writing Plans

@@ -84,8 +84,8 @@ away by positive cases.
 The metric pack reports deterministic setup, execution, and usage coverage. It
 does not claim semantic task success from a zero exit code.
 
-The final eight-case Core gate is recorded in
-[`results/2026-08-12-remediation-5.md`](results/2026-08-12-remediation-5.md),
+The final 2.0.1 eight-case Core gate is recorded in
+[`results/2026-08-12-remediation-6.md`](results/2026-08-12-remediation-6.md),
 with its structured scorecard in [`results/latest.json`](results/latest.json).
 The assembled Core passes all eight outcomes. Directory publication still
 depends on the remaining external preflight and submission checks.

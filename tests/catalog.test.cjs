@@ -97,7 +97,7 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.0.0');
+  assert.equal(codexPlugin.version, '2.0.1');
   assert.equal(codexPlugin.skills, './skills/');
   assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
   assert.equal(codexPlugin.interface.category, 'Productivity');
@@ -178,6 +178,9 @@ test('planning and review instructions preserve scope and findings', () => {
   assert.match(fullPlanning, /subagent-driven-development/);
   assert.match(fullPlanning, /executing-plans/);
   assert.match(review, /standalone bounded read-only code review directly/);
+  assert.match(review, /Do not enumerate the workspace/);
+  assert.match(review, /Every finding must name the defect, impact, and reasoning/);
+  assert.match(review, /Never output a placeholder/);
   assert.match(review, /must\s+never erase an earlier verified issue/);
 });
 
