@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skillquiver — 23 skills for Claude Code and Codex</title>
-<meta name="description" content="23 agent skills total, with 22 shared by Claude Code and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
+<title>Skillquiver — 22 skills for Claude Code and Codex</title>
+<meta name="description" content="22 agent skills total, with 21 shared by Claude Code and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
 <meta name="theme-color" content="#0B0E13">
-<meta property="og:title" content="Skillquiver — 23 skills for Claude Code and Codex">
-<meta property="og:description" content="23 skills total · 22 shared by Claude Code and Codex.">
+<meta property="og:title" content="Skillquiver — 22 skills for Claude Code and Codex">
+<meta property="og:description" content="22 skills total · 21 shared by Claude Code and Codex.">
 <meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/mark.svg">
@@ -88,7 +88,7 @@ a { color: inherit; }
 .meta { margin-top: 26px; font: 400 13px var(--mono); color: var(--muted); }
 .meta b { color: var(--bone); font-weight: 500; }
 
-/* the quiver: 23 shafts, one drawn at a time */
+/* the quiver: 22 shafts, one drawn at a time */
 .quiver { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
 .vis { position: relative; }
 /* the quiver mouth: a band the arrows sit in */
@@ -294,7 +294,7 @@ footer a:hover { color: var(--gold); }
     <span class="name">Skillquiver</span>
     <a class="link" href="#skill">How it works</a>
     <a class="link" href="#install">Install</a>
-    <a class="link" href="#quiver">All 23 skills</a>
+    <a class="link" href="#quiver">All 22 skills</a>
     <a class="gh" href="https://github.com/Drizzy07x/Skillquiver">GitHub</a>
   </div>
 </nav>
@@ -302,14 +302,14 @@ footer a:hover { color: var(--gold); }
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow">23 skills total · 22 shared by Claude Code and Codex</span>
+      <span class="eyebrow">22 skills total · 21 shared by Claude Code and Codex</span>
       <h1>Your agent <em>picks</em> the right skill on its own.</h1>
       <p class="sub">Every skill says what it does and when to use it. Claude Code and Codex match those lines to your request and open the workflow that fits. You never have to remember its name.</p>
       <div class="actions">
         <a class="btn solid" href="#install">Install</a>
-        <a class="btn" href="#quiver">See all 23 skills</a>
+        <a class="btn" href="#quiver">See all 22 skills</a>
       </div>
-      <p class="meta">MIT · <b>23</b> for Claude Code · <b>22</b> for Codex · nothing to build</p>
+      <p class="meta">MIT · <b>22</b> for Claude Code · <b>21</b> for Codex · nothing to build</p>
     </div>
 
     <div class="quiver">
@@ -334,7 +334,7 @@ footer a:hover { color: var(--gold); }
     </div>
     <div class="tree">
 Skillquiver/<br>
-├── <b>skills/</b> <i>22 shared</i><br>
+├── <b>skills/</b> <i>21 shared</i><br>
 │&nbsp;&nbsp;&nbsp;├── diagnose-systematically/<br>
 │&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── SKILL.md<br>
 │&nbsp;&nbsp;&nbsp;├── verify-work/<br>
@@ -351,7 +351,7 @@ Skillquiver/<br>
   <div class="wrap">
     <span class="eyebrow">Install</span>
     <h2>Choose your host.</h2>
-    <p class="lede">The marketplace is recommended. Claude Code gets all 23 skills; Codex gets the 22 portable skills.</p>
+    <p class="lede">The marketplace is recommended. Claude Code gets all 22 skills; Codex gets the 21 portable skills.</p>
 
     <div class="tabs" role="tablist" aria-label="Agent host">
       <button role="tab" aria-selected="true" aria-controls="p1" id="t1" tabindex="0">Claude Code</button>
@@ -371,7 +371,7 @@ claude plugin install skillquiver@skillquiver --scope user</pre><button class="c
       </div>
       <div class="method">
         <h3>Manual</h3>
-        <p>Copy both the shared set and the Claude-only set for all 23 skills:</p>
+        <p>Copy both the shared set and the Claude-only set for all 22 skills:</p>
         <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
 mkdir -p ~/.claude/skills
 cp -r Skillquiver/skills/* ~/.claude/skills/
@@ -392,7 +392,7 @@ codex plugin add skillquiver@skillquiver</pre><button class="copy">copy</button>
       </div>
       <div class="method">
         <h3>Manual</h3>
-        <p>Copy the 22 shared skills to the global agent directory:</p>
+        <p>Copy the 21 shared skills to the global agent directory:</p>
         <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
 mkdir -p ~/.agents/skills
 cp -r Skillquiver/skills/* ~/.agents/skills/</pre><button class="copy">copy</button></div>
@@ -406,13 +406,13 @@ cp -r Skillquiver/skills/* ~/.agents/skills/</pre><button class="copy">copy</but
 
 <section class="band" id="quiver">
   <div class="wrap">
-    <span class="eyebrow">All 23</span>
+    <span class="eyebrow">All 22</span>
     <h2>What each skill does, and when it steps in.</h2>
     <div class="tools">
       <input id="filter" type="search" placeholder="Search skills…" autocomplete="off" aria-label="Search skills">
       <span id="count"></span>
     </div>
-    <noscript><p class="note">JavaScript is off — browse the <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills">22 shared skills</a> and <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills-claude/skillquiver-doctor">Claude-only Doctor</a> on GitHub.</p></noscript>
+    <noscript><p class="note">JavaScript is off — browse the <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills">21 shared skills</a> and <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills-claude/skillquiver-doctor">Claude-only Doctor</a> on GitHub.</p></noscript>
     <div id="list"></div>
     <p class="empty hidden" id="empty">Nothing matches. Try <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
   </div>
@@ -422,7 +422,7 @@ cp -r Skillquiver/skills/* ~/.agents/skills/</pre><button class="copy">copy</but
   <div class="wrap">
     <span class="eyebrow">Working together</span>
     <h2>One feature, from idea to merge.</h2>
-    <p class="lede">These aren't 23 separate tricks. Almost every step of building something has a portable skill that fits it. A normal run in Claude Code or Codex looks like this:</p>
+    <p class="lede">These aren't 22 separate tricks. Almost every step of building something has a portable skill that fits it. A normal run in Claude Code or Codex looks like this:</p>
     <div class="chain" id="chain"></div>
   </div>
 </section>
@@ -472,7 +472,6 @@ const GROUPS = [
     ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface.", "shared"],
   ]],
   ["System", [
-    ["windows-doctor", "Checks what's actually wrong with Windows before repairing, cleaning, or tuning it.", "the machine is slow, blue-screens, loses internet, needs drivers, or Windows Update keeps failing.", "shared"],
     ["skillquiver-doctor", "Finds skills, plugins, and hooks from other installs that conflict with these, and removes them — always with a backup and your ok.", "the wrong skill activates, a name shows up twice, or another plugin interferes.", "claude"],
   ]],
   ["Prompt engineering", [

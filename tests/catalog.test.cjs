@@ -66,14 +66,14 @@ function markdownFiles(dir) {
   });
 }
 
-test('catalog contains 22 shared skills and one Claude-only skill', () => {
+test('catalog contains 21 shared skills and one Claude-only skill', () => {
   const shared = skillNames(sharedSkillsRoot);
   const claudeOnly = skillNames(claudeSkillsRoot);
   const all = [...shared, ...claudeOnly];
 
-  assert.equal(shared.length, 22);
+  assert.equal(shared.length, 21);
   assert.deepEqual(claudeOnly, ['skillquiver-doctor']);
-  assert.equal(new Set(all).size, 23);
+  assert.equal(new Set(all).size, 22);
 
   for (const [skillsRoot, names] of [
     [sharedSkillsRoot, shared],
@@ -177,7 +177,7 @@ test('local Markdown links resolve', () => {
   for (const file of markdownFiles(root)) {
     let content = fs.readFileSync(file, 'utf8');
     content = content.replace(
-      /(^|\n)(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\2(?=\n|$)/g,
+      /(^|\r?\n)(`{3,}|~{3,})[^\r\n]*\r?\n[\s\S]*?\r?\n\2(?=\r?\n|$)/g,
       '\n'
     );
 

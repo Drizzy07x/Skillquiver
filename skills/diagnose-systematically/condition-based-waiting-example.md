@@ -1,7 +1,8 @@
-// ILLUSTRATIVE ONLY - this file does not compile outside its source project.
-// The `~/threads` imports below are project-local path aliases from the
-// codebase this was extracted from. Treat it as a reference implementation
-// of condition-based waiting and adapt the types to your own codebase.
+# Complete TypeScript Example
+
+This example is illustrative. Its `~/threads` imports are project-local path aliases from the source project, so adapt the types and imports to your codebase.
+
+```typescript
 
 import type { ThreadManager } from '~/threads/thread-manager';
 import type { LaceEvent, LaceEventType } from '~/threads/types';
@@ -155,3 +156,4 @@ export function waitForEventMatch(
 // await messagePromise;
 // await waitForEventCount(threadManager, threadId, 'TOOL_RESULT', 2); // Wait for results
 // expect(toolResults.length).toBe(2); // Always succeeds
+```

@@ -3,10 +3,10 @@
 Use this template when dispatching an implementer subagent.
 
 ```
-Host-neutral worker template (translate with SKILL.md Host Dispatch Mapping):
+Host-neutral worker template (translate with references/dispatch-and-model-selection.md):
   task_label: "Implement Task N: [task name]"
   model_override: [MODEL — include only when the host supports explicit overrides;
-                   choose per SKILL.md Model Selection]
+                   choose per references/dispatch-and-model-selection.md]
   message: |
     You are implementing Task N: [task name]
 

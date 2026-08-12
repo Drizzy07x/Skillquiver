@@ -170,3 +170,22 @@ Independence relocates the bias; it does not remove it. The author still chooses
 ## Cross-session notes
 
 Append to the intent file, under `## Tried`: directions considered and dropped, with one line on why. Successive passes on the same product converge on the same look otherwise — the notes are what makes the second pass different from the first rather than a re-run of it.
+
+## Plan closure
+
+Close the plan only when every decision an implementer would otherwise invent is explicit and the complete check set passes after the last repair.
+
+- Specify every interaction's location, affordance, label, timing, and keyboard and assistive semantics.
+- Give every type role size, leading, tracking, and measure at each declared width. Map each spacing step to its owners, and give every breakpoint a stated consequence.
+- Bound the signature at every width. Its internal dimensions must sum correctly, and every alternate form must be drawn rather than named. Reduce its complexity until the complete specification fits.
+- Treat the specimen as a real product state: its geometry and copy must agree. Derive factual, capability, and security claims or remove them.
+- Solve width-dependent constraints for the width at which they fail. Test against the longest member of each declared vocabulary, not only the sample string or endpoint widths.
+- Plot wireframe positions from declared geometry. Walk every prohibition against that plotted drawing.
+- Recompute every derivation chain against the final values and check its units.
+- At every declared width, rank the signature and competing devices by drawn area. Removing the signature must remove identity; removing another device must remove detail only.
+- Verify all sample figures, formulas, clamps, counts, tokens, contrast ratios, boundaries, and composited values. A count is checkable only when its members are enumerated.
+- Mark every block containing illustrative values in pixels and in its accessible name. Use fictional identifiers for invented state; never attach it to a real named entity.
+
+Repairs can invalidate untouched decisions. After every repair, re-run the entire check set and keep the earlier version when the repair makes the system worse. The specification budget applies to the whole plan: when new scope causes old checks to fail, cut scope before adding another element.
+
+The checks trade against one another. Record which axis the brief prioritizes and re-run the checks that a new capability makes harder, not only those it improves. A self-administered pass remains a claim; use an independent context for consequential fidelity judgments.

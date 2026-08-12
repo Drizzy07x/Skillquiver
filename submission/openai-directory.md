@@ -25,7 +25,7 @@ This dossier is the single source of submission copy and review evidence for the
 
 ### Long description
 
-Skillquiver is a curated set of reusable development workflows. Its 22 portable skills help Claude Code and Codex turn ideas into decision-complete plans, implement with focused tests, diagnose failures from evidence, review changes, automate and verify user interfaces, research technical questions, and prove work before declaring it complete. Claude Code also receives Skillquiver Doctor, a host-specific workflow for finding conflicting Claude skills, plugins, and hooks with backups and per-item consent. Skillquiver has no hosted backend, account, or authentication requirement; workflows run through the user's agent host and user-approved tools.
+Skillquiver is a curated set of reusable development workflows. Its 21 portable skills help Claude Code and Codex turn ideas into decision-complete plans, implement with focused tests, diagnose failures from evidence, review changes, automate and verify user interfaces, research technical questions, and prove work before declaring it complete. Claude Code also receives Skillquiver Doctor, a host-specific workflow for finding conflicting Claude skills, plugins, and hooks with backups and per-item consent. Skillquiver has no hosted backend, account, or authentication requirement; workflows run through the user's agent host and user-approved tools.
 
 ### Capabilities shown in the listing
 
@@ -171,8 +171,8 @@ Each case is self-contained and should be run in a disposable test workspace. A 
 ### Skillquiver 2.0.0
 
 - Added first-class Codex plugin and GitHub marketplace support.
-- Made 22 skills portable across Claude Code and Codex.
-- Kept Skillquiver Doctor available exclusively to Claude Code, for 23 Claude skills total.
+- Made 21 skills portable across Claude Code and Codex.
+- Kept Skillquiver Doctor available exclusively to Claude Code, for 22 Claude skills total.
 - Moved portable source from `.claude/skills/` to `skills/`; manual installations must adopt the new path.
 - Added host-specific installation, update, compatibility, privacy, and terms documentation.
 - Updated Brainstorming version discovery and cross-host guidance.
@@ -187,7 +187,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [ ] `.codex-plugin/plugin.json` passes the official Codex plugin validator.
 - [ ] Claude's strict plugin validator passes.
 - [ ] The focused and full repository test commands pass, with results recorded in the release or PR.
-- [ ] A fresh Codex marketplace smoke test exposes exactly 22 skills and not `skillquiver-doctor`.
+- [ ] A fresh Codex marketplace smoke test exposes exactly 21 skills and not `skillquiver-doctor`.
 - [ ] GitHub Pages returns HTTP 200 for the website, privacy policy, and terms URLs above.
 - [ ] The logo is legible, square, and matches the package brand.
 - [ ] All five positive and three negative cases were run against the final bundle and their observed results were saved.

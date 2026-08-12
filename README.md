@@ -1,14 +1,14 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Skillquiver — 23 skills total, 22 shared by Claude Code and Codex" width="800">
+<img src="assets/banner.svg" alt="Skillquiver — 22 skills total, 21 shared by Claude Code and Codex" width="800">
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-8B929E)](LICENSE)
-![Skills](https://img.shields.io/badge/skills-23-C87941)
-![Shared](https://img.shields.io/badge/shared-22-7FA6A0)
-![Claude Code](https://img.shields.io/badge/Claude%20Code-23-E0A458)
-![Codex](https://img.shields.io/badge/Codex-22-E8E4DC)
+![Skills](https://img.shields.io/badge/skills-22-C87941)
+![Shared](https://img.shields.io/badge/shared-21-7FA6A0)
+![Claude Code](https://img.shields.io/badge/Claude%20Code-22-E0A458)
+![Codex](https://img.shields.io/badge/Codex-21-E8E4DC)
 
-**23 skills total · 22 shared by Claude Code and Codex.**
+**22 skills total · 21 shared by Claude Code and Codex.**
 
 Each skill tells the agent what it does and when to use it, so the right workflow can activate without you memorizing its name.
 
@@ -36,7 +36,7 @@ claude plugin marketplace add Drizzy07x/Skillquiver
 claude plugin install skillquiver@skillquiver --scope user
 ```
 
-Claude Code installs all 23 skills. Update later with:
+Claude Code installs all 22 skills. Update later with:
 
 ```text
 /plugin update skillquiver@skillquiver
@@ -68,7 +68,7 @@ codex plugin marketplace add Drizzy07x/Skillquiver
 codex plugin add skillquiver@skillquiver
 ```
 
-Codex installs the 22 shared skills. Refresh the marketplace and reinstall the plugin to update:
+Codex installs the 21 shared skills. Refresh the marketplace and reinstall the plugin to update:
 
 ```bash
 codex plugin marketplace upgrade skillquiver
@@ -92,11 +92,11 @@ Use a project's `.agents/skills/` directory instead for a project-only install. 
 
 ```text
 Skillquiver/
-├── skills/                              # 22 skills shared by both hosts
+├── skills/                              # 21 skills shared by both hosts
 ├── skills-claude/
 │   └── skillquiver-doctor/              # Claude Code only
-├── .claude-plugin/plugin.json           # exposes all 23 to Claude Code
-└── .codex-plugin/plugin.json            # exposes 22 to Codex
+├── .claude-plugin/plugin.json           # exposes all 22 to Claude Code
+└── .codex-plugin/plugin.json            # exposes 21 to Codex
 ```
 
 ## Skills
@@ -154,7 +154,6 @@ Claude-only badge: ![Claude Code only](https://img.shields.io/badge/Claude%20Cod
 
 | Skill | Compatibility | What it does |
 |-------|---------------|--------------|
-| [windows-doctor](skills/windows-doctor/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Diagnoses a Windows machine with read-only checks, then repairs and optimizes on evidence, with restore points and confirmation gates. |
 | [skillquiver-doctor](skills-claude/skillquiver-doctor/SKILL.md) | ![Claude Code only](https://img.shields.io/badge/Claude%20Code-only-E0A458) | Finds skills, plugins, and hooks from other installs that conflict with Skillquiver's, and removes them — always with a backup and per-item consent. |
 
 ### Prompt engineering

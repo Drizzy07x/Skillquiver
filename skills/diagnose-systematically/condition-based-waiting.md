@@ -68,7 +68,7 @@ async function waitFor<T>(
 }
 ```
 
-See `condition-based-waiting-example.ts` in this directory for a complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`). That file is illustrative only: its `~/threads` imports are path aliases from the project it was extracted from and will not compile elsewhere; adapt the pattern to your own types.
+For a complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`), read `condition-based-waiting-example.md` and adapt its project-specific types.
 
 ## Common Mistakes
 
