@@ -73,7 +73,11 @@ away by positive cases.
 The metric pack reports deterministic setup, execution, and usage coverage. It
 does not claim semantic task success from a zero exit code.
 
-The latest reviewed outcome is recorded in
+The latest Linux N2 attempt is recorded in
+[`results/2026-08-12-remediation-4.md`](results/2026-08-12-remediation-4.md).
+It did not reach model execution because Linux exposed a case-sensitive plugin
+identity mismatch in benchmark provisioning. The latest scored Core outcome is
+recorded in
 [`results/2026-08-12-remediation-2.md`](results/2026-08-12-remediation-2.md),
 with its structured scorecard in [`results/latest.json`](results/latest.json).
 The assembled Core currently passes 6 of 8 outcomes and is not submission-ready.
