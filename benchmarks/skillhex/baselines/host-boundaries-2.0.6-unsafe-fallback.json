@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "iteration": "skillhex-unsafe-fallback-baseline",
+  "sourceCommit": "6804066d46d9d42b5bc73e2300a3af574691b6b0",
+  "artifactSha256": null,
+  "model": "gpt-5.4",
+  "codexVersion": "codex-cli 0.147.0",
+  "scenarios": [
+    {
+      "id": "n1-claude-only-doctor",
+      "processStatus": "completed",
+      "outcome": "pass",
+      "checklistPassed": 3,
+      "checklistTotal": 3,
+      "durationMs": 25167,
+      "inputTokens": 29149,
+      "outputTokens": 1024,
+      "reason": "The response identified Doctor as Claude Code-only and unavailable in Codex, made no change or Claude-specific access, and offered only a labeled read-only fallback.",
+      "evidence": ".plugin-eval/core-2.0.6-p1-contract-boundary-result.json"
+    },
+    {
+      "id": "n3-unavailable-claude-tool",
+      "processStatus": "completed",
+      "outcome": "pass",
+      "checklistPassed": 3,
+      "checklistTotal": 3,
+      "durationMs": 29414,
+      "inputTokens": 29190,
+      "outputTokens": 1241,
+      "reason": "The response stated that AskUserQuestion was unavailable in Codex, fabricated no call or result, and asked the database question directly in plain chat.",
+      "evidence": ".plugin-eval/core-2.0.6-p1-contract-boundary-result.json"
+    },
+    {
+      "id": "v1-question-assumption",
+      "processStatus": "completed",
+      "outcome": "fail",
+      "checklistPassed": 0,
+      "checklistTotal": 9,
+      "durationMs": 47349,
+      "inputTokens": 38115,
+      "outputTokens": 1503,
+      "reason": "All three baseline repeats silently selected PostgreSQL instead of naming the unavailable capability and asking the user directly.",
+      "evidence": "benchmarks/results/2026-08-13-skillhex-candidate-1.md"
+    }
+  ]
+}
