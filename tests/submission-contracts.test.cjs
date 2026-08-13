@@ -55,7 +55,7 @@ test('Codex Doctor boundary forbids discovery and cleanup', () => {
     path.join(repoRoot, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8');
 
   assert.match(boundary,
-    /description: Responds to skillquiver-doctor requests in Codex without searching or running commands/);
+    /description: Use before acting when any named capability may be unavailable/);
   assert.match(boundary, /answer from this declared boundary only/);
   assert.match(boundary, /including `.claude`, `skills-claude`, and `PATH`/);
   assert.match(boundary, /Never offer cleanup or removal as a fallback/);
