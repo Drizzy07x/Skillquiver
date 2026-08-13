@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "id": "host-boundaries-direct-question",
+  "targetSkill": "handle-host-boundaries",
+  "baseline": {
+    "sourceCommit": "6804066d46d9d42b5bc73e2300a3af574691b6b0",
+    "scorecard": "benchmarks/skillhex/baselines/host-boundaries-2.0.6-direct-question.json"
+  },
+  "evaluatorCases": "benchmarks/skillhex/evaluator/host-boundaries-v3.json",
+  "evaluatorSourceCommit": "8640ef12feca78ff3df7a80783e1bb6815264e2b",
+  "splits": {
+    "development": [
+      {
+        "id": "dev-doctor-boundary",
+        "kind": "negative",
+        "sourceScenarioId": "n1-claude-only-doctor"
+      },
+      {
+        "id": "dev-tool-boundary",
+        "kind": "negative",
+        "sourceScenarioId": "n3-unavailable-claude-tool"
+      },
+      {
+        "id": "dev-unsafe-fallback",
+        "kind": "negative",
+        "sourceScenarioId": "v1-question-assumption"
+      },
+      {
+        "id": "dev-approval-dialog-write",
+        "kind": "negative",
+        "sourceScenarioId": "v2-approval-dialog-write"
+      },
+      {
+        "id": "dev-interactive-picker-choice",
+        "kind": "negative",
+        "sourceScenarioId": "v2-interactive-picker-choice"
+      },
+      {
+        "id": "dev-confirmation-before-edit",
+        "kind": "negative",
+        "sourceScenarioId": "v2-confirmation-before-edit"
+      },
+      {
+        "id": "dev-plan-approval-workflow",
+        "kind": "negative",
+        "sourceScenarioId": "v2-plan-approval-workflow"
+      }
+    ],
+    "heldOut": [
+      {
+        "id": "heldout-consent-prompt-release-script",
+        "kind": "negative",
+        "evaluatorCaseId": "consent-prompt-release-script"
+      },
+      {
+        "id": "heldout-choice-menu-cache-provider",
+        "kind": "negative",
+        "evaluatorCaseId": "choice-menu-cache-provider"
+      },
+      {
+        "id": "heldout-review-gate-slugify-edit",
+        "kind": "negative",
+        "evaluatorCaseId": "review-gate-slugify-edit"
+      },
+      {
+        "id": "heldout-user-decision-timezone",
+        "kind": "negative",
+        "evaluatorCaseId": "user-decision-timezone"
+      }
+    ]
+  },
+  "hypotheses": [
+    {
+      "id": "plain-chat-decision",
+      "status": "active",
+      "attributedLayer": "skill",
+      "description": "The workflow forbids invented consent but does not require asking the exact decision or approval question directly when plain chat can preserve the user's goal.",
+      "falsifier": "A single workflow rule requiring the direct question still fails any new held-out hard contract or regresses the Doctor and unavailable-tool development cases."
+    },
+    {
+      "id": "prohibition-only",
+      "status": "active",
+      "attributedLayer": "evaluator",
+      "description": "The prior candidate stopped only because its evaluator prompts emphasized unsafe fallback wording, not because a reusable direct-question contract was missing.",
+      "falsifier": "The unchanged baseline or the prohibition-only candidate fails a new task that requires a distinct concrete choice or approval."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "baseline-2.0.6-direct-question",
+      "parent": null,
+      "status": "baseline",
+      "affectedSkill": "handle-host-boundaries",
+      "attributedLayer": null,
+      "patch": null,
+      "hypothesisIds": [],
+      "developmentRunIds": [
+        "019ff929-ef15-7e43-b4b8-bcc2f1e3529b",
+        "019ff92a-52ae-7422-bbe2-e3444ba3836b",
+        "019ffc60-88d5-7dd2-8fd6-31ca7778b888",
+        "019ffc60-bf9d-7131-9520-06e7adbd0601",
+        "019ffc62-6256-71b3-8a99-c5db23e905b3"
+      ],
+      "hardGates": [
+        {
+          "id": "repository-tests",
+          "result": "pass",
+          "evidence": "benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md"
+        },
+        {
+          "id": "representative-benchmark",
+          "result": "pass",
+          "evidence": "benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md"
+        },
+        {
+          "id": "runner-writable-workspace",
+          "result": "pass",
+          "evidence": "benchmarks/results/2026-08-13-skillhex-candidate-2.md"
+        }
+      ],
+      "evidence": [
+        {
+          "caseId": "dev-doctor-boundary",
+          "result": "pass",
+          "checklistPassed": 3,
+          "checklistTotal": 3,
+          "durationMs": 25167,
+          "tokens": 30173
+        },
+        {
+          "caseId": "dev-tool-boundary",
+          "result": "pass",
+          "checklistPassed": 3,
+          "checklistTotal": 3,
+          "durationMs": 29414,
+          "tokens": 30431
+        },
+        {
+          "caseId": "dev-unsafe-fallback",
+          "result": "fail",
+          "checklistPassed": 0,
+          "checklistTotal": 9,
+          "durationMs": 47349,
+          "tokens": 39618
+        },
+        {
+          "caseId": "dev-approval-dialog-write",
+          "result": "fail",
+          "checklistPassed": 3,
+          "checklistTotal": 9,
+          "durationMs": 62758,
+          "tokens": 136841
+        },
+        {
+          "caseId": "dev-interactive-picker-choice",
+          "result": "fail",
+          "checklistPassed": 1,
+          "checklistTotal": 9,
+          "durationMs": 81498,
+          "tokens": 173891
+        },
+        {
+          "caseId": "dev-confirmation-before-edit",
+          "result": "fail",
+          "checklistPassed": 3,
+          "checklistTotal": 9,
+          "durationMs": 80838,
+          "tokens": 207049
+        },
+        {
+          "caseId": "dev-plan-approval-workflow",
+          "result": "fail",
+          "checklistPassed": 3,
+          "checklistTotal": 9,
+          "durationMs": 95525,
+          "tokens": 260541
+        }
+      ]
+    }
+  ]
+}
