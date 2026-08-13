@@ -148,6 +148,17 @@ function writeMarketplace(workspacePath) {
   fs.writeFileSync(marketplacePath, `${JSON.stringify(marketplace, null, 2)}\n`);
 }
 
+function writeCodexConfig(codexHomePath) {
+  const config = [
+    'approval_policy = "never"',
+    '',
+    '[windows]',
+    'sandbox = "unelevated"',
+    ''
+  ].join('\n');
+  fs.writeFileSync(path.join(codexHomePath, 'config.toml'), config);
+}
+
 function copyChangedFiles(workspacePath, changes, evidencePath) {
   for (const change of changes) {
     if (change.status === 'deleted') continue;
@@ -181,6 +192,7 @@ function executeRun({
   fs.mkdirSync(codexHomePath, { recursive: true });
   const sourceAuth = path.join(os.homedir(), '.codex', 'auth.json');
   if (fs.existsSync(sourceAuth)) fs.copyFileSync(sourceAuth, path.join(codexHomePath, 'auth.json'));
+  writeCodexConfig(codexHomePath);
   writeMarketplace(workspacePath);
 
   const expectedDigest = evaluation[`${role}Digest`];
@@ -318,8 +330,10 @@ if (require.main === module) {
 module.exports = {
   createSchedule,
   diffSnapshots,
+  executeRun,
   installPlugin,
   pairedOrders,
   runCli,
-  runEvaluation
+  runEvaluation,
+  writeCodexConfig
 };

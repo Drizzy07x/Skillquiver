@@ -7,7 +7,8 @@ const test = require('node:test');
 const { digestPayload } = require('../benchmarks/skillhex/integrity.cjs');
 const {
   createSchedule,
-  installPlugin
+  installPlugin,
+  writeCodexConfig
 } = require('../benchmarks/skillhex/runner.cjs');
 
 test('runner freezes three paired repeats with both orders', () => {
@@ -71,5 +72,16 @@ test('runner rejects an installed payload with a different digest', () => {
     expectedDigest: '0'.repeat(64),
     commandRunner
   }), /Installed payload digest mismatch/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('runner enables the isolated Windows workspace sandbox', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'skillhex-runner-'));
+  writeCodexConfig(root);
+  const config = fs.readFileSync(path.join(root, 'config.toml'), 'utf8');
+
+  assert.match(config, /approval_policy = "never"/);
+  assert.match(config, /\[windows\]\nsandbox = "unelevated"/);
+  assert.doesNotMatch(config, /marketplaces|plugins\./);
   fs.rmSync(root, { recursive: true, force: true });
 });
