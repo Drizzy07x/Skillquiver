@@ -72,6 +72,27 @@ for every checklist item. Behavior is scored before token cost.
 Any candidate hard-contract failure is rejected. A better candidate is only
 `eligible-for-human-review`; this infrastructure never promotes automatically.
 
+## Installed paired runner
+
+`runner.cjs` executes a prepared evaluation only after installing each sealed
+payload through Codex's plugin CLI in a fresh isolated home. Copying a local
+marketplace entry is not installation: every one-use run adds the marketplace,
+installs and enables `skillquiver@plugin-eval-benchmark`, and verifies the
+installed payload digest before starting Codex.
+
+```powershell
+node benchmarks/skillhex/runner.cjs run `
+  <evaluation.json> `
+  benchmarks/workspace `
+  <execution-root>
+```
+
+The runner freezes three paired repeats, uses a fresh workspace and Codex home
+for each role, captures JSONL events and workspace changes, and removes the
+ephemeral home so authentication data is never retained with the evidence.
+It records process evidence only; checklist assessment and scoring remain
+independent steps.
+
 ## Current boundary
 
 - The first isolated description candidate was rejected after 24 paired model
