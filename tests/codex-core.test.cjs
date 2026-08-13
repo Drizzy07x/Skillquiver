@@ -44,7 +44,7 @@ test('Codex Core build contains only selected skills and a consistent manifest',
 
   assert.deepEqual(builtSkills, [...result.skills].sort());
   assert.equal(manifest.name, 'skillquiver');
-  assert.equal(manifest.version, '2.0.6');
+  assert.equal(manifest.version, '2.0.7');
   assert.equal(manifest.skills, './skills/');
   assert.match(manifest.description, /6 portable Agent Skills/);
   assert.equal(manifest.interface.displayName, 'Skillquiver Core');

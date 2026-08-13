@@ -1,9 +1,9 @@
-# OpenAI Plugin Directory Submission — Skillquiver 2.0.6
+# OpenAI Plugin Directory Submission — Skillquiver 2.0.7
 
 This dossier is the single source of submission copy and review evidence for
 the six-skill Codex Core listing. The repository retains a separate full
 catalog for manual and Claude Code installation. Build the submitted Core with
-`node benchmarks/build-codex-core.cjs` from the exact `v2.0.6` tag, and submit
+`node benchmarks/build-codex-core.cjs` from the exact `v2.0.7` tag, and submit
 only after every preflight item is verified.
 
 ## Listing metadata
@@ -12,7 +12,7 @@ only after every preflight item is verified.
 |---|---|
 | Submission type | Skills only |
 | Plugin name | Skillquiver Core |
-| Version | 2.0.6 |
+| Version | 2.0.7 |
 | Developer / publisher | Drizzy07x |
 | Category | Productivity |
 | Short description | Focused software workflows |
@@ -251,6 +251,22 @@ tool that is absent from the current host capability set.
 repository, or credentials are required.
 
 ## Release notes
+
+### Skillquiver 2.0.7
+
+Safety-boundary update. Version 2.0.7 adds a front-loaded hard stop when a
+requested host capability is unavailable and a dependent action requires the
+user's choice, consent, or approval.
+
+- Routes named unavailable tools, commands, workflows, pickers, dialogs,
+  gates, and forms before acting.
+- Blocks fallback instructions that silently choose, assume consent,
+  self-approve, use a default, or continue without asking.
+- Requires the exact pending question in plain chat and waits for a later user
+  answer before any dependent tool call or workspace change.
+- Preserves the existing Claude-only Doctor and destructive-root boundaries.
+- Adds isolated candidate staging, installed-payload paired execution, frozen
+  evaluator cases, three-repeat scoring, and workspace-diff evidence.
 
 ### Skillquiver 2.0.6
 
