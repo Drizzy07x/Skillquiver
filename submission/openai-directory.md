@@ -297,17 +297,18 @@ Complete this record with evidence immediately before submission. Do not mark an
 - [x] The OpenAI Platform account can open the enabled `Create plugin` > `Skills only` upload flow. The official submission documentation states that creating drafts requires `Apps Management: Write`; this was observed in the Personal organization on 2026-08-12.
 - [x] The owner explicitly selected `Drizzy07x` as the public publisher and prohibited publishing an individual legal name. The available Individual identity is intentionally not selected or stored in this repository.
 - [ ] A verified Business identity named `Drizzy07x` is available and selected, and the public publisher name and URLs match it.
-- [x] The remote annotated `v2.0.6` tag resolves to the reviewed final release commit. The earlier release tags remain unchanged.
-- [x] The local 2.0.6 upload archive passed the bundled validator after extraction, contained the same files with zero content differences, and has a recorded SHA-256.
-- [x] The generated 2.0.6 Core passed the bundled `plugin-creator` validator.
+- [ ] The remote annotated `v2.0.7` tag resolves to the reviewed final release commit. The earlier release tags remain unchanged.
+- [x] The local 2.0.7 upload archive passed the bundled validator after extraction, contained the same files with zero content differences, and has a recorded SHA-256.
+- [x] The generated 2.0.7 Core passed the bundled `plugin-creator` validator.
 - [ ] The portal accepted that exact archive and its automated policy and security scan passed.
-- [x] Focused 2.0.6 release tests pass locally, and the exact branch and tag pass clean GitHub Actions checks.
-- [x] The reviewed 2.0.6 candidate is merged into `main` and its required checks pass.
-- [x] A fresh isolated Codex marketplace smoke installed 2.0.6 from the exact archive, exposed exactly six skills, and excluded `skillquiver-doctor`.
-- [x] The website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` as the public publisher.
+- [x] Focused 2.0.7 release tests pass locally.
+- [ ] The exact 2.0.7 branch and tag pass clean GitHub Actions checks.
+- [ ] The reviewed 2.0.7 release commit is pushed to `main` and its required checks pass.
+- [x] A fresh isolated Codex marketplace smoke installed 2.0.7 from the exact archive, exposed exactly six skills, and excluded `skillquiver-doctor`.
+- [ ] The updated website, support, privacy policy, and terms URLs return HTTP 200 and show `Drizzy07x` and version 2.0.7 where applicable.
 - [x] The reviewed logo is a legible, square 512×512 PNG that matches the package brand.
-- [x] All five positive and three negative cases pass against the exact final 2.0.6 bundle, with complete checklist and usage evidence.
-- [x] Listing copy, capabilities, authentication statement, availability, publisher, and release notes match the generated 2.0.6 bundle and the final directory metadata limits.
+- [x] All five positive and three negative cases pass against the exact final 2.0.7 bundle, with complete checklist and usage evidence.
+- [x] Listing copy, capabilities, authentication statement, availability, publisher, and release notes match the generated 2.0.7 bundle and the final directory metadata limits.
 - [ ] Policy, data-practice, rights, and content attestations were read and answered truthfully in the submission portal.
 - [ ] `Submit for Review` was selected and the resulting review status or submission ID was recorded below.
 
@@ -319,12 +320,13 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Submitted by | Pending |
 | Developer identity | `Drizzy07x` Business verification pending; Individual identity intentionally not selected |
 | Apps Management evidence | Enabled skills-only upload dialog |
-| GitHub pull request | [#8](https://github.com/Drizzy07x/Skillquiver/pull/8), merged |
-| Main merge commit | `c81a3f5024360a15e0cf531cdc85051bd10e9d18` |
-| Remote tag | `v2.0.6` -> `10bdb634a698ef4368a67e1c99306063d6faffce` |
-| Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.6.zip`; 66,859 bytes; 21 files |
-| Upload archive SHA-256 | `6CC27F4E53CC522BA902A4B1838D0EBBD29AD7BB5C2F8FF30908E90FF2296737` |
-| Final bundle commit | `10bdb634a698ef4368a67e1c99306063d6faffce` |
+| GitHub pull request | Pending; release prepared directly on local `main` |
+| Main merge commit | Pending push |
+| Remote tag | `v2.0.7` pending |
+| Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.7.zip`; 67,276 bytes; 21 files |
+| Upload archive SHA-256 | `79BBCAE268F7CADA7820DB0E8BB0D7583F3D6B7F4A082A3F096D75EE52E04456` |
+| Benchmarked bundle commit | `773dad85f74e2adb02218a17e859d188959f3533` |
+| Final release commit | Pending |
 
 OpenAI approval and later publication are external follow-up states; do not describe the plugin as approved or published until the directory reports that state.
 
@@ -339,5 +341,6 @@ is recorded in `benchmarks/results/2026-08-12-remediation-8.md`; the complete
 2.0.4 exact-tag mismatch is recorded in
 `benchmarks/results/2026-08-12-remediation-9.md`; the 2.0.5 tag checkout
 mismatch is recorded in `benchmarks/results/2026-08-12-remediation-10.md`;
-the 2.0.6 replacement gate will be recorded in
-`benchmarks/results/2026-08-12-remediation-11.md`.
+the 2.0.6 replacement gate is recorded in
+`benchmarks/results/2026-08-12-remediation-11.md`; the 2.0.7 gate is recorded in
+`benchmarks/results/2026-08-13-skillquiver-2.0.7-release.md`.

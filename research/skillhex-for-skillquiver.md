@@ -2,13 +2,13 @@
 
 Date: 2026-08-12
 Source: [SkillHEX v1](https://arxiv.org/abs/2608.05628v1), submitted 2026-08-06
-Status: phase 2 infrastructure implemented; the first isolated candidate was rejected and a second evaluator set is frozen before its patch is drafted
+Status: pilot completed; the fourth isolated candidate passed independent review and was promoted for Skillquiver 2.0.7
 
 ## Recommendation
 
 Adopt the paper's method as an **offline, benchmark-driven skill improvement loop**, not as runtime self-modification. The highest-value transfer is to turn each failed Skillquiver scenario into falsifiable failure hypotheses and reusable checks, preserve competing `SKILL.md` revisions instead of overwriting the first candidate, and spend fresh benchmark runs only on branches supported by accumulated evidence.
 
-This is a strong fit for the repository's existing evaluation surface: the benchmark already defines five positive and three negative scenarios with explicit success checklists ([scenario matrix](../.plugin-eval/benchmark.json#L28-L123)), runs each scenario in a fresh workspace, retains raw artifacts, and separates process completion from outcome quality ([benchmark design](../benchmarks/README.md#L8-L16), [isolation and artifacts](../benchmarks/README.md#L40-L50)). The recorded 2.0.6 Core baseline passed 8/8 scenarios and 29/29 checklist items ([recorded gate](../benchmarks/results/2026-08-12-remediation-11.md#L7-L14)); the earlier 3/8 report remains useful only as historical evidence about failure attribution. P1's contract has since been tightened, so the full matrix has not been rerun against that updated prompt. This campaign reuses only the unchanged N1 and N3 evidence.
+This is a strong fit for the repository's existing evaluation surface: the benchmark defines five positive and three negative scenarios with explicit success checklists ([scenario matrix](../.plugin-eval/benchmark.json#L28-L123)), runs each scenario in a fresh workspace, retains raw artifacts, and separates process completion from outcome quality ([benchmark design](../benchmarks/README.md#L8-L16), [isolation and artifacts](../benchmarks/README.md#L40-L50)). The tightened P1 contract was re-baselined before candidate work, and the complete matrix was rerun again against the promoted 2.0.7 Core. Both full runs passed 8/8 scenarios and 29/29 checklist items ([phase 2 baseline](../benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md), [2.0.7 release gate](../benchmarks/results/2026-08-13-skillquiver-2.0.7-release.md)).
 
 ## Current baseline and phase 1 scope
 
@@ -38,8 +38,14 @@ authorized external run evaluated the first isolated description candidate in
 all repeats of the unsafe-fallback case, while the candidate also used more
 tokens. The exact outcome is recorded in
 [`2026-08-13-skillhex-candidate-1.md`](../benchmarks/results/2026-08-13-skillhex-candidate-1.md).
-No source skill was changed. The exposed case is now development evidence; a
-new evaluator-only set was frozen before drafting the next candidate.
+Each rejected candidate's exact cases became development evidence, and a new
+evaluator-only set was committed before the next patch. Candidate 2 and
+candidate 3 were also rejected under the all-hard-contracts policy. Candidate
+4 then passed 36/36 held-out checklist observations across 24 paired runs,
+compared with 12/36 for the baseline, and became eligible for human review. The
+review promoted its exact LF-normalized skill blob; the full public 2.0.7 gate
+then passed 29/29. See the four candidate reports under
+[`benchmarks/results`](../benchmarks/results/2026-08-13-skillhex-candidate-4.md).
 
 After the P1 physical-line contract changed, the complete public eight-scenario model benchmark was rerun from zero against the rebuilt Core. All eight scenarios and all 29 checklist items passed; the frozen evidence is recorded in [`2026-08-12-skillhex-phase-2-baseline.md`](../benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md). This public rerun did not execute any of the four evaluator-only cases.
 
@@ -91,4 +97,4 @@ Use one behavior cluster first: **host-boundary routing**. It has explicit devel
 
 ## Decision gate
 
-Phases 1 and 2 satisfy the immutable split, persistent ledger, isolated staging, integrity, evaluator separation, and deterministic scoring requirements. Candidate generation remains blocked until a single-cause patch is explicitly approved. Held-out execution remains a separate human-gated action. The pilot succeeds only if a candidate beats the current skill on held-out paired runs without a safety or host-compatibility regression. Otherwise retain the current manual workflow; the paper's reported improvement is not transferable by assumption.
+The pilot satisfied the immutable split, persistent ledger, isolated staging, installed-payload integrity, evaluator separation, paired repetition, deterministic scoring, and human-promotion requirements. Candidate 4 beat the frozen baseline on held-out behavior without a public safety or host-compatibility regression, so the pilot met its success gate. Future campaigns must freeze new evaluator cases; every case opened in this pilot is now development evidence and cannot be reused as held-out promotion evidence.

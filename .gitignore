@@ -8,6 +8,7 @@ Thumbs.db
 .plugin-eval/*-result*.json
 .plugin-eval/*-report.json
 .plugin-eval/*-analysis.json
+.plugin-eval/*-metric-pack.json
 .plugin-eval/*.md
 .plugin-eval/writing-plans-*.json
 .plugin-eval/codex-core/

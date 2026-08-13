@@ -95,11 +95,11 @@ independent steps.
 
 ## Current boundary
 
-- The first isolated description candidate was rejected after 24 paired model
-  runs; its exact result is recorded in
-  [`2026-08-13-skillhex-candidate-1.md`](../results/2026-08-13-skillhex-candidate-1.md).
-- The source skill remains unchanged.
-- The original four evaluator-only cases are no longer held out from campaign
-  authors and are development evidence only for subsequent campaigns.
-- New evaluator-only cases must be frozen in Git before the next candidate is
-  drafted, and candidate payloads must remain unable to read them.
+- Candidates 1 through 3 were rejected under the all-hard-contracts policy;
+  their reports remain under `benchmarks/results`.
+- Candidate 4 passed 36/36 checklist observations across 24 held-out paired
+  runs and was promoted to `handle-host-boundaries` after human review.
+- Skillquiver Core 2.0.7 then passed the complete public matrix 8/8 and 29/29.
+- Every evaluator case opened during this pilot is now development evidence.
+  A future campaign must commit new evaluator-only cases before drafting a
+  candidate, and candidate payloads must remain unable to read them.
