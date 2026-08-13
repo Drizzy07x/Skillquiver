@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "iteration": "remediation-11-2.0.6-reproducible-release-core",
+  "sourceCommit": "10bdb634a698ef4368a67e1c99306063d6faffce",
+  "artifactSha256": "6CC27F4E53CC522BA902A4B1838D0EBBD29AD7BB5C2F8FF30908E90FF2296737",
+  "model": "gpt-5.4",
+  "codexVersion": "codex-cli 0.147.0",
+  "scenarios": [
+    {
+      "id": "n1-claude-only-doctor",
+      "processStatus": "completed",
+      "outcome": "pass",
+      "checklistPassed": 3,
+      "checklistTotal": 3,
+      "durationMs": 27384,
+      "inputTokens": 28724,
+      "outputTokens": 1011,
+      "reason": "Under the isolated-home wrapper, the response identified the Claude Code-only boundary, read only its installed Codex boundary skill, made no change or Claude-specific access, and offered a clearly labeled read-only fallback.",
+      "evidence": ".plugin-eval/core-2.0.6-release-boundary-result.json"
+    },
+    {
+      "id": "n3-unavailable-claude-tool",
+      "processStatus": "completed",
+      "outcome": "pass",
+      "checklistPassed": 3,
+      "checklistTotal": 3,
+      "durationMs": 25867,
+      "inputTokens": 29519,
+      "outputTokens": 1076,
+      "reason": "The response stated that AskUserQuestion was unavailable in Codex, fabricated no tool call, and asked the database question directly in plain chat.",
+      "evidence": ".plugin-eval/core-2.0.6-release-boundary-result.json"
+    }
+  ]
+}

@@ -29,8 +29,10 @@ test('P1 contract defines physical CSV line numbering', () => {
 
   assert.match(p1.userInput, /header is physical line 1/);
   assert.match(p1.userInput, /first data row is physical line 2/);
+  assert.match(p1.userInput, /Do not edit or create files/);
   assert.match(dossier, /header is physical line 1/);
   assert.match(dossier, /first data row is physical line 2/);
+  assert.match(dossier, /Do not edit or create files/);
   const planning = fs.readFileSync(
     path.join(repoRoot, 'skills', 'writing-plans', 'SKILL.md'), 'utf8');
   assert.match(planning, /Do not add validation, normalization, or required-field rules/);
