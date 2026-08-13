@@ -2,7 +2,7 @@
 
 Date: 2026-08-12
 Source: [SkillHEX v1](https://arxiv.org/abs/2608.05628v1), submitted 2026-08-06
-Status: phase 2 infrastructure implemented and public baseline renewed; no candidate revision or held-out model run has been executed
+Status: phase 2 infrastructure implemented; the first isolated candidate was rejected and a second evaluator set is frozen before its patch is drafted
 
 ## Recommendation
 
@@ -32,7 +32,14 @@ Phase 2 implements the physical boundary required before candidate generation:
 - [`evaluator.cjs`](../benchmarks/skillhex/evaluator.cjs) canonicalizes physical roots before requiring disjoint baseline, candidate, and evaluator directories; anchors the baseline and candidate lineage to the frozen Git payload; rejects held-out text in candidate files or metadata; writes the held-out package only under the evaluator root; and reloads the scoring rubric from its frozen Git commit.
 - The independent scorer requires three paired repeats with both baseline/candidate orders, checklist-level three-valued evidence, and behavior-first gating. It can only return eligibility for human review and never promotes a candidate.
 
-These commands prepare and score evidence but contain no model runner. The four held-out prompts have not been executed. Candidate generation, patch application, held-out execution, and promotion remain separate future actions.
+These commands prepare and score evidence but contain no model runner. An
+authorized external run evaluated the first isolated description candidate in
+24 paired runs. The independent scorer rejected it because both roles failed
+all repeats of the unsafe-fallback case, while the candidate also used more
+tokens. The exact outcome is recorded in
+[`2026-08-13-skillhex-candidate-1.md`](../benchmarks/results/2026-08-13-skillhex-candidate-1.md).
+No source skill was changed. The exposed case is now development evidence; a
+new evaluator-only set was frozen before drafting the next candidate.
 
 After the P1 physical-line contract changed, the complete public eight-scenario model benchmark was rerun from zero against the rebuilt Core. All eight scenarios and all 29 checklist items passed; the frozen evidence is recorded in [`2026-08-12-skillhex-phase-2-baseline.md`](../benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md). This public rerun did not execute any of the four evaluator-only cases.
 

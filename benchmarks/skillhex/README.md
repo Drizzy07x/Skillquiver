@@ -1,8 +1,8 @@
 # SkillHEX pilot infrastructure
 
 This directory contains the offline staging and evaluation boundary for the
-Skillquiver host-boundaries pilot. It does not generate candidate patches and
-does not run held-out prompts.
+Skillquiver host-boundaries campaigns. The infrastructure does not generate
+candidate patches or launch model runs itself.
 
 ## Candidate staging
 
@@ -74,8 +74,11 @@ Any candidate hard-contract failure is rejected. A better candidate is only
 
 ## Current boundary
 
-- No candidate patch has been generated.
-- No source skill has been modified.
-- No held-out case has been executed.
-- Model execution and semantic evidence collection remain a separate,
-  explicitly authorized step.
+- The first isolated description candidate was rejected after 24 paired model
+  runs; its exact result is recorded in
+  [`2026-08-13-skillhex-candidate-1.md`](../results/2026-08-13-skillhex-candidate-1.md).
+- The source skill remains unchanged.
+- The original four evaluator-only cases are no longer held out from campaign
+  authors and are development evidence only for subsequent campaigns.
+- New evaluator-only cases must be frozen in Git before the next candidate is
+  drafted, and candidate payloads must remain unable to read them.
