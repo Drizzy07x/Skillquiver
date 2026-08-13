@@ -54,7 +54,9 @@ and its extracted archive passed the plugin validator; all six extracted skills
 passed the skill validator. The 512x512 logo is 33,188 bytes. A fresh isolated
 Codex profile installed version 2.0.7 from the extracted archive, exposed
 exactly six skills, excluded `skillquiver-doctor`, and matched the source
-payload digest.
+payload digest. A clean rebuild from the final remote `v2.0.7` commit
+`26fb9683706927f90b50f7b111d9e73dee35565b` reproduced the same archive
+SHA-256 after the CI-only workflow correction.
 
 ## Static and observed signals
 
@@ -90,12 +92,19 @@ The remaining blocks that had not started before the fail-fast stop then passed:
 - Windows release tool tests: pass.
 
 The focused catalog, Core, submission, SkillHEX campaign, runner, metric-pack,
-and usage tests also passed during iteration. The final release still requires
-the remote branch/tag workflows before the dossier can mark CI complete.
+and usage tests also passed during iteration. The first remote branch and tag
+runs exposed a shallow-checkout failure because the isolation tests read the
+frozen `6804066` baseline commit. Adding `fetch-depth: 0` to the checkout fixed
+that CI-only issue. The final `main` and `v2.0.7` workflows passed on
+`26fb9683706927f90b50f7b111d9e73dee35565b`, and the matching Pages deployment
+also passed.
 
 ## External boundary
 
-Local packaging and behavior gates are complete. Portal acceptance, publisher
-identity selection, attestations, review, approval, and publication are external
-states and must not be reported as complete until observed in the submission
-portal.
+Local packaging and behavior gates are complete. On 2026-08-13, the submission
+portal showed version 2.0.6 as Published, Individual verification as Approved,
+and Business verification as not started. Because the intended public publisher
+is `Drizzy07x`, version 2.0.7 was not drafted, uploaded, or submitted under the
+Individual identity. Business verification, exact-archive portal acceptance,
+attestations, review, approval, and publication remain external states and must
+not be reported as complete until observed in the submission portal.
