@@ -22,6 +22,9 @@ function validateCampaign(campaign, evaluatorCases) {
   }
   if (!campaign.baseline?.scorecard) errors.push('baseline.scorecard is required');
   if (!campaign.evaluatorCases) errors.push('evaluatorCases is required');
+  if (!/^[0-9a-f]{40}$/i.test(campaign.evaluatorSourceCommit || '')) {
+    errors.push('evaluatorSourceCommit must be a full Git commit');
+  }
 
   const development = Array.isArray(campaign.splits?.development)
     ? campaign.splits.development

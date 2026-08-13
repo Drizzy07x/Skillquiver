@@ -2,7 +2,7 @@
 
 Date: 2026-08-12
 Source: [SkillHEX v1](https://arxiv.org/abs/2608.05628v1), submitted 2026-08-06
-Status: phase 1 implemented; no candidate revision or held-out model run has been executed
+Status: phase 2 infrastructure implemented; no candidate revision or held-out model run has been executed
 
 ## Recommendation
 
@@ -22,6 +22,17 @@ Phase 1 adds only offline experimental records and deterministic validation:
 - [`campaign.cjs`](../benchmarks/skillhex/campaign.cjs) validates the linked campaign/evaluator records, rejects scorecards from another source commit, and replays existing results into `pass`, `fail`, or `inconclusive` evidence.
 
 This phase does not generate patches, expose held-out cases to a candidate workspace, run a model, rank candidates, modify installed skills, or promote a revision.
+
+## Phase 2 isolation and independent evaluation
+
+Phase 2 implements the physical boundary required before candidate generation:
+
+- [`staging.cjs`](../benchmarks/skillhex/staging.cjs) extracts the target skill and Codex manifest from the frozen source commit into a new directory outside the repository. Candidate staging never receives the campaign ledger or evaluator cases and refuses existing destinations.
+- [`integrity.cjs`](../benchmarks/skillhex/integrity.cjs) calculates the same deterministic SHA-256 digest over staged files and the frozen Git payload while rejecting links or unsupported staged entries.
+- [`evaluator.cjs`](../benchmarks/skillhex/evaluator.cjs) canonicalizes physical roots before requiring disjoint baseline, candidate, and evaluator directories; anchors the baseline and candidate lineage to the frozen Git payload; rejects held-out text in candidate files or metadata; writes the held-out package only under the evaluator root; and reloads the scoring rubric from its frozen Git commit.
+- The independent scorer requires three paired repeats with both baseline/candidate orders, checklist-level three-valued evidence, and behavior-first gating. It can only return eligibility for human review and never promotes a candidate.
+
+These commands prepare and score evidence but contain no model runner. The four held-out prompts have not been executed. Candidate generation, patch application, held-out execution, and promotion remain separate future actions.
 
 ## Mechanisms worth transferring
 
@@ -71,4 +82,4 @@ Use one behavior cluster first: **host-boundary routing**. It has explicit devel
 
 ## Decision gate
 
-Phase 1 satisfies the immutable split and persistent-ledger requirements. Candidate generation remains blocked until isolated candidate staging and independent semantic scoring are implemented. The pilot succeeds only if a candidate beats the current skill on held-out paired runs without a safety or host-compatibility regression. Otherwise retain the current manual workflow; the paper's reported improvement is not transferable by assumption.
+Phases 1 and 2 satisfy the immutable split, persistent ledger, isolated staging, integrity, evaluator separation, and deterministic scoring requirements. Candidate generation remains blocked until a single-cause patch is explicitly approved. Held-out execution remains a separate human-gated action. The pilot succeeds only if a candidate beats the current skill on held-out paired runs without a safety or host-compatibility regression. Otherwise retain the current manual workflow; the paper's reported improvement is not transferable by assumption.

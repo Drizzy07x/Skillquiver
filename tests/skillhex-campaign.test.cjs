@@ -18,6 +18,7 @@ function makeCampaign() {
       scorecard: 'benchmarks/skillhex/baselines/host-boundaries-2.0.6.json'
     },
     evaluatorCases: 'benchmarks/skillhex/evaluator/host-boundaries.json',
+    evaluatorSourceCommit: '42d54b2ec6898f103da1c98e357651bd4a7f74d9',
     splits: {
       development: [
         {
