@@ -93,6 +93,9 @@ the 2.0.5 tag checkout mismatch is recorded in
 and the replacement 2.0.6 gate is recorded in
 [`results/2026-08-12-remediation-11.md`](results/2026-08-12-remediation-11.md)
 with its structured scorecard in [`results/latest.json`](results/latest.json).
+The P1 physical-line contract was subsequently re-baselined across all eight
+public scenarios in [`results/2026-08-12-skillhex-phase-2-baseline.md`](results/2026-08-12-skillhex-phase-2-baseline.md);
+`results/latest.json` now points to that run.
 The earlier tags remain unchanged and are not publication passes. The 2.0.6
 artifact and representative-use gate passed; directory publication still
 depends on the external identity, portal, and review checks. The prior 2.0.3

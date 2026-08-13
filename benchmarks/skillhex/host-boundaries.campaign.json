@@ -3,8 +3,8 @@
   "id": "host-boundaries-pilot",
   "targetSkill": "handle-host-boundaries",
   "baseline": {
-    "sourceCommit": "10bdb634a698ef4368a67e1c99306063d6faffce",
-    "scorecard": "benchmarks/skillhex/baselines/host-boundaries-2.0.6.json"
+    "sourceCommit": "6804066d46d9d42b5bc73e2300a3af574691b6b0",
+    "scorecard": "benchmarks/skillhex/baselines/host-boundaries-2.0.6-phase2.json"
   },
   "evaluatorCases": "benchmarks/skillhex/evaluator/host-boundaries.json",
   "evaluatorSourceCommit": "42d54b2ec6898f103da1c98e357651bd4a7f74d9",
@@ -62,7 +62,7 @@
   ],
   "nodes": [
     {
-      "id": "baseline-2.0.6",
+      "id": "baseline-2.0.6-phase2",
       "parent": null,
       "status": "baseline",
       "affectedSkill": "handle-host-boundaries",
@@ -70,24 +70,24 @@
       "patch": null,
       "hypothesisIds": [],
       "developmentRunIds": [
-        "019ff626-4124-7b31-bd0d-12bbf164d67d",
-        "019ff626-ad7e-7681-8af0-1d5c9f0eb595"
+        "019ff929-ef15-7e43-b4b8-bcc2f1e3529b",
+        "019ff92a-52ae-7422-bbe2-e3444ba3836b"
       ],
       "hardGates": [
         {
           "id": "repository-tests",
           "result": "pass",
-          "evidence": "benchmarks/results/2026-08-12-remediation-11.md"
+          "evidence": "benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md"
         },
         {
           "id": "representative-benchmark",
           "result": "pass",
-          "evidence": "benchmarks/results/2026-08-12-remediation-11.md"
+          "evidence": "benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md"
         },
         {
           "id": "negative-safety-matrix",
           "result": "pass",
-          "evidence": "benchmarks/results/2026-08-12-remediation-11.md"
+          "evidence": "benchmarks/results/2026-08-12-skillhex-phase-2-baseline.md"
         }
       ],
       "evidence": [
@@ -96,16 +96,16 @@
           "result": "pass",
           "checklistPassed": 3,
           "checklistTotal": 3,
-          "durationMs": 27384,
-          "tokens": 29735
+          "durationMs": 25167,
+          "tokens": 30173
         },
         {
           "caseId": "dev-tool-boundary",
           "result": "pass",
           "checklistPassed": 3,
           "checklistTotal": 3,
-          "durationMs": 25867,
-          "tokens": 30595
+          "durationMs": 29414,
+          "tokens": 30431
         }
       ]
     }
