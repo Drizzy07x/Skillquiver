@@ -42,6 +42,7 @@ all six matrix, execution, usage, and semantic-coverage checks.
 ## Artifact
 
 - Path: `.plugin-eval/codex-core/skillquiver-2.0.7.zip`.
+- Remote asset: `https://github.com/Drizzy07x/Skillquiver/releases/download/v2.0.7/skillquiver-2.0.7.zip`.
 - SHA-256: `79BBCAE268F7CADA7820DB0E8BB0D7583F3D6B7F4A082A3F096D75EE52E04456`.
 - Compressed size: 67,276 bytes.
 - Entries: 21.
@@ -57,6 +58,10 @@ exactly six skills, excluded `skillquiver-doctor`, and matched the source
 payload digest. A clean rebuild from the final remote `v2.0.7` commit
 `26fb9683706927f90b50f7b111d9e73dee35565b` reproduced the same archive
 SHA-256 after the CI-only workflow correction.
+
+The exact archive was also attached to the public GitHub `v2.0.7` release. A
+fresh HTTP download returned 67,276 bytes, reproduced the recorded SHA-256, and
+was byte-identical to the locally validated upload archive.
 
 ## Static and observed signals
 

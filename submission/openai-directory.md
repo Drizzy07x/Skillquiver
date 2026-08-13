@@ -328,6 +328,7 @@ Complete this record with evidence immediately before submission. Do not mark an
 | Tag workflow | Passed: https://github.com/Drizzy07x/Skillquiver/actions/runs/31743098441 |
 | Pages workflow | Passed: https://github.com/Drizzy07x/Skillquiver/actions/runs/31743095008 |
 | Local upload archive | `.plugin-eval/codex-core/skillquiver-2.0.7.zip`; 67,276 bytes; 21 files |
+| Remote upload archive | https://github.com/Drizzy07x/Skillquiver/releases/download/v2.0.7/skillquiver-2.0.7.zip |
 | Upload archive SHA-256 | `79BBCAE268F7CADA7820DB0E8BB0D7583F3D6B7F4A082A3F096D75EE52E04456` |
 | Benchmarked bundle commit | `773dad85f74e2adb02218a17e859d188959f3533` |
 | Final release commit | `26fb9683706927f90b50f7b111d9e73dee35565b` |
