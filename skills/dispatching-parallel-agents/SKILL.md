@@ -1,6 +1,6 @@
 ---
 name: dispatching-parallel-agents
-description: Dispatches parallel subagents, one per independent domain, to investigate or fix several unrelated problems concurrently. Use when 2+ independent investigations or fixes — typically unrelated test failures in different files or subsystems — can each proceed without shared state or sequential dependencies.
+description: Dispatches one subagent per independent problem. Use when two or more investigations or fixes can proceed concurrently without shared state or sequential dependencies.
 ---
 
 # Dispatching Parallel Agents

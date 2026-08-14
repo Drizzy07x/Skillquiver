@@ -48,5 +48,5 @@
   <!-- tagline -->
   <text x="640" y="548" text-anchor="middle"
         font-family="'Cascadia Code','SF Mono',Consolas,Menlo,monospace"
-        font-size="21" letter-spacing="2" fill="#8B929E">23 SKILLS TOTAL · 22 SHARED BY CLAUDE CODE AND CODEX</text>
+        font-size="21" letter-spacing="2" fill="#8B929E">23 SKILLS SHARED BY CLAUDE CODE AND CODEX</text>
 </svg>

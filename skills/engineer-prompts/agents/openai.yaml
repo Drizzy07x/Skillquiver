@@ -1,0 +1,7 @@
+interface:
+  display_name: "Engineer Prompts"
+  short_description: "Design testable prompts with explicit contracts"
+  default_prompt: "Use $engineer-prompts to build a testable prompt contract."
+
+policy:
+  allow_implicit_invocation: true

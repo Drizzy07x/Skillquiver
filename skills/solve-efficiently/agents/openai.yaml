@@ -1,0 +1,7 @@
+interface:
+  display_name: "Solve Efficiently"
+  short_description: "Route complex work with efficient context use"
+  default_prompt: "Use $solve-efficiently to route this work with minimal context."
+
+policy:
+  allow_implicit_invocation: true

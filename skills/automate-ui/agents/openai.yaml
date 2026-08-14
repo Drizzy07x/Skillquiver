@@ -1,0 +1,7 @@
+interface:
+  display_name: "Automate UI"
+  short_description: "Automate browser and desktop UI workflows"
+  default_prompt: "Use $automate-ui to navigate and verify this user interface."
+
+policy:
+  allow_implicit_invocation: true

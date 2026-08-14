@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Skillquiver — 23 skills for Claude Code and Codex</title>
-<meta name="description" content="23 agent skills total, with 22 shared by Claude Code and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
+<meta name="description" content="23 agent skills shared by Claude Code and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
 <meta name="theme-color" content="#0B0E13">
 <meta property="og:title" content="Skillquiver — 23 skills for Claude Code and Codex">
-<meta property="og:description" content="23 skills total · 22 shared by Claude Code and Codex.">
+<meta property="og:description" content="23 skills shared by Claude Code and Codex.">
 <meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/mark.svg">
@@ -293,7 +293,7 @@ footer a:hover { color: var(--gold); }
     <svg class="mark" aria-hidden="true"><use href="#quivermark"/></svg>
     <span class="name">Skillquiver</span>
     <a class="link" href="#skill">How it works</a>
-    <a class="link" href="#core">Codex Core</a>
+    <a class="link" href="#package">Codex package</a>
     <a class="link" href="#install">Install</a>
     <a class="link" href="#quiver">All 23 skills</a>
     <a class="gh" href="https://github.com/Drizzy07x/Skillquiver">GitHub</a>
@@ -303,14 +303,14 @@ footer a:hover { color: var(--gold); }
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow">23 skills total · 22 shared by Claude Code and Codex</span>
+      <span class="eyebrow">23 skills shared by Claude Code and Codex</span>
       <h1>Your agent <em>picks</em> the right skill on its own.</h1>
       <p class="sub">Every skill says what it does and when to use it. Claude Code and Codex match those lines to your request and open the workflow that fits. You never have to remember its name.</p>
       <div class="actions">
         <a class="btn solid" href="#install">Install</a>
         <a class="btn" href="#quiver">See all 23 skills</a>
       </div>
-      <p class="meta">MIT · <b>23</b> for Claude Code · <b>22</b> for Codex · nothing to build</p>
+      <p class="meta">MIT · <b>23</b> for Claude Code · <b>23</b> for Codex · nothing to build</p>
     </div>
 
     <div class="quiver">
@@ -335,35 +335,33 @@ footer a:hover { color: var(--gold); }
     </div>
     <div class="tree">
 Skillquiver/<br>
-├── <b>skills/</b> <i>22 shared</i><br>
+├── <b>skills/</b> <i>23 shared</i><br>
 │&nbsp;&nbsp;&nbsp;├── diagnose-systematically/<br>
 │&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── SKILL.md<br>
 │&nbsp;&nbsp;&nbsp;├── verify-work/<br>
+│&nbsp;&nbsp;&nbsp;├── skillquiver-doctor/<br>
 │&nbsp;&nbsp;&nbsp;└── … 20 more<br>
-├── <b>skills-claude/</b><br>
-│&nbsp;&nbsp;&nbsp;└── skillquiver-doctor/<br>
 ├── .claude-plugin/plugin.json<br>
 └── .codex-plugin/plugin.json
     </div>
   </div>
 </section>
 
-<section class="band" id="core">
+<section class="band" id="package">
   <div class="wrap explain">
     <div>
-      <span class="eyebrow">Public directory candidate</span>
-      <h2>Skillquiver Core: six focused Codex workflows.</h2>
-      <p class="lede">The OpenAI Plugin Directory candidate is a deliberately smaller bundle for planning, diagnosis, test-driven implementation, code review, static UI work, and safe host boundaries. It runs through Codex and user-approved local tools, with no hosted backend, account, authentication, bundled MCP server, or app UI.</p>
-      <p class="note">Version 2.0.7 is prepared for review under the public publisher name Drizzy07x, but is not yet approved or published. See the <a href="privacy.html">privacy policy</a>, <a href="terms.html">terms</a>, and <a href="https://github.com/Drizzy07x/Skillquiver/issues">support</a>.</p>
+      <span class="eyebrow">Public directory package</span>
+      <h2>Skillquiver v2.1.0: the complete Codex catalog.</h2>
+      <p class="lede">The update contains 23 shared Agent Skills and is a Codex-only public package. It runs through Codex and user-approved local tools, with no hosted backend, account, authentication, bundled MCP server, hooks, or app UI.</p>
+      <p class="note">Version 2.1.0 is prepared as an update to the existing listing under the public publisher name Drizzy07x. Portal review and publication remain separate external gates. See the <a href="privacy.html">privacy policy</a>, <a href="terms.html">terms</a>, and <a href="https://github.com/Drizzy07x/Skillquiver/issues">support</a>.</p>
     </div>
-    <div class="tree" data-core-skills>
-<b>Skillquiver Core v2.0.7/</b><br>
-├── <span data-core-skill="writing-plans">writing-plans</span><br>
-├── <span data-core-skill="diagnose-systematically">diagnose-systematically</span><br>
-├── <span data-core-skill="test-driven-development">test-driven-development</span><br>
-├── <span data-core-skill="requesting-code-review">requesting-code-review</span><br>
-├── <span data-core-skill="design-ui">design-ui</span><br>
-└── <span data-core-skill="handle-host-boundaries">handle-host-boundaries</span>
+    <div class="tree">
+<b>Skillquiver v2.1.0/</b><br>
+├── <span>writing-plans</span><br>
+├── <span>diagnose-systematically</span><br>
+├── <span>test-driven-development</span><br>
+├── <span>skillquiver-doctor</span><br>
+└── <span>… 19 more</span>
     </div>
   </div>
 </section>
@@ -372,7 +370,7 @@ Skillquiver/<br>
   <div class="wrap">
     <span class="eyebrow">Install</span>
     <h2>Choose your host.</h2>
-    <p class="lede">The marketplace is recommended. Claude Code gets all 23 skills; Codex gets the 22 portable skills.</p>
+    <p class="lede">The marketplace is recommended. Claude Code and Codex both get the complete 23-skill source catalog; the public directory package is gated to Codex.</p>
 
     <div class="tabs" role="tablist" aria-label="Agent host">
       <button role="tab" aria-selected="true" aria-controls="p1" id="t1" tabindex="0">Claude Code</button>
@@ -392,11 +390,10 @@ claude plugin install skillquiver@skillquiver --scope user</pre><button class="c
       </div>
       <div class="method">
         <h3>Manual</h3>
-        <p>Copy both the shared set and the Claude-only set for all 23 skills:</p>
+        <p>Copy the shared catalog for all 23 skills:</p>
         <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
 mkdir -p ~/.claude/skills
-cp -r Skillquiver/skills/* ~/.claude/skills/
-cp -r Skillquiver/skills-claude/* ~/.claude/skills/</pre><button class="copy">copy</button></div>
+cp -r Skillquiver/skills/* ~/.claude/skills/</pre><button class="copy">copy</button></div>
         <p class="note">Use a project's <code>.claude/skills/</code> folder instead for a project-only install.</p>
       </div>
     </div>
@@ -413,15 +410,15 @@ codex plugin add skillquiver@skillquiver</pre><button class="copy">copy</button>
       </div>
       <div class="method">
         <h3>Manual</h3>
-        <p>Copy the 22 shared skills to the global agent directory:</p>
+        <p>Copy all 23 shared skills to the global agent directory:</p>
         <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
-mkdir -p ~/.agents/skills
-cp -r Skillquiver/skills/* ~/.agents/skills/</pre><button class="copy">copy</button></div>
+mkdir -p ~/.codex/skills
+cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</button></div>
         <p class="note">Use a project's <code>.agents/skills/</code> folder instead for a project-only install.</p>
       </div>
     </div>
 
-    <p class="note"><strong>v2 migration:</strong> shared source moved from <code>.claude/skills/</code> to <code>skills/</code>. Marketplace installs update normally. Manual installs must use the new path; Claude users also copy <code>skills-claude/</code>.</p>
+    <p class="note"><strong>v2.1 migration:</strong> Skillquiver Doctor moved into <code>skills/</code>. Marketplace installs update normally; manual installations now copy only that directory.</p>
   </div>
 </section>
 
@@ -433,7 +430,7 @@ cp -r Skillquiver/skills/* ~/.agents/skills/</pre><button class="copy">copy</but
       <input id="filter" type="search" placeholder="Search skills…" autocomplete="off" aria-label="Search skills">
       <span id="count"></span>
     </div>
-    <noscript><p class="note">JavaScript is off — browse the <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills">22 shared skills</a> and <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills-claude/skillquiver-doctor">Claude-only Doctor</a> on GitHub.</p></noscript>
+    <noscript><p class="note">JavaScript is off — browse the <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills">23 shared skills</a> on GitHub.</p></noscript>
     <div id="list"></div>
     <p class="empty hidden" id="empty">Nothing matches. Try <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
   </div>
@@ -457,9 +454,7 @@ cp -r Skillquiver/skills/* ~/.agents/skills/</pre><button class="copy">copy</but
 
 <script>
 const REPO_SHARED = "https://github.com/Drizzy07x/Skillquiver/blob/main/skills/";
-const REPO_CLAUDE = "https://github.com/Drizzy07x/Skillquiver/blob/main/skills-claude/";
-const skillUrl = (id, compatibility = "shared") =>
-  (compatibility === "claude" ? REPO_CLAUDE : REPO_SHARED) + id + "/SKILL.md";
+const skillUrl = id => REPO_SHARED + id + "/SKILL.md";
 
 const GROUPS = [
   ["Planning", [
@@ -494,7 +489,7 @@ const GROUPS = [
     ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface.", "shared"],
   ]],
   ["System", [
-    ["skillquiver-doctor", "Finds skills, plugins, and hooks from other installs that conflict with these, and removes them — always with a backup and your ok.", "the wrong skill activates, a name shows up twice, or another plugin interferes.", "claude"],
+    ["skillquiver-doctor", "Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time.", "the wrong skill activates, a name shows up twice, or another plugin interferes.", "shared"],
   ]],
   ["Prompt engineering", [
     ["engineer-prompts", "Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.", "you're writing a prompt that other people will reuse.", "shared"],
@@ -510,8 +505,8 @@ document.getElementById("list").innerHTML = GROUPS.map(([group, skills]) => `
       <span class="eyebrow">${group}</span><span class="rule"></span><span class="n">${skills.length}</span>
     </div>
     ${skills.map(([id, does, when, compatibility]) => `
-      <a class="arrow" href="${skillUrl(id, compatibility)}">
-        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}<span class="compat ${compatibility}">${compatibility === "shared" ? "Claude Code + Codex" : "Claude Code only"}</span></span>
+      <a class="arrow" href="${skillUrl(id)}">
+        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}<span class="compat ${compatibility}">Claude Code + Codex</span></span>
         <span class="does">${does}</span>
         <span class="when">${when}</span>
       </a>`).join("")}

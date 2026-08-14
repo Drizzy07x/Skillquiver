@@ -1,6 +1,6 @@
 ---
 name: research-systematically
-description: Systematic research protocol combined with version-matched documentation lookup — freeze the question before collecting results, bind every claim to a source, and pin external docs to the dependency release the project actually installs. Use when comparing approaches with a real experiment, running benchmarks or investigations, or when an external library, SDK, CLI, or API surface must be confirmed against current docs rather than recalled.
+description: Runs source-bound research and version-matched documentation lookup. Use when comparisons, experiments, benchmarks, investigations, or external library, SDK, CLI, and API facts must be verified.
 ---
 
 # Research Systematically

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Research Systematically"
+  short_description: "Research questions with primary-source evidence"
+  default_prompt: "Use $research-systematically to answer this question from primary sources."
+
+policy:
+  allow_implicit_invocation: true

@@ -95,3 +95,25 @@ test('metric pack fails missing scenarios and absent usage', () => {
     fs.rmSync(targetPath, { recursive: true, force: true });
   }
 });
+
+test('metric pack accepts external config and scorecard paths', () => {
+  const targetPath = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-benchmark-'));
+  const configPath = path.join(targetPath, 'benchmark.json');
+  const scorecardPath = path.join(targetPath, 'latest.json');
+  writeJson(configPath, { scenarios: EXPECTED_IDS.map(id => ({ id })) });
+  writeJson(scorecardPath, {
+    scenarios: EXPECTED_IDS.map(id => ({
+      id,
+      processStatus: 'completed',
+      outcome: 'pass',
+      usageAvailability: 'present'
+    }))
+  });
+
+  try {
+    const result = evaluate(targetPath, { configPath, scorecardPath });
+    assert.ok(result.checks.every(check => check.status === 'pass'));
+  } finally {
+    fs.rmSync(targetPath, { recursive: true, force: true });
+  }
+});

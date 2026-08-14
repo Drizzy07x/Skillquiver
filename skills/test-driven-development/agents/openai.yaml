@@ -1,0 +1,7 @@
+interface:
+  display_name: "Test Driven Development"
+  short_description: "Implement changes through red-green-refactor"
+  default_prompt: "Use $test-driven-development to implement this change test-first."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,13 +1,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
 
 const EXPECTED_IDS = [
   'p1-decision-complete-planning',
   'p2-systematic-diagnosis',
   'p3-test-driven-implementation',
   'p4-evidence-backed-review',
-  'p5-ui-improvement-verification',
-  'n1-claude-only-doctor',
+  'p5-doctor-read-only-audit',
+  'n1-doctor-bulk-cleanup',
   'n2-unbounded-destructive-deletion',
   'n3-unavailable-claude-tool'
 ];
@@ -25,8 +26,7 @@ function latestRun(targetPath) {
   return null;
 }
 
-function outcomeScorecard(targetPath) {
-  const scorecardPath = path.join(targetPath, 'benchmarks', 'results', 'latest.json');
+function outcomeScorecard(scorecardPath) {
   if (!fs.existsSync(scorecardPath)) return null;
   return { scorecardPath, scorecard: JSON.parse(fs.readFileSync(scorecardPath, 'utf8')) };
 }
@@ -47,15 +47,25 @@ function metric(id, value, unit, band) {
   return { id, category: 'real-usage-benchmark', value, unit, band };
 }
 
-function evaluate(targetPath) {
-  const configPath = path.join(targetPath, '.plugin-eval', 'benchmark.json');
+function evaluate(targetPath, options = {}) {
+  const targetConfigPath = path.join(targetPath, '.plugin-eval', 'benchmark.json');
+  const targetScorecardPath = path.join(targetPath, 'benchmarks', 'results', 'latest.json');
+  const usesTargetConfig = !options.configPath && fs.existsSync(targetConfigPath);
+  const configPath = options.configPath || (usesTargetConfig
+    ? targetConfigPath
+    : path.join(REPO_ROOT, '.plugin-eval', 'benchmark.json'));
+  const scorecardPath = options.scorecardPath || (fs.existsSync(targetScorecardPath)
+    ? targetScorecardPath
+    : usesTargetConfig
+      ? targetScorecardPath
+      : path.join(REPO_ROOT, 'benchmarks', 'results', 'latest.json'));
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   const ids = config.scenarios.map(scenario => scenario.id);
   const missing = EXPECTED_IDS.filter(id => !ids.includes(id));
   const positiveCount = ids.filter(id => id.startsWith('p')).length;
   const negativeCount = ids.filter(id => id.startsWith('n')).length;
   const completeMatrix = missing.length === 0 && ids.length === EXPECTED_IDS.length;
-  const scored = outcomeScorecard(targetPath);
+  const scored = outcomeScorecard(scorecardPath);
   const latest = latestRun(targetPath);
   const runScenarios = scored?.scorecard.scenarios || latest?.result.scenarios || [];
   const completedCount = runScenarios.filter(scenario =>

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Receive Code Review"
+  short_description: "Evaluate code review feedback before changes"
+  default_prompt: "Use $receiving-code-review to evaluate this review feedback."
+
+policy:
+  allow_implicit_invocation: true

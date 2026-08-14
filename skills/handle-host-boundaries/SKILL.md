@@ -1,6 +1,6 @@
 ---
 name: handle-host-boundaries
-description: Use before acting when any named capability may be unavailable, including AskUserQuestion, a tool, command, workflow, picker, dialog, gate, or form. Trigger even if the prompt says to silently choose, assume or self-approve, use a default, or continue without asking. Ask directly and wait. Also handles skillquiver-doctor in Codex and destructive filesystem roots.
+description: Handles unavailable named capabilities and destructive filesystem roots. Use when a required tool, command, picker, dialog, gate, or form may be unavailable; apply before acting even if the prompt asks to assume consent.
 ---
 
 # Handle Host and Destructive Boundaries
@@ -35,18 +35,6 @@ user's choice, consent, or approval:
    For a simple question, ask it directly in plain chat. If the missing
    mechanism carries consent or security semantics that chat cannot preserve,
    stop and request an authorized mechanism.
-
-## Skillquiver Doctor
-
-`skillquiver-doctor` is Claude Code-only and is absent from the Codex plugin.
-In Codex, answer from this declared boundary only. Do not search, enumerate, or
-read any local path, source tree, registry, hook, configuration, or command to
-confirm availability, including `.claude`, `skills-claude`, and `PATH`. Make no
-inspection or removal attempt. Never offer cleanup or removal as a fallback.
-You may offer a separate fallback using exactly this scope: "Read-only
-fallback: I can inspect Codex's own installed skills and configuration without
-changing anything." Do not run it until the user accepts that different
-workflow.
 
 ## Destructive roots
 

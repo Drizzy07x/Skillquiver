@@ -1,0 +1,7 @@
+interface:
+  display_name: "Verify Work"
+  short_description: "Verify software behavior with proportionate checks"
+  default_prompt: "Use $verify-work to gather proportionate evidence for this change."
+
+policy:
+  allow_implicit_invocation: true

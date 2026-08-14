@@ -42,3 +42,20 @@ test('collector rejects intermediate agent messages as usage telemetry', () => {
     fs.rmSync(target, { recursive: true, force: true });
   }
 });
+
+test('collector accepts a benchmark config outside the package target', () => {
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-usage-'));
+  const configPath = path.join(target, 'benchmark.json');
+  write(configPath, JSON.stringify({
+    scenarios: [{ id: 'p1-example', title: 'P1 example' }]
+  }));
+  write(path.join(target, '.plugin-eval', 'runs', '2026-01-01', '01-p1-example', 'codex.stdout.jsonl'),
+    `${JSON.stringify({ type: 'turn.completed', usage: { input_tokens: 7, output_tokens: 2 } })}\n`);
+
+  try {
+    const [sample] = collectUsage(target, configPath);
+    assert.equal(sample.usage.total_tokens, 9);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});

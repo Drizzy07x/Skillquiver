@@ -1,0 +1,7 @@
+interface:
+  display_name: "Verify Before Completion"
+  short_description: "Verify evidence before claiming completion"
+  default_prompt: "Use $verification-before-completion to verify this work before closing it."
+
+policy:
+  allow_implicit_invocation: true

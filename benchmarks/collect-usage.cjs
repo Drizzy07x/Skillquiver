@@ -29,8 +29,8 @@ function normalizeUsage(usage) {
   };
 }
 
-function collectUsage(targetPath) {
-  const config = JSON.parse(fs.readFileSync(path.join(targetPath, '.plugin-eval', 'benchmark.json'), 'utf8'));
+function collectUsage(targetPath, configPath = path.join(targetPath, '.plugin-eval', 'benchmark.json')) {
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   const scenarios = new Map(config.scenarios.map(scenario => [scenario.id, scenario.title]));
   const selected = new Map();
   const runsPath = path.join(targetPath, '.plugin-eval', 'runs');
@@ -65,7 +65,10 @@ function collectUsage(targetPath) {
 if (require.main === module) {
   const targetPath = path.resolve(process.argv[2] || '.');
   const outputPath = path.resolve(process.argv[3] || path.join(targetPath, '.plugin-eval', 'benchmark-usage.jsonl'));
-  const samples = collectUsage(targetPath);
+  const configPath = process.argv[4]
+    ? path.resolve(process.argv[4])
+    : path.join(targetPath, '.plugin-eval', 'benchmark.json');
+  const samples = collectUsage(targetPath, configPath);
   fs.writeFileSync(outputPath, samples.map(sample => JSON.stringify(sample)).join('\n') + (samples.length ? '\n' : ''));
   process.stdout.write(`${JSON.stringify({ outputPath, sampleCount: samples.length })}\n`);
 }

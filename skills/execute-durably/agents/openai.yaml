@@ -1,0 +1,7 @@
+interface:
+  display_name: "Execute Durably"
+  short_description: "Run long work with durable state and evidence"
+  default_prompt: "Use $execute-durably to run this long task with durable evidence."
+
+policy:
+  allow_implicit_invocation: true

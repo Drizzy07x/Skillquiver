@@ -1,7 +1,7 @@
 {
   "name": "skillquiver",
-  "version": "2.0.7",
-  "description": "Twenty-two portable Agent Skills for planning, implementation, review, verification, UI, and system work.",
+  "version": "2.1.0",
+  "description": "Twenty-three reusable Agent Skills for planning, implementation, review, verification, UI, and system work in Codex.",
   "author": {
     "name": "Drizzy07x",
     "url": "https://github.com/Drizzy07x"
@@ -19,20 +19,22 @@
   "interface": {
     "displayName": "Skillquiver",
     "shortDescription": "Practical software workflows",
-    "longDescription": "A curated collection of 22 portable Agent Skills for planning, implementation, debugging, review, verification, host boundaries, and UI work in Claude Code and Codex. The Codex package excludes Skillquiver Doctor.",
+    "longDescription": "Skillquiver is a Codex-only collection of 23 reusable Agent Skills for planning, implementation, debugging, review, verification, UI, host boundaries, and safe environment maintenance. It has no hosted backend, account, authentication, MCP server, or bundled hooks; workflows run through Codex and user-approved local tools.",
     "developerName": "Drizzy07x",
     "category": "Productivity",
     "capabilities": [
-      "Read",
-      "Write"
+      "Read project files and relevant local context.",
+      "Write project files when the user's task authorizes changes.",
+      "Run host-approved local development commands and tests.",
+      "Use optional host-provided browser, UI automation, or subagent capabilities when available."
     ],
     "websiteURL": "https://drizzy07x.github.io/Skillquiver/",
     "privacyPolicyURL": "https://drizzy07x.github.io/Skillquiver/privacy.html",
     "termsOfServiceURL": "https://drizzy07x.github.io/Skillquiver/terms.html",
     "defaultPrompt": [
-      "Turn this feature idea into a decision-complete implementation plan.",
-      "Diagnose this failing test systematically and verify the root cause.",
-      "Review this code change and report only evidence-backed findings."
+      "Use $writing-plans to turn this feature idea into a decision-complete implementation plan.",
+      "Use $diagnose-systematically to diagnose this failing test and verify the root cause.",
+      "Use $skillquiver:skillquiver-doctor to audit this Codex setup; confirm each change."
     ],
     "brandColor": "#C87941",
     "composerIcon": "./assets/plugin-logo.png",

@@ -5,7 +5,6 @@ const test = require('node:test');
 
 const root = path.resolve(__dirname, '..');
 const sharedSkillsRoot = path.join(root, 'skills');
-const claudeSkillsRoot = path.join(root, 'skills-claude');
 
 function skillNames(skillsRoot) {
   return fs.readdirSync(skillsRoot, { withFileTypes: true })
@@ -66,28 +65,34 @@ function markdownFiles(dir) {
   });
 }
 
-test('catalog contains 22 shared skills and one Claude-only skill', () => {
+test('catalog contains 23 dual-host skills with Codex metadata', () => {
   const shared = skillNames(sharedSkillsRoot);
-  const claudeOnly = skillNames(claudeSkillsRoot);
-  const all = [...shared, ...claudeOnly];
 
-  assert.equal(shared.length, 22);
+  assert.equal(shared.length, 23);
   assert.ok(shared.includes('handle-host-boundaries'));
-  assert.deepEqual(claudeOnly, ['skillquiver-doctor']);
-  assert.equal(new Set(all).size, 23);
+  assert.ok(shared.includes('skillquiver-doctor'));
 
-  for (const [skillsRoot, names] of [
-    [sharedSkillsRoot, shared],
-    [claudeSkillsRoot, claudeOnly]
-  ]) {
-    for (const name of names) {
-      const content = fs.readFileSync(path.join(skillsRoot, name, 'SKILL.md'), 'utf8');
-      const frontmatter = readFrontmatter(content);
-      assert.equal(frontmatter.name, name);
-      assert.equal(typeof frontmatter.description, 'string');
-      assert.ok(frontmatter.description.length > 0);
-    }
+  for (const name of shared) {
+    const skillRoot = path.join(sharedSkillsRoot, name);
+    const content = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
+    const frontmatter = readFrontmatter(content);
+    const metadata = fs.readFileSync(path.join(skillRoot, 'agents', 'openai.yaml'), 'utf8');
+    assert.equal(frontmatter.name, name);
+    assert.equal(typeof frontmatter.description, 'string');
+    assert.ok(frontmatter.description.length > 0);
+    assert.match(metadata, /^interface:\r?$/m);
+    const mention = name === 'skillquiver-doctor'
+      ? 'skillquiver:skillquiver-doctor'
+      : name;
+    assert.match(metadata, new RegExp(`default_prompt: "[^"]*\\$${mention.replace(/-/g, '\\-')}[^\"]*"`));
+    assert.match(metadata, /^policy:\r?$/m);
+    assert.doesNotMatch(metadata, /^  products:/m);
   }
+
+  const doctorMetadata = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'skillquiver-doctor', 'agents', 'openai.yaml'), 'utf8');
+  assert.match(doctorMetadata, /^  allow_implicit_invocation: false\r?$/m);
+  assert.match(doctorMetadata, /default_prompt: "Use \$skillquiver:skillquiver-doctor/);
 });
 
 test('plugin manifests and marketplaces expose the intended catalogs', () => {
@@ -97,9 +102,14 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.0.7');
+  assert.equal(codexPlugin.version, '2.1.0');
   assert.equal(codexPlugin.skills, './skills/');
-  assert.deepEqual(codexPlugin.interface.capabilities, ['Read', 'Write']);
+  assert.deepEqual(codexPlugin.interface.capabilities, [
+    'Read project files and relevant local context.',
+    "Write project files when the user's task authorizes changes.",
+    'Run host-approved local development commands and tests.',
+    'Use optional host-provided browser, UI automation, or subagent capabilities when available.'
+  ]);
   assert.equal(codexPlugin.interface.category, 'Productivity');
   assert.ok(codexPlugin.interface.displayName.length <= 30);
   assert.ok(codexPlugin.interface.shortDescription.length <= 30);
@@ -111,9 +121,9 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.equal(codexPlugin.interface.logo, './assets/plugin-logo.png');
   assert.equal(codexPlugin.interface.composerIcon, './assets/plugin-logo.png');
   assert.deepEqual(codexPlugin.interface.defaultPrompt, [
-    'Turn this feature idea into a decision-complete implementation plan.',
-    'Diagnose this failing test systematically and verify the root cause.',
-    'Review this code change and report only evidence-backed findings.'
+    'Use $writing-plans to turn this feature idea into a decision-complete implementation plan.',
+    'Use $diagnose-systematically to diagnose this failing test and verify the root cause.',
+    'Use $skillquiver:skillquiver-doctor to audit this Codex setup; confirm each change.'
   ]);
   assert.ok(codexPlugin.interface.defaultPrompt.every(prompt => prompt.length <= 128));
   assert.ok(fs.existsSync(path.resolve(root, codexPlugin.interface.logo)));
@@ -125,10 +135,10 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
 
   assert.equal(claudePlugin.name, 'skillquiver');
   assert.equal(claudePlugin.version, codexPlugin.version);
-  assert.deepEqual(claudePlugin.skills, ['./skills', './skills-claude']);
-  assert.match(codexPlugin.description, /Twenty-two portable Agent Skills/);
-  assert.match(codexPlugin.interface.longDescription, /22 portable Agent Skills/);
-  assert.match(claudePlugin.description, /Twenty-two Agent Skills shared/);
+  assert.equal(claudePlugin.skills, './skills');
+  assert.match(codexPlugin.description, /Twenty-three reusable Agent Skills/);
+  assert.match(codexPlugin.interface.longDescription, /23 reusable Agent Skills/);
+  assert.match(claudePlugin.description, /Twenty-three Agent Skills shared/);
 
   assert.equal(codexMarketplace.name, 'skillquiver');
   assert.equal(codexMarketplace.interface.displayName, 'Skillquiver');
@@ -136,29 +146,30 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.deepEqual(codexMarketplace.plugins[0], {
     name: 'skillquiver',
     source: { source: 'local', path: './' },
-    policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' },
+    policy: {
+      installation: 'AVAILABLE',
+      authentication: 'ON_INSTALL',
+      products: ['CODEX']
+    },
     category: 'Productivity'
   });
 
   assert.equal(claudeMarketplace.name, 'skillquiver');
-  assert.match(claudeMarketplace.description, /Twenty-two Agent Skills shared/);
+  assert.match(claudeMarketplace.description, /Twenty-three Agent Skills shared/);
   assert.equal(claudeMarketplace.plugins.length, 1);
   assert.equal(claudeMarketplace.plugins[0].name, 'skillquiver');
   assert.equal(claudeMarketplace.plugins[0].source, './');
-  assert.match(claudeMarketplace.plugins[0].description, /Twenty-two shared Agent Skills/);
+  assert.match(claudeMarketplace.plugins[0].description, /Twenty-three shared Agent Skills/);
 });
 
-test('Codex manifest declares unavailable Claude capabilities safely', () => {
-  const codexPlugin = readJson('.codex-plugin/plugin.json');
-  const boundary = `${codexPlugin.description} ${codexPlugin.interface.longDescription}`;
+test('host boundaries keep generic capability and destructive safeguards', () => {
   const routing = fs.readFileSync(
     path.join(sharedSkillsRoot, 'handle-host-boundaries', 'SKILL.md'), 'utf8');
 
-  assert.match(boundary, /Skillquiver Doctor/);
-  assert.match(routing, /Skillquiver Doctor/);
-  assert.match(routing, /Claude Code-only/);
   assert.match(routing, /Do not inspect or modify another host's configuration/);
   assert.match(routing, /ask it directly in plain chat/);
+  assert.doesNotMatch(routing, /Skillquiver Doctor/);
+  assert.doesNotMatch(routing, /Claude Code-only/);
 });
 
 test('planning and review instructions preserve scope and findings', () => {
@@ -229,18 +240,17 @@ test('diagnosis examples report secret presence without revealing values', () =>
 
 test('README and website list every skill with matching compatibility', () => {
   const shared = skillNames(sharedSkillsRoot);
-  const claudeOnly = skillNames(claudeSkillsRoot);
-  const expected = [...shared, ...claudeOnly].sort();
+  const expected = [...shared].sort();
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const groups = html.slice(html.indexOf('const GROUPS'), html.indexOf('const FLAT'));
 
   const readmeEntries = [...readme.matchAll(
-    /\[([a-z0-9-]+)\]\(((?:skills|skills-claude)\/([a-z0-9-]+)\/SKILL\.md)\)/g
+    /\[([a-z0-9-]+)\]\((skills\/([a-z0-9-]+)\/SKILL\.md)\)/g
   )].map(match => ({ label: match[1], target: match[2], id: match[3] }));
   const siteEntries = [...groups.matchAll(
-    /^\s+\["([a-z0-9-]+)",.*,\s*"(shared|claude)"\],?$/gm
-  )].map(match => ({ id: match[1], compatibility: match[2] }));
+    /^\s+\["([a-z0-9-]+)",.*,\s*"shared"\],?$/gm
+  )].map(match => ({ id: match[1], compatibility: 'shared' }));
 
   assert.deepEqual([...new Set(readmeEntries.map(entry => entry.id))].sort(), expected);
   assert.deepEqual([...new Set(siteEntries.map(entry => entry.id))].sort(), expected);
@@ -254,42 +264,38 @@ test('README and website list every skill with matching compatibility', () => {
     assert.equal(siteEntries.find(candidate => candidate.id === name).compatibility, 'shared');
   }
 
-  const doctor = readmeEntries.find(entry => entry.id === 'skillquiver-doctor');
-  assert.equal(doctor.target, 'skills-claude/skillquiver-doctor/SKILL.md');
-  assert.match(readme.split(/\r?\n/).find(line => line.includes(`](${doctor.target})`)),
-    /!\[Claude Code only\]/);
   assert.equal(
     siteEntries.find(entry => entry.id === 'skillquiver-doctor').compatibility,
-    'claude'
+    'shared'
   );
 });
 
-test('website identifies the focused Codex Core candidate honestly', () => {
+test('website identifies the complete Codex package honestly', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const core = html.slice(html.indexOf('<section class="band" id="core">'),
+  const packageSection = html.slice(html.indexOf('<section class="band" id="package">'),
     html.indexOf('<section class="band" id="install">'));
-  const coreSkills = [...core.matchAll(/data-core-skill="([a-z0-9-]+)"/g)]
-    .map(match => match[1]);
 
-  assert.deepEqual(coreSkills, [
-    'writing-plans',
-    'diagnose-systematically',
-    'test-driven-development',
-    'requesting-code-review',
-    'design-ui',
-    'handle-host-boundaries'
-  ]);
-  assert.match(core, /Skillquiver Core v2\.0\.7/);
-  assert.match(core, /public publisher name Drizzy07x/);
-  assert.match(core, /not yet approved or published/);
+  assert.match(packageSection, /Skillquiver v2\.1\.0/);
+  assert.match(packageSection, /23 shared Agent Skills/);
+  assert.match(packageSection, /Codex-only public package/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
-    /Skillquiver Core is the focused six-skill Codex directory bundle/);
+    /Skillquiver is a Codex-only public package of 23 Agent Skills/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
     /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
   assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
-    /Skillquiver Core is the focused six-skill Codex directory bundle/);
+    /Skillquiver is a Codex-only public package of 23 Agent Skills/);
   assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
     /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
+});
+
+test('Codex manual install uses the user skill directory', () => {
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  for (const content of [readme, html]) {
+    assert.match(content, /~\/\.codex\/skills/);
+    assert.doesNotMatch(content, /mkdir -p ~\/\.agents\/skills/);
+  }
 });
 
 test('local Markdown links resolve', () => {

@@ -1,6 +1,6 @@
 ---
 name: solve-efficiently
-description: Routes work efficiently with progressive context discovery, matched effort, context economy, semantic navigation, and durable project mapping. Use when work touches several modules or layers, boundaries must be discovered before editing, context payload must be reduced, or a project map or domain glossary should be written; skip only for an obvious one-file change with a nearby test.
+description: Routes multi-module work with progressive discovery, matched effort, and context economy. Use when boundaries are unclear, context must stay small, or a durable project map is needed.
 ---
 
 # Solve Efficiently

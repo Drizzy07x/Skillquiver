@@ -12,6 +12,7 @@ Thumbs.db
 .plugin-eval/*.md
 .plugin-eval/writing-plans-*.json
 .plugin-eval/codex-core/
+.plugin-eval/codex-package/
 .plugin-eval/smoke-*/
 benchmarks/bin/
 benchmarks/obj/

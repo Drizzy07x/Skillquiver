@@ -26,15 +26,68 @@ try {
   & (Join-Path $root 'benchmarks\prepare-configs.ps1') | Out-Null
 
   $configExpectations = @(
-    @('positive.generated.json', 'danger-full-access', 'p1-decision-complete-planning,p2-systematic-diagnosis,p3-test-driven-implementation,p4-evidence-backed-review,p5-ui-improvement-verification'),
+    @('positive.generated.json', 'danger-full-access', 'p1-decision-complete-planning,p2-systematic-diagnosis,p3-test-driven-implementation,p4-evidence-backed-review'),
     @('planning.generated.json', 'danger-full-access', 'p1-decision-complete-planning'),
-    @('boundary.generated.json', 'danger-full-access', 'n1-claude-only-doctor,n3-unavailable-claude-tool'),
+    @('doctor.generated.json', 'danger-full-access', 'p5-doctor-read-only-audit'),
+    @('doctor-boundary.generated.json', 'danger-full-access', 'n1-doctor-bulk-cleanup'),
+    @('boundary.generated.json', 'danger-full-access', 'n3-unavailable-claude-tool'),
     @('destructive.generated.json', 'read-only', 'n2-unbounded-destructive-deletion')
   )
   foreach ($expectation in $configExpectations) {
     $config = Read-GeneratedConfig $expectation[0]
     Assert-Equal $expectation[1] $config.runner.sandbox "$($expectation[0]) sandbox mismatch."
     Assert-Equal $expectation[2] ($config.scenarios.id -join ',') "$($expectation[0]) scenarios mismatch."
+  }
+
+  $packageArtifactRoot = Join-Path $work 'codex-package'
+  $firstPackage = & (Join-Path $root 'benchmarks\build-codex-package.ps1') `
+    -ArtifactRoot $packageArtifactRoot
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  $secondPackage = & (Join-Path $root 'benchmarks\build-codex-package.ps1') `
+    -ArtifactRoot $packageArtifactRoot
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  Assert-Equal $firstPackage.Sha256 $secondPackage.Sha256 `
+    'Consecutive package builds must have the same SHA-256.'
+  Assert-Equal 23 $secondPackage.SkillCount 'The release archive must contain 23 skills.'
+  if (-not (Test-Path -LiteralPath $secondPackage.ArchivePath)) {
+    throw 'The release archive was not created.'
+  }
+
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $archive = [IO.Compression.ZipFile]::OpenRead($secondPackage.ArchivePath)
+  try {
+    $entryNames = @($archive.Entries | ForEach-Object FullName)
+    Assert-Equal (($entryNames | Sort-Object) -join "`n") ($entryNames -join "`n") `
+      'Archive entries must be written in sorted order.'
+    Assert-Equal 23 @($entryNames | Where-Object { $_ -match '^skills/[^/]+/SKILL\.md$' }).Count `
+      'Archive skill entry count mismatch.'
+    if ($entryNames | Where-Object { $_ -match '(^/|(^|/)\.\.(/|$)|\\)' }) {
+      throw 'The release archive contains an unsafe path.'
+    }
+    $manifestEntry = $archive.GetEntry('.codex-plugin/plugin.json')
+    if (-not $manifestEntry) { throw 'The release archive is missing plugin.json.' }
+    $reader = [IO.StreamReader]::new($manifestEntry.Open())
+    try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json }
+    finally { $reader.Dispose() }
+    Assert-Equal 'skillquiver' $manifest.name 'Archive manifest name mismatch.'
+    Assert-Equal '2.1.0' $manifest.version 'Archive manifest version mismatch.'
+  }
+  finally {
+    $archive.Dispose()
+  }
+
+  $unsafeArtifactRoot = Join-Path (Split-Path -Parent $root) `
+    ("skillquiver-outside-{0}" -f [guid]::NewGuid())
+  try {
+    & (Join-Path $root 'benchmarks\build-codex-package.ps1') `
+      -ArtifactRoot $unsafeArtifactRoot | Out-Null
+    throw 'The release builder accepted an unsafe artifact root.'
+  }
+  catch {
+    if ($_.Exception.Message -notmatch 'artifact root or system temp') { throw }
+  }
+  if (Test-Path -LiteralPath $unsafeArtifactRoot) {
+    throw 'The release builder created an unsafe artifact root before rejecting it.'
   }
 
   $fakePluginEval = Join-Path $work 'fake-plugin-eval.cjs'

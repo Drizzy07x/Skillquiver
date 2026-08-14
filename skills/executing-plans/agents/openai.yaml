@@ -1,0 +1,7 @@
+interface:
+  display_name: "Execute Plans"
+  short_description: "Execute approved implementation plans safely"
+  default_prompt: "Use $executing-plans to implement this approved plan in checkpoints."
+
+policy:
+  allow_implicit_invocation: true

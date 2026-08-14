@@ -1,6 +1,6 @@
 ---
 name: refactor-safely
-description: Refactors working code for readability and lands changes in untested legacy code, without altering observable behavior - smell-driven moves, seams, dependency-breaking, and characterization tests. Use when tidying code that is messy, long, deeply nested, or duplicated, or when a change must land in uncovered code whose callers nobody can enumerate.
+description: Refactors working or legacy code without changing observable behavior, using characterization tests when needed. Use when code is messy, nested, duplicated, or uncovered.
 ---
 
 # Refactor Safely

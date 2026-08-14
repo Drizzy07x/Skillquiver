@@ -1,14 +1,14 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Skillquiver — 23 skills total, 22 shared by Claude Code and Codex" width="800">
+<img src="assets/banner.svg" alt="Skillquiver — 23 skills shared by Claude Code and Codex" width="800">
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-8B929E)](LICENSE)
 ![Skills](https://img.shields.io/badge/skills-23-C87941)
-![Shared](https://img.shields.io/badge/shared-22-7FA6A0)
+![Shared](https://img.shields.io/badge/shared-23-7FA6A0)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-23-E0A458)
-![Codex](https://img.shields.io/badge/Codex-22-E8E4DC)
+![Codex](https://img.shields.io/badge/Codex-23-E8E4DC)
 
-**23 skills total · 22 shared by Claude Code and Codex.**
+**23 skills shared by Claude Code and Codex.**
 
 Each skill tells the agent what it does and when to use it, so the right workflow can activate without you memorizing its name.
 
@@ -48,13 +48,12 @@ or:
 claude plugin update skillquiver@skillquiver
 ```
 
-For a manual global install, clone the repository and copy both skill sets:
+For a manual global install, clone the repository and copy the shared catalog:
 
 ```bash
 git clone https://github.com/Drizzy07x/Skillquiver.git
 mkdir -p ~/.claude/skills
 cp -r Skillquiver/skills/* ~/.claude/skills/
-cp -r Skillquiver/skills-claude/* ~/.claude/skills/
 ```
 
 Use a project's `.claude/skills/` directory instead for a project-only install.
@@ -68,7 +67,7 @@ codex plugin marketplace add Drizzy07x/Skillquiver
 codex plugin add skillquiver@skillquiver
 ```
 
-Codex installs the 22 shared skills. Refresh the marketplace and reinstall the plugin to update:
+Codex installs all 23 skills. Refresh the marketplace and reinstall the plugin to update:
 
 ```bash
 codex plugin marketplace upgrade skillquiver
@@ -79,31 +78,27 @@ For a manual global install:
 
 ```bash
 git clone https://github.com/Drizzy07x/Skillquiver.git
-mkdir -p ~/.agents/skills
-cp -r Skillquiver/skills/* ~/.agents/skills/
+mkdir -p ~/.codex/skills
+cp -r Skillquiver/skills/* ~/.codex/skills/
 ```
 
 Use a project's `.agents/skills/` directory instead for a project-only install. Plugins are supported in Codex CLI and the Codex desktop app; use the manual project install for clients that do not load plugins.
 
 > [!IMPORTANT]
-> **v2 migration:** the shared source moved from `.claude/skills/` to `skills/`. Existing marketplace installs update through their host commands above. If you previously cloned or copied `.claude/skills/` directly, replace that path with `skills/`; Claude users should also copy `skills-claude/` for Skillquiver Doctor.
+> **v2.1 migration:** Skillquiver Doctor moved into `skills/`. Existing marketplace installs update through their host commands above. Manual installations now copy only `skills/` for the complete 23-skill catalog.
 
 ## Repository layout
 
 ```text
 Skillquiver/
-├── skills/                              # 22 skills shared by both hosts
-├── skills-claude/
-│   └── skillquiver-doctor/              # Claude Code only
+├── skills/                              # 23 skills shared by both hosts
 ├── .claude-plugin/plugin.json           # exposes all 23 to Claude Code
-└── .codex-plugin/plugin.json            # exposes 22 to Codex
+└── .codex-plugin/plugin.json            # exposes all 23 to Codex
 ```
 
 ## Skills
 
 Shared compatibility badge: ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0)
-
-Claude-only badge: ![Claude Code only](https://img.shields.io/badge/Claude%20Code-only-E0A458)
 
 ### Planning
 
@@ -155,7 +150,7 @@ Claude-only badge: ![Claude Code only](https://img.shields.io/badge/Claude%20Cod
 
 | Skill | Compatibility | What it does |
 |-------|---------------|--------------|
-| [skillquiver-doctor](skills-claude/skillquiver-doctor/SKILL.md) | ![Claude Code only](https://img.shields.io/badge/Claude%20Code-only-E0A458) | Finds skills, plugins, and hooks from other installs that conflict with Skillquiver's, and removes them — always with a backup and per-item consent. |
+| [skillquiver-doctor](skills/skillquiver-doctor/SKILL.md) | ![Claude Code + Codex](https://img.shields.io/badge/Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Audits host-local skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs with per-item consent. |
 
 ### Prompt engineering
 

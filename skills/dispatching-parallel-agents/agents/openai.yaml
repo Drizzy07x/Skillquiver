@@ -1,0 +1,7 @@
+interface:
+  display_name: "Dispatch Parallel Agents"
+  short_description: "Coordinate independent work across subagents"
+  default_prompt: "Use $dispatching-parallel-agents to divide these independent tasks."
+
+policy:
+  allow_implicit_invocation: true

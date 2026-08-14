@@ -1,0 +1,7 @@
+interface:
+  display_name: "Brainstorm Ideas"
+  short_description: "Explore ideas before implementation begins"
+  default_prompt: "Use $brainstorming to explore this idea before implementation."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,6 +1,6 @@
 ---
 name: receiving-code-review
-description: "Processes code review feedback with technical rigor: verify each claim against the code before implementing, push back with evidence when the reviewer is wrong, never agree performatively. Use when receiving review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable."
+description: Verifies code review feedback before implementation and pushes back with evidence when a claim is wrong. Use when feedback is unclear, risky, or technically questionable.
 ---
 
 # Code Review Reception

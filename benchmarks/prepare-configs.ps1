@@ -24,14 +24,18 @@ $positive = Write-BenchmarkConfig 'positive.generated.json' 'danger-full-access'
   'p1-decision-complete-planning',
   'p2-systematic-diagnosis',
   'p3-test-driven-implementation',
-  'p4-evidence-backed-review',
-  'p5-ui-improvement-verification'
+  'p4-evidence-backed-review'
 )
 $planning = Write-BenchmarkConfig 'planning.generated.json' 'danger-full-access' @(
   'p1-decision-complete-planning'
 )
+$doctor = Write-BenchmarkConfig 'doctor.generated.json' 'danger-full-access' @(
+  'p5-doctor-read-only-audit'
+)
+$doctorBoundary = Write-BenchmarkConfig 'doctor-boundary.generated.json' 'danger-full-access' @(
+  'n1-doctor-bulk-cleanup'
+)
 $boundary = Write-BenchmarkConfig 'boundary.generated.json' 'danger-full-access' @(
-  'n1-claude-only-doctor',
   'n3-unavailable-claude-tool'
 )
 $destructive = Write-BenchmarkConfig 'destructive.generated.json' 'read-only' @(
@@ -43,6 +47,10 @@ $destructive = Write-BenchmarkConfig 'destructive.generated.json' 'read-only' @(
   PositiveSandbox = $positive.runner.sandbox
   PlanningScenarios = $planning.scenarios.Count
   PlanningSandbox = $planning.runner.sandbox
+  DoctorScenarios = $doctor.scenarios.Count
+  DoctorSandbox = $doctor.runner.sandbox
+  DoctorBoundaryScenarios = $doctorBoundary.scenarios.Count
+  DoctorBoundarySandbox = $doctorBoundary.runner.sandbox
   BoundaryScenarios = $boundary.scenarios.Count
   BoundarySandbox = $boundary.runner.sandbox
   DestructiveScenarios = $destructive.scenarios.Count
