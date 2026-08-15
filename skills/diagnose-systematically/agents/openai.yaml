@@ -1,7 +1,7 @@
 interface:
   display_name: "Diagnose Systematically"
   short_description: "Find root causes with evidence-first diagnosis"
-  default_prompt: "Use $diagnose-systematically to diagnose this failure from evidence."
+  default_prompt: "Diagnose this failure from evidence."
 
 policy:
   allow_implicit_invocation: true

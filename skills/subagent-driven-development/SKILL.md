@@ -36,7 +36,7 @@ Use `executing-plans` for a parallel session. Return to planning when tasks are 
    bash <skill-dir>/scripts/sdd-workspace PLAN_FILE
    ```
 
-   The command prints `<repo-root>/.skillquiver/sdd/<plan-basename>/`. This git-ignored directory owns every artifact for this plan: ledger, briefs, reports, and review packages. Never reuse another plan's directory.
+   The command prints `<repo-root>/.skillquiver/sdd/<plan-basename>-<path-hash>/`. This git-ignored directory owns every artifact for this plan: ledger, briefs, reports, and review packages. Never reuse another plan's directory.
 4. Inspect `<workspace>/progress.md`:
    - If its first line names this plan, treat every `Task <N>: complete` line as authoritative and resume at the first incomplete task.
    - If a task ends with a fix-round entry, resume at the next round.

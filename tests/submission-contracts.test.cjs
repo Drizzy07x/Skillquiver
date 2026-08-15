@@ -5,6 +5,24 @@ const test = require('node:test');
 
 const repoRoot = path.resolve(__dirname, '..');
 
+test('submission dossier describes one universal skills-only update', () => {
+  const dossier = fs.readFileSync(
+    path.join(repoRoot, 'submission', 'openai-directory.md'), 'utf8');
+
+  assert.match(dossier, /Update to existing public listing/);
+  assert.match(dossier, /Plugin ID \| `plugins_6a7e4ad693708191a1b2d5b8d68f2a88`/);
+  assert.match(dossier, /Current public name \| Skillquiver Core/);
+  assert.match(dossier, /Current public version \| 2\.0\.7/);
+  assert.match(dossier, /public plugin works in ChatGPT and Codex/);
+  assert.match(dossier, /same source catalog also supports Claude Code/);
+  assert.doesNotMatch(dossier, /product-gated|Codex-only public package|Codex product gate/i);
+  assert.match(dossier, /1\. `Turn this feature idea into a decision-complete implementation plan\.`/);
+  assert.match(dossier, /2\. `Diagnose this failing test systematically and verify the root cause\.`/);
+  assert.match(dossier, /3\. `Review this code change and report only evidence-backed findings\.`/);
+  assert.equal((dossier.match(/^### P\d+ —/gm) || []).length, 5);
+  assert.equal((dossier.match(/^### N\d+ —/gm) || []).length, 3);
+});
+
 test('N3 contract permits an honest plain-chat fallback', () => {
   const config = JSON.parse(fs.readFileSync(
     path.join(repoRoot, '.plugin-eval', 'benchmark.json'), 'utf8'));
@@ -70,10 +88,12 @@ test('Skillquiver Doctor requires host-local evidence and per-item consent', () 
   assert.doesNotMatch(codex, /user skills under `~\/\.agents\/skills/);
   assert.match(codex, /requirements\.toml.*report-only/is);
   assert.match(codex, /allow_implicit_invocation.*false.*explicitly via `\$skillquiver:skillquiver-doctor`/is);
-  assert.match(codex, /Never report.*Skillquiver.*as a conflict/is);
+  assert.match(codex, /second.*Skillquiver.*foreign.*Class A/is);
+  assert.doesNotMatch(codex, /Never report any Skillquiver source/is);
   assert.match(codex, /at most 12 read-only tool calls/i);
   assert.match(codex, /Do not traverse uninstalled plugin caches/i);
   assert.match(codex, /~\/\.codex\/skillquiver-doctor-backup/);
+  assert.match(claude, /second.*Skillquiver.*foreign.*Class A/is);
   assert.match(claude, /~\/\.claude\/skillquiver-doctor-backup/);
 
   const benchmark = JSON.parse(fs.readFileSync(
@@ -83,6 +103,12 @@ test('Skillquiver Doctor requires host-local evidence and per-item consent', () 
     assert.match(prompt, /\$skillquiver:skillquiver-doctor/);
     assert.doesNotMatch(prompt, /`\$skillquiver:skillquiver-doctor`/);
   }
+  const doctorScenario = benchmark.scenarios.find(
+    scenario => scenario.id === 'p5-doctor-read-only-audit');
+  assert.match(doctorScenario.userInput, /\.agents\/skills\/writing-plans/);
+  assert.ok(doctorScenario.successChecklist.some(item =>
+    /second.*Skillquiver.*foreign.*Class A/i.test(item)
+  ));
 });
 
 test('read-only diagnosis forbids scratch log files', () => {

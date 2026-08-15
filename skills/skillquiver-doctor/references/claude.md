@@ -16,9 +16,12 @@ Resolve home and cwd to absolute paths once. Inventory:
 - the session skill listing only as corroboration.
 
 Read `name` and `description` first. Load a body or hook only when the common
-classification contract requires it. Treat the active Skillquiver install,
-its development install, and this repository's `skills/` directory as self.
-Report plugin caches and managed settings without editing them.
+classification contract requires it. Resolve the active Skillquiver install's
+selector and canonical source path. Treat only that source, exact development
+aliases, and cache views that resolve back to it as self. A second plugin or
+standalone Skillquiver source at a different canonical path is foreign; evaluate
+its duplicate names under Class A. Report plugin caches and managed settings
+without editing them.
 
 ## Reversible actions
 

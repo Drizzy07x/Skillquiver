@@ -7,6 +7,8 @@ $originalCodexHome = $env:CODEX_HOME
 $originalLog = $env:FAKE_CODEX_LOG
 $originalFailure = $env:FAKE_CODEX_FAIL_MARKETPLACE
 $originalTimeout = $env:SKILLQUIVER_BENCHMARK_TIMEOUT_SECONDS
+$escapeLink = $null
+$escapeTarget = $null
 
 function Assert-Equal {
   param($Expected, $Actual, [string]$Message)
@@ -38,6 +40,9 @@ try {
     Assert-Equal $expectation[1] $config.runner.sandbox "$($expectation[0]) sandbox mismatch."
     Assert-Equal $expectation[2] ($config.scenarios.id -join ',') "$($expectation[0]) scenarios mismatch."
   }
+  $doctorConfig = Read-GeneratedConfig 'doctor.generated.json'
+  Assert-Equal 'benchmarks/workspace-doctor' $doctorConfig.workspace.sourcePath `
+    'Doctor benchmark must use the duplicate-source workspace.'
 
   $packageArtifactRoot = Join-Path $work 'codex-package'
   $firstPackage = & (Join-Path $root 'benchmarks\build-codex-package.ps1') `
@@ -71,10 +76,48 @@ try {
     finally { $reader.Dispose() }
     Assert-Equal 'skillquiver' $manifest.name 'Archive manifest name mismatch.'
     Assert-Equal '2.1.0' $manifest.version 'Archive manifest version mismatch.'
+    $executableEntries = @(
+      'skills/brainstorming/scripts/start-server.sh',
+      'skills/brainstorming/scripts/stop-server.sh',
+      'skills/diagnose-systematically/find-polluter.sh'
+    )
+    foreach ($entryName in $executableEntries) {
+      $executableEntry = $archive.GetEntry($entryName)
+      if (-not $executableEntry) { throw "The release archive is missing $entryName." }
+      $unixPermissions = ($executableEntry.ExternalAttributes -shr 16) -band 0x1FF
+      Assert-Equal 493 $unixPermissions "$entryName must retain mode 0755."
+    }
   }
   finally {
     $archive.Dispose()
   }
+
+  $archiveBytes = [IO.File]::ReadAllBytes($secondPackage.ArchivePath)
+  $endOffset = -1
+  for ($offset = $archiveBytes.Length - 22; $offset -ge 0; $offset--) {
+    if ($archiveBytes[$offset] -eq 0x50 -and $archiveBytes[$offset + 1] -eq 0x4B -and
+        $archiveBytes[$offset + 2] -eq 0x05 -and $archiveBytes[$offset + 3] -eq 0x06) {
+      $endOffset = $offset
+      break
+    }
+  }
+  if ($endOffset -lt 0) { throw 'The release ZIP has no end-of-central-directory record.' }
+  $centralEntryCount = [BitConverter]::ToUInt16($archiveBytes, $endOffset + 10)
+  $offset = [int64][BitConverter]::ToUInt32($archiveBytes, $endOffset + 16)
+  for ($index = 0; $index -lt $centralEntryCount; $index++) {
+    if ($archiveBytes[$offset] -ne 0x50 -or $archiveBytes[$offset + 1] -ne 0x4B -or
+        $archiveBytes[$offset + 2] -ne 0x01 -or $archiveBytes[$offset + 3] -ne 0x02) {
+      throw 'The release ZIP central directory is malformed.'
+    }
+    Assert-Equal 3 $archiveBytes[$offset + 5] `
+      'ZIP central-directory entries must declare a Unix creator system.'
+    $nameLength = [BitConverter]::ToUInt16($archiveBytes, $offset + 28)
+    $extraLength = [BitConverter]::ToUInt16($archiveBytes, $offset + 30)
+    $commentLength = [BitConverter]::ToUInt16($archiveBytes, $offset + 32)
+    $offset += 46 + $nameLength + $extraLength + $commentLength
+  }
+  Assert-Equal $secondPackage.EntryCount $centralEntryCount `
+    'ZIP central-directory entry count mismatch.'
 
   $unsafeArtifactRoot = Join-Path (Split-Path -Parent $root) `
     ("skillquiver-outside-{0}" -f [guid]::NewGuid())
@@ -88,6 +131,21 @@ try {
   }
   if (Test-Path -LiteralPath $unsafeArtifactRoot) {
     throw 'The release builder created an unsafe artifact root before rejecting it.'
+  }
+
+  $escapeTarget = Join-Path $root ".plugin-eval\release-escape-target-$([guid]::NewGuid())"
+  $escapeLink = Join-Path $root ".plugin-eval\codex-package\release-escape-link-$([guid]::NewGuid())"
+  New-Item -ItemType Directory -Force $escapeTarget | Out-Null
+  New-Item -ItemType Junction -Path $escapeLink -Target $escapeTarget | Out-Null
+  $escapedArtifactRoot = Join-Path $escapeLink 'created-outside-boundary'
+  $escapeLog = Join-Path $work 'escape-builder.log'
+  & pwsh -NoLogo -NoProfile -File (Join-Path $root 'benchmarks\build-codex-package.ps1') `
+    -ArtifactRoot $escapedArtifactRoot *> $escapeLog
+  if ($LASTEXITCODE -eq 0) {
+    throw 'The release builder accepted an artifact root through an escaping junction.'
+  }
+  if (Test-Path -LiteralPath (Join-Path $escapeTarget 'created-outside-boundary')) {
+    throw 'The release builder created a directory through an escaping junction.'
   }
 
   $fakePluginEval = Join-Path $work 'fake-plugin-eval.cjs'
@@ -235,6 +293,12 @@ finally {
   $env:FAKE_CODEX_LOG = $originalLog
   $env:FAKE_CODEX_FAIL_MARKETPLACE = $originalFailure
   $env:SKILLQUIVER_BENCHMARK_TIMEOUT_SECONDS = $originalTimeout
+  if ($escapeLink -and (Test-Path -LiteralPath $escapeLink)) {
+    Remove-Item -LiteralPath $escapeLink -Force
+  }
+  if ($escapeTarget -and (Test-Path -LiteralPath $escapeTarget)) {
+    Remove-Item -LiteralPath $escapeTarget -Recurse -Force
+  }
   if (Test-Path -LiteralPath $work) {
     Remove-Item -LiteralPath $work -Recurse -Force
   }

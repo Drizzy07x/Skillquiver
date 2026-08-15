@@ -1,7 +1,7 @@
 interface:
   display_name: "Design UI"
   short_description: "Design accessible responsive user interfaces"
-  default_prompt: "Use $design-ui to design and verify this user interface."
+  default_prompt: "Design and verify this user interface."
 
 policy:
   allow_implicit_invocation: true

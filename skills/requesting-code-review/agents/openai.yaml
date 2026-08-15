@@ -1,7 +1,7 @@
 interface:
   display_name: "Request Code Review"
   short_description: "Review code changes with evidence-backed findings"
-  default_prompt: "Use $requesting-code-review to review these changes for actionable defects."
+  default_prompt: "Review these changes for actionable defects."
 
 policy:
   allow_implicit_invocation: true

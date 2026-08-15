@@ -1,7 +1,7 @@
 interface:
   display_name: "Write Plans"
   short_description: "Create decision-complete implementation plans"
-  default_prompt: "Use $writing-plans to create a decision-complete implementation plan."
+  default_prompt: "Create a decision-complete implementation plan."
 
 policy:
   allow_implicit_invocation: true

@@ -58,10 +58,14 @@ test('Codex package contains every skill and consistent public metadata', t => {
     value.length <= 120 && !/[\r\n]/.test(value)
   ));
   assert.deepEqual(manifest.interface.defaultPrompt, [
-    'Use $writing-plans to turn this feature idea into a decision-complete implementation plan.',
-    'Use $diagnose-systematically to diagnose this failing test and verify the root cause.',
-    'Use $skillquiver:skillquiver-doctor to audit this Codex setup; confirm each change.'
+    'Turn this feature idea into a decision-complete implementation plan.',
+    'Diagnose this failing test systematically and verify the root cause.',
+    'Review this code change and report only evidence-backed findings.'
   ]);
+  assert.match(manifest.description, /ChatGPT and Codex/);
+  assert.match(manifest.interface.longDescription, /public plugin works in ChatGPT and Codex/);
+  assert.match(manifest.interface.longDescription, /same source catalog also supports Claude Code/);
+  assert.ok(manifest.keywords.includes('chatgpt'));
   assert.ok(manifest.interface.defaultPrompt.every(prompt =>
     prompt.length <= 128 && !/[\r\n]/.test(prompt) && !prompt.includes('@')
   ));
@@ -94,6 +98,37 @@ test('Codex package refuses output outside its artifact or temp roots', () => {
     () => buildCodexPackage(root, path.dirname(root)),
     /must be inside the artifact root or system temp/
   );
+});
+
+test('Codex package refuses output through a link that escapes its allowed roots', t => {
+  const artifactRoot = path.join(root, '.plugin-eval', 'codex-package');
+  const outsideRoot = fs.mkdtempSync(path.join(root, '.skillquiver-output-target-'));
+  const outsideOutput = path.join(outsideRoot, 'victim');
+  const outputLink = path.join(
+    artifactRoot,
+    `output-link-${process.pid}-${Date.now()}`
+  );
+  fs.mkdirSync(artifactRoot, { recursive: true });
+  fs.mkdirSync(outsideOutput);
+  fs.writeFileSync(path.join(outsideOutput, 'sentinel.txt'), 'keep');
+  fs.symlinkSync(
+    outsideRoot,
+    outputLink,
+    process.platform === 'win32' ? 'junction' : 'dir'
+  );
+  t.after(() => {
+    if (fs.existsSync(outputLink)) {
+      if (process.platform === 'win32') fs.rmdirSync(outputLink);
+      else fs.unlinkSync(outputLink);
+    }
+    fs.rmSync(outsideRoot, { recursive: true, force: true });
+  });
+
+  assert.throws(
+    () => buildCodexPackage(root, path.join(outputLink, 'victim')),
+    /must be inside the artifact root or system temp/
+  );
+  assert.equal(fs.readFileSync(path.join(outsideOutput, 'sentinel.txt'), 'utf8'), 'keep');
 });
 
 test('Codex package rejects links anywhere in the source tree', t => {

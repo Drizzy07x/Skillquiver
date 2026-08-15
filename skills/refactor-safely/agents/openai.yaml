@@ -1,7 +1,7 @@
 interface:
   display_name: "Refactor Safely"
   short_description: "Refactor behavior safely with verification"
-  default_prompt: "Use $refactor-safely to improve this code without changing behavior."
+  default_prompt: "Improve this code without changing behavior."
 
 policy:
   allow_implicit_invocation: true

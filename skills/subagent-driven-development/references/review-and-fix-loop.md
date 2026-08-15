@@ -6,7 +6,7 @@ Read this reference before the first task review. Apply every gate through task 
 
 Per-task review is a task-scoped gate. It never replaces the broad whole-branch review.
 
-1. Run `scripts/review-package PLAN_FILE BASE HEAD`, using the BASE recorded before implementation. Use the printed file path; `HEAD~1` can omit earlier commits from a multi-commit task.
+1. Run `bash <skill-dir>/scripts/review-package PLAN_FILE BASE HEAD`, using the BASE recorded before implementation. Use the printed file path; `HEAD~1` can omit earlier commits from a multi-commit task.
 2. Dispatch [task-reviewer-prompt.md](../task-reviewer-prompt.md) with the task brief, implementer report, review package, and binding global constraints.
 3. Copy exact values, formats, and relationships from the plan's Global Constraints or specification. The reviewer template already carries process rules.
 4. Require both verdicts: spec compliance and task quality. Implementer self-review does not replace either verdict.
@@ -49,7 +49,7 @@ Dispatch a fresh implementer, using a more capable model when supported. Include
 1. The implementer fixes the findings, runs the focused tests covering the amended code, and appends the change, test command, and output to the existing report file.
 2. Confirm that evidence exists before re-review.
 3. Record `FIX_BASE`, the head seen by the previous review.
-4. Run `scripts/review-package PLAN_FILE FIX_BASE HEAD`.
+4. Run `bash <skill-dir>/scripts/review-package PLAN_FILE FIX_BASE HEAD`.
 5. Dispatch [re-review-prompt.md](../re-review-prompt.md) with the findings, brief, report, and printed diff path.
 6. The re-review verdicts each finding as ADDRESSED or NOT ADDRESSED and checks only the fix diff for new breakage.
 7. Ledger out-of-scope observations as deferred minors; they do not extend the loop.
@@ -80,10 +80,10 @@ Mark the task complete only after this line exists. Continue to the next task on
 
 After all tasks complete:
 
-1. Run `scripts/review-package PLAN_FILE MERGE_BASE HEAD`, where `MERGE_BASE` is the commit from which the branch started.
+1. Run `bash <skill-dir>/scripts/review-package PLAN_FILE MERGE_BASE HEAD`, where `MERGE_BASE` is the commit from which the branch started.
 2. Dispatch the most capable available model with [code-reviewer.md](../../requesting-code-review/code-reviewer.md), the printed package, and pointers to the ledger's deferred-minor and parked lines.
 3. If findings remain, dispatch one fix worker with the complete findings list.
-4. Run exactly one scoped re-review of that fix wave using `scripts/review-package PLAN_FILE FIX_BASE HEAD` and [re-review-prompt.md](../re-review-prompt.md).
+4. Run exactly one scoped re-review of that fix wave using `bash <skill-dir>/scripts/review-package PLAN_FILE FIX_BASE HEAD` and [re-review-prompt.md](../re-review-prompt.md).
 5. Park residual non-load-bearing findings with rulings. Surface residual load-bearing findings when `finishing-a-development-branch` presents the integration options.
 
 There is no second final-review fix wave.

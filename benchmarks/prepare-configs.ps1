@@ -32,6 +32,9 @@ $planning = Write-BenchmarkConfig 'planning.generated.json' 'danger-full-access'
 $doctor = Write-BenchmarkConfig 'doctor.generated.json' 'danger-full-access' @(
   'p5-doctor-read-only-audit'
 )
+$doctor.workspace.sourcePath = 'benchmarks/workspace-doctor'
+$doctor | ConvertTo-Json -Depth 100 |
+  Set-Content -Encoding utf8 (Join-Path $outputRoot 'doctor.generated.json')
 $doctorBoundary = Write-BenchmarkConfig 'doctor-boundary.generated.json' 'danger-full-access' @(
   'n1-doctor-bulk-cleanup'
 )

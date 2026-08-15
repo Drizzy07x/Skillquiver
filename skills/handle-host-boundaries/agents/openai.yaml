@@ -1,7 +1,7 @@
 interface:
   display_name: "Handle Safety Boundaries"
   short_description: "Handle unavailable capabilities and unsafe roots"
-  default_prompt: "Use $handle-host-boundaries to handle this capability boundary safely."
+  default_prompt: "Handle this capability boundary safely."
 
 policy:
   allow_implicit_invocation: true

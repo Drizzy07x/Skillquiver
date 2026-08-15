@@ -1,6 +1,9 @@
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const PACKAGE_ROOTS = ['.codex-plugin', 'skills', 'assets', 'LICENSE'];
+const EVIDENCE_ROOTS = ['.plugin-eval', 'benchmarks'];
 
 const EXPECTED_IDS = [
   'p1-decision-complete-planning',
@@ -13,6 +16,14 @@ const EXPECTED_IDS = [
   'n3-unavailable-claude-tool'
 ];
 
+function readJson(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 function latestRun(targetPath) {
   const runsPath = path.join(targetPath, '.plugin-eval', 'runs');
   if (!fs.existsSync(runsPath)) return null;
@@ -20,15 +31,76 @@ function latestRun(targetPath) {
   for (const name of fs.readdirSync(runsPath).sort().reverse()) {
     const resultPath = path.join(runsPath, name, 'benchmark-run.json');
     if (fs.existsSync(resultPath)) {
-      return { resultPath, result: JSON.parse(fs.readFileSync(resultPath, 'utf8')) };
+      const result = readJson(resultPath);
+      if (Array.isArray(result?.scenarios)) return { resultPath, result };
     }
   }
   return null;
 }
 
-function outcomeScorecard(scorecardPath) {
-  if (!fs.existsSync(scorecardPath)) return null;
-  return { scorecardPath, scorecard: JSON.parse(fs.readFileSync(scorecardPath, 'utf8')) };
+function artifactTreeSha256(targetPath) {
+  const files = [];
+  const allowedRoots = new Set([...PACKAGE_ROOTS, ...EVIDENCE_ROOTS]);
+
+  for (const entry of fs.readdirSync(targetPath)) {
+    if (!allowedRoots.has(entry)) return null;
+  }
+
+  function collect(entryPath) {
+    const stat = fs.lstatSync(entryPath);
+    if (stat.isSymbolicLink()) return false;
+    if (stat.isDirectory()) {
+      for (const entry of fs.readdirSync(entryPath).sort()) {
+        if (!collect(path.join(entryPath, entry))) return false;
+      }
+    }
+    else if (stat.isFile()) {
+      files.push(entryPath);
+    }
+    return true;
+  }
+
+  for (const name of PACKAGE_ROOTS) {
+    const entryPath = path.join(targetPath, name);
+    if (fs.existsSync(entryPath) && !collect(entryPath)) return null;
+  }
+  if (files.length === 0) return null;
+
+  const hash = crypto.createHash('sha256');
+  for (const filePath of files.sort()) {
+    const relativePath = path.relative(targetPath, filePath).split(path.sep).join('/');
+    hash.update(relativePath);
+    hash.update(Buffer.from([0]));
+    hash.update(fs.readFileSync(filePath));
+    hash.update(Buffer.from([0]));
+  }
+  return hash.digest('hex').toUpperCase();
+}
+
+function artifactArchiveSha256(targetPath) {
+  const manifest = readJson(path.join(targetPath, '.codex-plugin', 'plugin.json'));
+  if (typeof manifest?.name !== 'string' || typeof manifest?.version !== 'string') return null;
+  const archivePath = path.join(
+    path.dirname(targetPath),
+    `${manifest.name}-${manifest.version}.zip`
+  );
+  if (!fs.existsSync(archivePath)) return null;
+  return crypto.createHash('sha256')
+    .update(fs.readFileSync(archivePath))
+    .digest('hex')
+    .toUpperCase();
+}
+
+function outcomeScorecard(scorecardPath, targetPath, requireArchiveHash = false) {
+  if (!scorecardPath || !fs.existsSync(scorecardPath)) return null;
+  const scorecard = readJson(scorecardPath);
+  if (!Array.isArray(scorecard?.scenarios)) return null;
+  const targetSha256 = artifactTreeSha256(targetPath);
+  if (!targetSha256 || scorecard.artifactTreeSha256 !== targetSha256) return null;
+  if (requireArchiveHash && typeof scorecard.artifactSha256 !== 'string') return null;
+  if (scorecard.artifactSha256 &&
+      scorecard.artifactSha256 !== artifactArchiveSha256(targetPath)) return null;
+  return { scorecardPath, scorecard };
 }
 
 function check(id, status, message, evidence, remediation = []) {
@@ -50,34 +122,43 @@ function metric(id, value, unit, band) {
 function evaluate(targetPath, options = {}) {
   const targetConfigPath = path.join(targetPath, '.plugin-eval', 'benchmark.json');
   const targetScorecardPath = path.join(targetPath, 'benchmarks', 'results', 'latest.json');
+  const repositoryTargetPath = path.join(REPO_ROOT, '.plugin-eval', 'codex-package', 'skillquiver');
+  const usesRepositoryEvidence = path.resolve(targetPath) === repositoryTargetPath;
   const usesTargetConfig = !options.configPath && fs.existsSync(targetConfigPath);
   const configPath = options.configPath || (usesTargetConfig
     ? targetConfigPath
-    : path.join(REPO_ROOT, '.plugin-eval', 'benchmark.json'));
+    : usesRepositoryEvidence
+      ? path.join(REPO_ROOT, '.plugin-eval', 'benchmark.json')
+      : null);
   const scorecardPath = options.scorecardPath || (fs.existsSync(targetScorecardPath)
     ? targetScorecardPath
-    : usesTargetConfig
-      ? targetScorecardPath
-      : path.join(REPO_ROOT, 'benchmarks', 'results', 'latest.json'));
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  const ids = config.scenarios.map(scenario => scenario.id);
+    : usesRepositoryEvidence
+      ? path.join(REPO_ROOT, 'benchmarks', 'results', 'latest.json')
+      : null);
+  const requireArchiveHash = options.requireArchiveHash ?? usesRepositoryEvidence;
+  const config = configPath && fs.existsSync(configPath) ? readJson(configPath) : null;
+  const configuredScenarios = Array.isArray(config?.scenarios) ? config.scenarios : [];
+  const ids = configuredScenarios
+    .filter(scenario => typeof scenario?.id === 'string')
+    .map(scenario => scenario.id);
   const missing = EXPECTED_IDS.filter(id => !ids.includes(id));
   const positiveCount = ids.filter(id => id.startsWith('p')).length;
   const negativeCount = ids.filter(id => id.startsWith('n')).length;
   const completeMatrix = missing.length === 0 && ids.length === EXPECTED_IDS.length;
-  const scored = outcomeScorecard(scorecardPath);
+  const scored = outcomeScorecard(scorecardPath, targetPath, requireArchiveHash);
   const latest = latestRun(targetPath);
   const runScenarios = scored?.scorecard.scenarios || latest?.result.scenarios || [];
-  const completedCount = runScenarios.filter(scenario =>
-    (scenario.processStatus || scenario.status) === 'completed'
+  const evidenceCount = predicate => EXPECTED_IDS.filter(id =>
+    runScenarios.some(scenario => scenario.id === id && predicate(scenario))
   ).length;
-  const usageCount = runScenarios.filter(scenario =>
-    typeof scenario.inputTokens === 'number' || scenario.usageAvailability === 'present'
-  ).length;
+  const completedCount = evidenceCount(scenario =>
+    (scenario.processStatus || scenario.status) === 'completed');
+  const usageCount = evidenceCount(scenario =>
+    typeof scenario.inputTokens === 'number' || scenario.usageAvailability === 'present');
   const outcomePassCount = scored
-    ? runScenarios.filter(scenario => scenario.outcome === 'pass').length
+    ? evidenceCount(scenario => scenario.outcome === 'pass')
     : 0;
-  const matchingRun = EXPECTED_IDS.every(id => runScenarios.some(scenario => scenario.id === id));
+  const matchingRun = evidenceCount(() => true) === EXPECTED_IDS.length;
 
   const checks = [
     check(
@@ -163,4 +244,4 @@ if (require.main === module) {
   process.stdout.write(`${JSON.stringify(evaluate(targetPath))}\n`);
 }
 
-module.exports = { EXPECTED_IDS, evaluate };
+module.exports = { EXPECTED_IDS, artifactTreeSha256, evaluate };

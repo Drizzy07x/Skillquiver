@@ -49,6 +49,11 @@ fi
 echo "Found $TOTAL test files"
 echo ""
 
+if [ "$TOTAL" -eq 0 ]; then
+  echo "❌ No test files matched: $TEST_PATTERN" >&2
+  exit 4
+fi
+
 COUNT=0
 while IFS= read -r TEST_FILE; do
   [ -n "$TEST_FILE" ] || continue
@@ -58,7 +63,8 @@ while IFS= read -r TEST_FILE; do
 
   # Run the test (unquoted expansion is intentional: the runner may be
   # a multi-word command like 'npx vitest run')
-  $TEST_RUNNER "$TEST_FILE" > /dev/null 2>&1 || true
+  RUNNER_STATUS=0
+  $TEST_RUNNER "$TEST_FILE" > /dev/null 2>&1 || RUNNER_STATUS=$?
 
   # Check if pollution appeared
   if [ -e "$POLLUTION_CHECK" ]; then
@@ -74,6 +80,11 @@ while IFS= read -r TEST_FILE; do
     echo "  $TEST_RUNNER $TEST_FILE    # Run just this test"
     echo "  cat $TEST_FILE         # Review test code"
     exit 1
+  fi
+
+  if [ "$RUNNER_STATUS" -ne 0 ]; then
+    echo "❌ Test runner failed for: $TEST_FILE" >&2
+    exit 3
   fi
 done <<< "$TEST_FILES"
 

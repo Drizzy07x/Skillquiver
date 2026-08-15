@@ -90,6 +90,10 @@ away by positive cases.
 
 The metric pack reports deterministic setup, execution, and usage coverage. It
 does not claim semantic task success from a zero exit code.
+Repository scorecards are accepted only when both `artifactTreeSha256` and the
+declared release `artifactSha256` match the analyzed package. Rebuilding or
+editing the package invalidates prior semantic and usage claims until the same
+scenario matrix is evaluated again.
 
 The exact 2.0.4 tag mismatch is recorded in
 [`results/2026-08-12-remediation-9.md`](results/2026-08-12-remediation-9.md),
@@ -100,7 +104,10 @@ and the replacement 2.0.6 gate is recorded in
 with its structured scorecard in [`results/latest.json`](results/latest.json).
 The P1 physical-line contract was subsequently re-baselined across all eight
 public scenarios in [`results/2026-08-12-skillhex-phase-2-baseline.md`](results/2026-08-12-skillhex-phase-2-baseline.md);
-`results/latest.json` now points to the complete 2.1.0 package gate recorded in
+`results/latest.json` now points to the universal 2.1.0 release-candidate gate
+recorded in
+[`results/2026-08-14-skillquiver-2.1.0-universal.md`](results/2026-08-14-skillquiver-2.1.0-universal.md).
+The earlier complete-package gate remains recorded in
 [`results/2026-08-13-skillquiver-2.1.0-package.md`](results/2026-08-13-skillquiver-2.1.0-package.md).
 The earlier tags remain unchanged and are not publication passes. The 2.1.0
 artifact and representative-use gate passed; directory publication still

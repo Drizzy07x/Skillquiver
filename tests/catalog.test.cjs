@@ -65,7 +65,7 @@ function markdownFiles(dir) {
   });
 }
 
-test('catalog contains 23 dual-host skills with Codex metadata', () => {
+test('catalog contains 23 universal skills with OpenAI metadata', () => {
   const shared = skillNames(sharedSkillsRoot);
 
   assert.equal(shared.length, 23);
@@ -81,10 +81,10 @@ test('catalog contains 23 dual-host skills with Codex metadata', () => {
     assert.equal(typeof frontmatter.description, 'string');
     assert.ok(frontmatter.description.length > 0);
     assert.match(metadata, /^interface:\r?$/m);
-    const mention = name === 'skillquiver-doctor'
-      ? 'skillquiver:skillquiver-doctor'
-      : name;
-    assert.match(metadata, new RegExp(`default_prompt: "[^"]*\\$${mention.replace(/-/g, '\\-')}[^\"]*"`));
+    const defaultPrompt = metadata.match(/^  default_prompt: "([^"]+)"\r?$/m);
+    assert.ok(defaultPrompt, `${name} must expose a default prompt`);
+    assert.doesNotMatch(defaultPrompt[1], /[$@]/,
+      `${name} default prompt must be host-neutral`);
     assert.match(metadata, /^policy:\r?$/m);
     assert.doesNotMatch(metadata, /^  products:/m);
   }
@@ -92,7 +92,7 @@ test('catalog contains 23 dual-host skills with Codex metadata', () => {
   const doctorMetadata = fs.readFileSync(
     path.join(sharedSkillsRoot, 'skillquiver-doctor', 'agents', 'openai.yaml'), 'utf8');
   assert.match(doctorMetadata, /^  allow_implicit_invocation: false\r?$/m);
-  assert.match(doctorMetadata, /default_prompt: "Use \$skillquiver:skillquiver-doctor/);
+  assert.match(doctorMetadata, /default_prompt: "Audit this host and confirm each repair\."/);
 });
 
 test('plugin manifests and marketplaces expose the intended catalogs', () => {
@@ -121,9 +121,9 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.equal(codexPlugin.interface.logo, './assets/plugin-logo.png');
   assert.equal(codexPlugin.interface.composerIcon, './assets/plugin-logo.png');
   assert.deepEqual(codexPlugin.interface.defaultPrompt, [
-    'Use $writing-plans to turn this feature idea into a decision-complete implementation plan.',
-    'Use $diagnose-systematically to diagnose this failing test and verify the root cause.',
-    'Use $skillquiver:skillquiver-doctor to audit this Codex setup; confirm each change.'
+    'Turn this feature idea into a decision-complete implementation plan.',
+    'Diagnose this failing test systematically and verify the root cause.',
+    'Review this code change and report only evidence-backed findings.'
   ]);
   assert.ok(codexPlugin.interface.defaultPrompt.every(prompt => prompt.length <= 128));
   assert.ok(fs.existsSync(path.resolve(root, codexPlugin.interface.logo)));
@@ -137,8 +137,13 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.equal(claudePlugin.version, codexPlugin.version);
   assert.equal(claudePlugin.skills, './skills');
   assert.match(codexPlugin.description, /Twenty-three reusable Agent Skills/);
+  assert.match(codexPlugin.description, /ChatGPT and Codex/);
+  assert.match(codexPlugin.interface.longDescription, /public plugin works in ChatGPT and Codex/);
+  assert.match(codexPlugin.interface.longDescription, /same source catalog also supports Claude Code/);
+  assert.ok(codexPlugin.keywords.includes('chatgpt'));
   assert.match(codexPlugin.interface.longDescription, /23 reusable Agent Skills/);
   assert.match(claudePlugin.description, /Twenty-three Agent Skills shared/);
+  assert.match(claudePlugin.description, /ChatGPT, Claude Code, and Codex/);
 
   assert.equal(codexMarketplace.name, 'skillquiver');
   assert.equal(codexMarketplace.interface.displayName, 'Skillquiver');
@@ -148,14 +153,14 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
     source: { source: 'local', path: './' },
     policy: {
       installation: 'AVAILABLE',
-      authentication: 'ON_INSTALL',
-      products: ['CODEX']
+      authentication: 'ON_INSTALL'
     },
     category: 'Productivity'
   });
 
   assert.equal(claudeMarketplace.name, 'skillquiver');
   assert.match(claudeMarketplace.description, /Twenty-three Agent Skills shared/);
+  assert.match(claudeMarketplace.description, /ChatGPT, Claude Code, and Codex/);
   assert.equal(claudeMarketplace.plugins.length, 1);
   assert.equal(claudeMarketplace.plugins[0].name, 'skillquiver');
   assert.equal(claudeMarketplace.plugins[0].source, './');
@@ -260,7 +265,7 @@ test('README and website list every skill with matching compatibility', () => {
     const entry = readmeEntries.find(candidate => candidate.id === name);
     assert.equal(entry.target, `skills/${name}/SKILL.md`);
     assert.match(readme.split(/\r?\n/).find(line => line.includes(`](${entry.target})`)),
-      /!\[Claude Code \+ Codex\]/);
+      /!\[ChatGPT \+ Claude Code \+ Codex\]/);
     assert.equal(siteEntries.find(candidate => candidate.id === name).compatibility, 'shared');
   }
 
@@ -270,20 +275,53 @@ test('README and website list every skill with matching compatibility', () => {
   );
 });
 
-test('website identifies the complete Codex package honestly', () => {
+test('ChatGPT host routes stay capability-aware', () => {
+  const doctor = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'skillquiver-doctor', 'SKILL.md'), 'utf8');
+  const visualCompanion = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'brainstorming', 'visual-companion.md'), 'utf8');
+  const automateUi = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'automate-ui', 'SKILL.md'), 'utf8');
+  const projectMap = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'solve-efficiently', 'SKILL.md'), 'utf8');
+  const chatgptDoctorPath = path.join(
+    sharedSkillsRoot, 'skillquiver-doctor', 'references', 'chatgpt.md');
+
+  assert.match(doctor, /current ChatGPT, Claude Code, or Codex host/);
+  assert.match(doctor, /ChatGPT: \[references\/chatgpt\.md\]/);
+  assert.ok(fs.existsSync(chatgptDoctorPath));
+
+  const chatgptDoctor = fs.readFileSync(chatgptDoctorPath, 'utf8');
+  assert.match(chatgptDoctor, /Use only for a running ChatGPT session/);
+  assert.match(chatgptDoctor, /record a coverage gap/i);
+  assert.match(chatgptDoctor, /Plugins Directory/);
+  assert.match(chatgptDoctor, /Do not inspect Claude Code or Codex configuration/);
+  assert.doesNotMatch(chatgptDoctor, /~\/\.claude|~\/\.codex|codex plugin|claude plugin/);
+
+  assert.match(visualCompanion, /\*\*ChatGPT:\*\*/);
+  assert.match(visualCompanion, /long-running or yielded shell capability/);
+  assert.match(visualCompanion, /continue text-only/);
+  assert.match(automateUi, /ChatGPT and Codex examples include/);
+  assert.match(projectMap, /ChatGPT or Codex surface/);
+});
+
+test('website identifies the complete universal package honestly', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const packageSection = html.slice(html.indexOf('<section class="band" id="package">'),
     html.indexOf('<section class="band" id="install">'));
 
   assert.match(packageSection, /Skillquiver v2\.1\.0/);
   assert.match(packageSection, /23 shared Agent Skills/);
-  assert.match(packageSection, /Codex-only public package/);
+  assert.match(packageSection, /public plugin works in ChatGPT and Codex/);
+  assert.doesNotMatch(html, /Claude-only or Codex-only capability/);
+  assert.match(fs.readFileSync(path.join(root, 'assets', 'banner.svg'), 'utf8'),
+    /23 SKILLS · CHATGPT · CLAUDE CODE · CODEX/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
-    /Skillquiver is a Codex-only public package of 23 Agent Skills/);
+    /Skillquiver is a public package of 23 Agent Skills for ChatGPT and Codex/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
     /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
   assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
-    /Skillquiver is a Codex-only public package of 23 Agent Skills/);
+    /Skillquiver is a public package of 23 Agent Skills for ChatGPT and Codex/);
   assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
     /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
 });

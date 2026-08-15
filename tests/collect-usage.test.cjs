@@ -43,6 +43,22 @@ test('collector rejects intermediate agent messages as usage telemetry', () => {
   }
 });
 
+test('collector rejects incomplete or invalid completed-turn usage', () => {
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-usage-'));
+  const logPath = path.join(target, 'codex.stdout.jsonl');
+  write(logPath, [
+    { type: 'turn.completed', usage: { input_tokens: 10 } },
+    { type: 'turn.completed', usage: { input_tokens: -1, output_tokens: 2 } },
+    { type: 'turn.completed', usage: { input_tokens: 5, output_tokens: 1.5 } }
+  ].map(event => JSON.stringify(event)).join('\n') + '\n');
+
+  try {
+    assert.equal(readTurnUsage(logPath), null);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test('collector accepts a benchmark config outside the package target', () => {
   const target = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-usage-'));
   const configPath = path.join(target, 'benchmark.json');

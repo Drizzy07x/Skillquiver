@@ -1,7 +1,7 @@
 interface:
   display_name: "Finish Development Branch"
   short_description: "Finish and integrate a development branch"
-  default_prompt: "Use $finishing-a-development-branch to finish this branch safely."
+  default_prompt: "Finish this development branch safely."
 
 policy:
   allow_implicit_invocation: true

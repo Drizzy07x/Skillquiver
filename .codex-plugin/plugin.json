@@ -1,7 +1,7 @@
 {
   "name": "skillquiver",
   "version": "2.1.0",
-  "description": "Twenty-three reusable Agent Skills for planning, implementation, review, verification, UI, and system work in Codex.",
+  "description": "Twenty-three reusable Agent Skills for planning, implementation, review, verification, UI, and system work in ChatGPT and Codex.",
   "author": {
     "name": "Drizzy07x",
     "url": "https://github.com/Drizzy07x"
@@ -11,6 +11,7 @@
   "license": "MIT",
   "keywords": [
     "agent-skills",
+    "chatgpt",
     "claude-code",
     "codex",
     "developer-tools"
@@ -19,7 +20,7 @@
   "interface": {
     "displayName": "Skillquiver",
     "shortDescription": "Practical software workflows",
-    "longDescription": "Skillquiver is a Codex-only collection of 23 reusable Agent Skills for planning, implementation, debugging, review, verification, UI, host boundaries, and safe environment maintenance. It has no hosted backend, account, authentication, MCP server, or bundled hooks; workflows run through Codex and user-approved local tools.",
+    "longDescription": "Skillquiver is a collection of 23 reusable Agent Skills for planning, implementation, debugging, review, verification, UI, host boundaries, and safe environment maintenance. The public plugin works in ChatGPT and Codex; the same source catalog also supports Claude Code. It has no hosted backend, account, authentication, MCP server, bundled hooks, or app UI, and runs only through host-approved tools.",
     "developerName": "Drizzy07x",
     "category": "Productivity",
     "capabilities": [
@@ -32,9 +33,9 @@
     "privacyPolicyURL": "https://drizzy07x.github.io/Skillquiver/privacy.html",
     "termsOfServiceURL": "https://drizzy07x.github.io/Skillquiver/terms.html",
     "defaultPrompt": [
-      "Use $writing-plans to turn this feature idea into a decision-complete implementation plan.",
-      "Use $diagnose-systematically to diagnose this failing test and verify the root cause.",
-      "Use $skillquiver:skillquiver-doctor to audit this Codex setup; confirm each change."
+      "Turn this feature idea into a decision-complete implementation plan.",
+      "Diagnose this failing test systematically and verify the root cause.",
+      "Review this code change and report only evidence-backed findings."
     ],
     "brandColor": "#C87941",
     "composerIcon": "./assets/plugin-logo.png",

@@ -1,7 +1,7 @@
 interface:
   display_name: "Communicate Clearly"
   short_description: "Write clear audience-appropriate communication"
-  default_prompt: "Use $communicate-clearly to rewrite this message for its audience."
+  default_prompt: "Rewrite this message for its audience."
 
 policy:
   allow_implicit_invocation: true

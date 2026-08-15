@@ -18,7 +18,7 @@ Observe before acting. Act on what the interface actually shows, not what it sho
 
 ## Mode 1: Explore an unfamiliar web interface
 
-Use when the navigation path is unknown, spans sites, or the interface has drifted and no stable reproduction exists. Use whichever authorized browser-control capability the host provides. Claude Code examples include `mcp__Claude_Browser__*` and `mcp__claude-in-chrome__*`; Codex examples include its in-app Browser or Chrome-control capability when available.
+Use when the navigation path is unknown, spans sites, or the interface has drifted and no stable reproduction exists. Use whichever authorized browser-control capability the host provides. Claude Code examples include `mcp__Claude_Browser__*` and `mcp__claude-in-chrome__*`; ChatGPT and Codex examples include an in-app Browser or Chrome-control capability when available.
 
 1. **Bound the exploration before starting.** Freeze: starting URL, one concrete goal, extraction schema if any, maximum steps, and side-effect scope:
    - `observe`: navigate and inspect; no form submission, downloads, or remote state change.

@@ -1,7 +1,7 @@
 interface:
   display_name: "Subagent Development"
   short_description: "Execute plans through bounded subagent tasks"
-  default_prompt: "Use $subagent-driven-development to execute this plan through bounded tasks."
+  default_prompt: "Execute this plan through bounded tasks."
 
 policy:
   allow_implicit_invocation: true

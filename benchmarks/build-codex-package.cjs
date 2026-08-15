@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const PACKAGE_LONG_DESCRIPTION = 'Skillquiver is a Codex-only collection of 23 reusable Agent Skills for planning, implementation, debugging, review, verification, UI, host boundaries, and safe environment maintenance. It has no hosted backend, account, authentication, MCP server, or bundled hooks; workflows run through Codex and user-approved local tools.';
+const PACKAGE_LONG_DESCRIPTION = 'Skillquiver is a collection of 23 reusable Agent Skills for planning, implementation, debugging, review, verification, UI, host boundaries, and safe environment maintenance. The public plugin works in ChatGPT and Codex; the same source catalog also supports Claude Code. It has no hosted backend, account, authentication, MCP server, bundled hooks, or app UI, and runs only through host-approved tools.';
 const PACKAGE_CAPABILITIES = [
   'Read project files and relevant local context.',
   "Write project files when the user's task authorizes changes.",
@@ -62,6 +62,20 @@ function isInside(parent, candidate) {
     relative !== '..' && !path.isAbsolute(relative);
 }
 
+function resolvePhysicalPath(candidate) {
+  const missingSegments = [];
+  let existingPath = path.resolve(candidate);
+
+  while (!fs.existsSync(existingPath)) {
+    const parent = path.dirname(existingPath);
+    if (parent === existingPath) break;
+    missingSegments.unshift(path.basename(existingPath));
+    existingPath = parent;
+  }
+
+  return path.resolve(fs.realpathSync.native(existingPath), ...missingSegments);
+}
+
 function normalizePortableText(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
@@ -80,8 +94,15 @@ function buildCodexPackage(root, outputRoot) {
   const resolvedRoot = path.resolve(root);
   const resolvedOutput = path.resolve(outputRoot);
   const artifactRoot = path.join(resolvedRoot, '.plugin-eval', 'codex-package');
-  if (!isInside(artifactRoot, resolvedOutput) &&
-      !isInside(path.resolve(os.tmpdir()), resolvedOutput)) {
+  const physicalOutput = resolvePhysicalPath(resolvedOutput);
+  const physicalArtifactRoot = path.join(
+    fs.realpathSync.native(resolvedRoot),
+    '.plugin-eval',
+    'codex-package'
+  );
+  const physicalTempRoot = fs.realpathSync.native(path.resolve(os.tmpdir()));
+  if (!isInside(physicalArtifactRoot, physicalOutput) &&
+      !isInside(physicalTempRoot, physicalOutput)) {
     throw new Error('Codex package output must be inside the artifact root or system temp.');
   }
 

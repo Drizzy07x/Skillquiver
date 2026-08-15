@@ -29,18 +29,34 @@ IDLE_TIMEOUT_MINUTES=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project-dir)
+      if [[ $# -lt 2 ]]; then
+        echo '{"error": "--project-dir requires a value"}'
+        exit 2
+      fi
       PROJECT_DIR="$2"
       shift 2
       ;;
     --host)
+      if [[ $# -lt 2 ]]; then
+        echo '{"error": "--host requires a value"}'
+        exit 2
+      fi
       BIND_HOST="$2"
       shift 2
       ;;
     --url-host)
+      if [[ $# -lt 2 ]]; then
+        echo '{"error": "--url-host requires a value"}'
+        exit 2
+      fi
       URL_HOST="$2"
       shift 2
       ;;
     --idle-timeout-minutes)
+      if [[ $# -lt 2 ]]; then
+        echo '{"error": "--idle-timeout-minutes requires a value"}'
+        exit 2
+      fi
       IDLE_TIMEOUT_MINUTES="$2"
       shift 2
       ;;

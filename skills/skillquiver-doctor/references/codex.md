@@ -30,10 +30,13 @@ Read `name` and `description` first. Load a skill body or hook command only to
 decide a fork or Class C conflict. Report unreadable skills, dangling links,
 and malformed configuration without repairing them automatically.
 
-Treat the active `skillquiver` plugin, its development install, and this
-repository's `skills/` directory as self. Never report any Skillquiver source,
-cache copy, metadata, or runtime visibility difference as a conflict, and never
-propose its removal.
+Resolve the active `skillquiver` plugin's selector and canonical source path.
+Treat only that source, exact development-source aliases, and cache or runtime
+views that resolve back to it as self. Do not report metadata or visibility
+differences among those exact views, and never propose removing the active
+source. A second plugin or standalone Skillquiver source that resolves to a
+different canonical path is foreign; evaluate its duplicate names under Class A
+and offer repair only for that foreign source.
 
 Skillquiver Doctor sets `allow_implicit_invocation` to `false`. Codex therefore
 does not inject it into the default session skill catalog, but it can still be

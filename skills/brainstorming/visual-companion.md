@@ -69,6 +69,14 @@ scripts/start-server.sh --project-dir /path/to/project --open
 
 On Windows, the script auto-detects and switches to foreground mode (which blocks the tool call). Use Claude Code's `run_in_background: true` Bash option so the server survives across conversation turns, then read `$STATE_DIR/server-info` on the next turn to get the URL and port.
 
+**ChatGPT:** First check whether the current ChatGPT surface exposes both a
+long-running or yielded shell capability and a browser that can reach the
+loopback URL. If it does, launch the foreground command through that capability
+and read `$STATE_DIR/server-info` before opening the URL. If either capability
+is unavailable, ask the user to run the command in a persistent Bash-compatible
+terminal; if that is not practical, continue text-only. Never claim the server
+is running from a detached command that the host may reap.
+
 **Codex:** The script detects `CODEX_CI` and switches to foreground mode. First check whether the current Codex surface exposes a yielded, long-running, or background shell-process capability. If it does, launch the same command through that capability and then read `$STATE_DIR/server-info`. If it does not, ask the user to run the command in a persistent Bash-compatible terminal (Git Bash on Windows); if that is not practical, continue text-only. Do not claim the companion is running or force `--background` when detached processes are reaped.
 
 **Other environments:** The server must keep running in the background across conversation turns. If your environment reaps detached processes, use `--foreground` and launch the command with your platform's background execution mechanism.

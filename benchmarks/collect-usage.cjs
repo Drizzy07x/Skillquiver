@@ -7,7 +7,9 @@ function readTurnUsage(logPath) {
     if (!line) continue;
     try {
       const event = JSON.parse(line);
-      if (event.type === 'turn.completed' && Number.isFinite(event.usage?.input_tokens)) {
+      if (event.type === 'turn.completed' &&
+          Number.isInteger(event.usage?.input_tokens) && event.usage.input_tokens >= 0 &&
+          Number.isInteger(event.usage?.output_tokens) && event.usage.output_tokens >= 0) {
         usage = event.usage;
       }
     } catch {}

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skillquiver — 23 skills for Claude Code and Codex</title>
-<meta name="description" content="23 agent skills shared by Claude Code and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
+<title>Skillquiver — 23 skills for ChatGPT, Claude Code, and Codex</title>
+<meta name="description" content="23 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
 <meta name="theme-color" content="#0B0E13">
-<meta property="og:title" content="Skillquiver — 23 skills for Claude Code and Codex">
-<meta property="og:description" content="23 skills shared by Claude Code and Codex.">
+<meta property="og:title" content="Skillquiver — 23 skills for ChatGPT, Claude Code, and Codex">
+<meta property="og:description" content="23 skills shared by ChatGPT, Claude Code, and Codex.">
 <meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/mark.svg">
@@ -293,7 +293,7 @@ footer a:hover { color: var(--gold); }
     <svg class="mark" aria-hidden="true"><use href="#quivermark"/></svg>
     <span class="name">Skillquiver</span>
     <a class="link" href="#skill">How it works</a>
-    <a class="link" href="#package">Codex package</a>
+    <a class="link" href="#package">Public plugin</a>
     <a class="link" href="#install">Install</a>
     <a class="link" href="#quiver">All 23 skills</a>
     <a class="gh" href="https://github.com/Drizzy07x/Skillquiver">GitHub</a>
@@ -303,14 +303,14 @@ footer a:hover { color: var(--gold); }
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow">23 skills shared by Claude Code and Codex</span>
+      <span class="eyebrow">23 skills shared by ChatGPT, Claude Code, and Codex</span>
       <h1>Your agent <em>picks</em> the right skill on its own.</h1>
-      <p class="sub">Every skill says what it does and when to use it. Claude Code and Codex match those lines to your request and open the workflow that fits. You never have to remember its name.</p>
+      <p class="sub">Every skill says what it does and when to use it. ChatGPT, Claude Code, and Codex match those lines to your request and open the workflow that fits. You never have to remember its name.</p>
       <div class="actions">
         <a class="btn solid" href="#install">Install</a>
         <a class="btn" href="#quiver">See all 23 skills</a>
       </div>
-      <p class="meta">MIT · <b>23</b> for Claude Code · <b>23</b> for Codex · nothing to build</p>
+      <p class="meta">MIT · <b>23</b> for ChatGPT · <b>23</b> for Claude Code · <b>23</b> for Codex · nothing to build</p>
     </div>
 
     <div class="quiver">
@@ -351,8 +351,8 @@ Skillquiver/<br>
   <div class="wrap explain">
     <div>
       <span class="eyebrow">Public directory package</span>
-      <h2>Skillquiver v2.1.0: the complete Codex catalog.</h2>
-      <p class="lede">The update contains 23 shared Agent Skills and is a Codex-only public package. It runs through Codex and user-approved local tools, with no hosted backend, account, authentication, bundled MCP server, hooks, or app UI.</p>
+      <h2>Skillquiver v2.1.0: universal release candidate.</h2>
+      <p class="lede">The update contains 23 shared Agent Skills, and the public plugin works in ChatGPT and Codex. The same source catalog also supports Claude Code. It runs through host-approved tools, with no hosted backend, account, authentication, bundled MCP server, hooks, or app UI.</p>
       <p class="note">Version 2.1.0 is prepared as an update to the existing listing under the public publisher name Drizzy07x. Portal review and publication remain separate external gates. See the <a href="privacy.html">privacy policy</a>, <a href="terms.html">terms</a>, and <a href="https://github.com/Drizzy07x/Skillquiver/issues">support</a>.</p>
     </div>
     <div class="tree">
@@ -370,14 +370,23 @@ Skillquiver/<br>
   <div class="wrap">
     <span class="eyebrow">Install</span>
     <h2>Choose your host.</h2>
-    <p class="lede">The marketplace is recommended. Claude Code and Codex both get the complete 23-skill source catalog; the public directory package is gated to Codex.</p>
+    <p class="lede">The universal Plugins Directory is recommended for ChatGPT and Codex once the listing shows version 2.1.0. Claude Code can install the same 23-skill source catalog from the repository marketplace.</p>
 
     <div class="tabs" role="tablist" aria-label="Agent host">
-      <button role="tab" aria-selected="true" aria-controls="p1" id="t1" tabindex="0">Claude Code</button>
-      <button role="tab" aria-selected="false" aria-controls="p2" id="t2" tabindex="-1">Codex</button>
+      <button role="tab" aria-selected="true" aria-controls="p1" id="t1" tabindex="0">ChatGPT</button>
+      <button role="tab" aria-selected="false" aria-controls="p2" id="t2" tabindex="-1">Claude Code</button>
+      <button role="tab" aria-selected="false" aria-controls="p3" id="t3" tabindex="-1">Codex</button>
     </div>
 
     <div class="pane" id="p1" role="tabpanel" aria-labelledby="t1">
+      <div class="method">
+        <h3>Plugins Directory <span class="recommended">recommended</span></h3>
+        <p>Open the Plugins Directory in ChatGPT, search for <strong>Skillquiver</strong>, confirm that the listing shows version 2.1.0, and select Add.</p>
+        <p class="note">Until 2.1.0 is approved, the public listing may still expose the smaller Skillquiver Core catalog. ChatGPT uses <code>@</code> mentions for explicit skill selection. Repository installs are intended for local development and Claude Code.</p>
+      </div>
+    </div>
+
+    <div class="pane" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
       <div class="method">
         <h3>Marketplace <span class="recommended">recommended</span></h3>
         <p>Run inside an interactive Claude Code session:</p>
@@ -398,7 +407,7 @@ cp -r Skillquiver/skills/* ~/.claude/skills/</pre><button class="copy">copy</but
       </div>
     </div>
 
-    <div class="pane" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
+    <div class="pane" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
       <div class="method">
         <h3>Marketplace <span class="recommended">recommended</span></h3>
         <p>Run from a terminal:</p>
@@ -440,14 +449,14 @@ cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</butt
   <div class="wrap">
     <span class="eyebrow">Working together</span>
     <h2>One feature, from idea to merge.</h2>
-    <p class="lede">These aren't 23 separate tricks. Almost every step of building something has a portable skill that fits it. A normal run in Claude Code or Codex looks like this:</p>
+    <p class="lede">These aren't 23 separate tricks. Almost every step of building something has a portable skill that fits it. A normal run in ChatGPT, Claude Code, or Codex looks like this:</p>
     <div class="chain" id="chain"></div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <span>MIT · for <a href="https://claude.com/product/claude-code">Claude Code</a> and <a href="https://developers.openai.com/codex/">Codex</a></span>
+    <span>MIT · for ChatGPT, <a href="https://claude.com/product/claude-code">Claude Code</a>, and <a href="https://developers.openai.com/codex/">Codex</a></span>
     <span><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="https://github.com/Drizzy07x/Skillquiver/issues">Support</a> · <a href="https://github.com/Drizzy07x/Skillquiver">GitHub</a></span>
   </div>
 </footer>
@@ -467,7 +476,7 @@ const GROUPS = [
   ["Execution", [
     ["test-driven-development", "Writes the failing test first, then the smallest code that makes it pass.", "you're adding a feature or fixing a bug.", "shared"],
     ["solve-efficiently", "Finds the few files that actually matter instead of reading the whole project.", "the change touches several parts of the codebase.", "shared"],
-    ["handle-host-boundaries", "Handles a skill or tool that belongs to another agent host without pretending it exists.", "a request names a Claude-only or Codex-only capability.", "shared"],
+    ["handle-host-boundaries", "Handles a skill or tool that belongs to another agent host without pretending it exists.", "a request names a capability from another host.", "shared"],
     ["execute-durably", "Keeps progress in a file on disk so long work can be picked up where it stopped.", "the job is long and might get interrupted.", "shared"],
     ["refactor-safely", "Tidies code without changing what it does, with tests in place first.", "code is messy or duplicated but still has to work exactly the same.", "shared"],
     ["using-git-worktrees", "Sets up a separate working copy so your current work stays untouched.", "you're starting a feature and don't want to disturb what's already open.", "shared"],
@@ -506,7 +515,7 @@ document.getElementById("list").innerHTML = GROUPS.map(([group, skills]) => `
     </div>
     ${skills.map(([id, does, when, compatibility]) => `
       <a class="arrow" href="${skillUrl(id)}">
-        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}<span class="compat ${compatibility}">Claude Code + Codex</span></span>
+        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}<span class="compat ${compatibility}">ChatGPT + Claude Code + Codex</span></span>
         <span class="does">${does}</span>
         <span class="when">${when}</span>
       </a>`).join("")}

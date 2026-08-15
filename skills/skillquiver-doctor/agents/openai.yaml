@@ -1,7 +1,7 @@
 interface:
   display_name: "Skillquiver Doctor"
   short_description: "Audit and repair conflicting skills and hooks"
-  default_prompt: "Use $skillquiver:skillquiver-doctor to audit this host and confirm each repair."
+  default_prompt: "Audit this host and confirm each repair."
 
 policy:
   allow_implicit_invocation: false

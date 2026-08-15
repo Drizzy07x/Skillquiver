@@ -11,11 +11,15 @@ bash -n \
   skills/subagent-driven-development/scripts/review-package \
   skills/subagent-driven-development/scripts/sdd-workspace \
   skills/subagent-driven-development/scripts/task-brief \
+  tests/brainstorm-scripts.test.sh \
+  tests/diagnose-scripts.test.sh \
   tests/sdd-scripts.test.sh \
   tests/run.sh
 
 node --test tests/*.test.cjs
 bash tests/benchmark-wrapper.test.sh
+bash tests/brainstorm-scripts.test.sh
+bash tests/diagnose-scripts.test.sh
 bash tests/sdd-scripts.test.sh
 
 if command -v pwsh.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then

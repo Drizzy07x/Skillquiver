@@ -19,7 +19,7 @@ model: <model_override>            # include only when overrides are supported a
 
 Record the returned worker target. For fix rounds 1–3, call `followup_task` with that same `target` and the findings in `message`; keep the original worker while it remains available.
 
-### Other hosts
+### ChatGPT and other hosts
 
 Map `task_label` and `message` to the closest general-purpose worker dispatch fields. Include `model_override` only when the host exposes per-worker model selection.
 
