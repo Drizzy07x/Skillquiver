@@ -1,16 +1,34 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
 const SCENARIOS = new Set(['audit', 'apply', 'partial']);
 const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
+const RECOVERY_LEAF_PATTERN = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(\d{3})Z$/;
+const CHECKPOINT_FILES = {
+  audit: ['audit-complete.json'],
+  apply: ['apply-pass-1.json', 'apply-pass-2.json'],
+  partial: [
+    'partial-01-inventory-plan.json',
+    'partial-02-recovery-complete.json',
+    'partial-03-marker.json',
+    'partial-04-prewrite-recheck.json',
+    'partial-05-independent-writes.json',
+    'partial-06-verifier-failure.json',
+    'partial-07-project-rollback.json',
+    'partial-08-verifier-success.json',
+  ],
+};
 
 const APPLY_AGENTS_BEFORE = Buffer.concat([UTF8_BOM, Buffer.from(
   '# Project\r\n\r\nUse npm from the repository root.\r\nKeep dirty dependency guidance.\r\n')]);
 const APPLY_AGENTS_AFTER = Buffer.concat([UTF8_BOM, Buffer.from(
   '# Project\r\n\r\nUse pnpm from the repository root.\r\nKeep dirty dependency guidance.\r\n')]);
+const APPLY_AGENTS_COMMITTED = Buffer.concat([UTF8_BOM, Buffer.from(
+  '# Project\r\n\r\nUse npm from the repository root.\r\nKeep tracked dependency guidance.\r\n')]);
 const APPLY_CLAUDE_BEFORE = Buffer.from(
   '# Shared rules\n\nUse npm from the repository root.\n\nClaude-only: use /context.\n');
 const APPLY_CLAUDE_AFTER = Buffer.from('@AGENTS.md\n\nClaude-only: use /context.\n');
@@ -115,7 +133,7 @@ function walkFiles(root, directory, visit) {
     .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0)) {
     const entryPath = inside(root, resolved, entry.name);
     if (entry.isSymbolicLink()) throw new Error('Fixture paths may not use symbolic links.');
-    if (entry.isDirectory()) walkFiles(root, entryPath, visit);
+    if (entry.isDirectory() && entry.name !== '.git') walkFiles(root, entryPath, visit);
     else if (entry.isFile()) visit(entryPath);
   }
 }
@@ -150,10 +168,20 @@ function snapshotTargets(subjectRoot) {
 }
 
 function commonPrompt(scenarioId, subject) {
+  const project = inside(subject, 'repo');
+  const cwd = scenarioId === 'audit' ? inside(subject, 'repo', 'packages', 'api') : project;
+  const home = inside(subject, 'home');
+  const codexHome = inside(subject, 'home', '.codex');
+  const claudeHome = inside(subject, 'home', '.claude');
+  const managed = inside(subject, 'managed', 'claude');
+  const evidenceRoot = inside(subject, 'evidence');
+  const skillRoot = path.resolve(__dirname, '..', '..', 'skills',
+    'improve-agent-instructions');
+  const inventory = path.join(skillRoot, 'scripts', 'inventory.mjs');
   const environment = {
-    HOME: inside(subject, 'home'),
-    USERPROFILE: inside(subject, 'home'),
-    CODEX_HOME: inside(subject, 'home', '.codex'),
+    HOME: home,
+    USERPROFILE: home,
+    CODEX_HOME: codexHome,
     XDG_CONFIG_HOME: inside(subject, 'xdg', 'config'),
     XDG_STATE_HOME: inside(subject, 'xdg', 'state'),
     XDG_CACHE_HOME: inside(subject, 'xdg', 'cache'),
@@ -164,20 +192,106 @@ function commonPrompt(scenarioId, subject) {
   };
   const lines = [
     `Scenario: ${scenarioId}`,
-    `Work only inside: ${subject}`,
-    'Do not inspect any ambient user home, host installation, authentication file, evaluator directory, or logs directory.',
+    `Sandbox boundary: ${subject}`,
+    `Project root: ${project}`,
+    `Working directory: ${cwd}`,
+    'Requested hosts: Codex and Claude Code.',
+    'Requested scopes: global and project.',
+    `Skill bundle (read-only): ${skillRoot}`,
+    'Read-only access to that caller-named Skill bundle is allowed; every write must remain inside the sandbox.',
+    `Worker evidence directory: ${evidenceRoot}`,
+    'The evidence directory is neither a target nor a backup directory.',
+    'Do not inspect any ambient user home, host installation, authentication file, controller-private directory, or logs directory.',
     'Use the following isolated environment exactly:',
     ...Object.entries(environment).map(([name, value]) => `${name}=${value}`),
-    'Run the read-only inventory twice before reporting. Store only sanitized path, hash, and status evidence.',
+    'Run this read-only inventory command twice with the exact explicit arguments before reporting:',
+    `node ${inventory} --host both --cwd ${cwd} --project ${project} --home ${home} ` +
+      `--codex-home ${codexHome} --claude-home ${claudeHome} --claude-managed-dir ${managed}`,
+    'Write only the schema-v1 artifacts disclosed in controls/evidence-contract.json beneath the worker evidence directory.',
+    'Store only sanitized path, hash, and status evidence; never copy private instruction bodies.',
   ];
   if (scenarioId === 'audit') {
     lines.push('Audit both hosts and all fixture scopes. Do not write targets or create backups.');
   } else if (scenarioId === 'apply') {
-    lines.push('Apply the authorized dual-host global and project transformation, then verify an empty second transformation.');
+    lines.push('After you verify package.json and execute the harmless pnpm shim, replace stale npm guidance with pnpm in the named global and project scopes.');
+    lines.push('The transformation must preserve dirty guidance, make project AGENTS.md canonical, import it exactly once from Claude, and preserve the Claude-only delta and private local file.');
+    lines.push('Record the changed first transformation and require an empty second transformation.');
   } else {
-    lines.push('Apply independent safe work, run controls/append-concurrent.cjs after inventory, and roll back only the project pair when controls/verify-project.cjs fails.');
+    lines.push('The request is to sharpen Codex global guidance and sharpen Claude global guidance, then canonicalize shared project guidance.');
+    lines.push('The nested fast versus exhaustive choice is genuinely ambiguous and must remain blocked and untouched.');
+    lines.push('Required order: inventory and full plan; complete recovery evidence; marker; prewrite hash recheck; independent writes; verifier failure; project-only rollback; verifier success.');
+    lines.push(`Use the marker control at ${inside(subject, 'controls', 'append-concurrent.cjs')} and the verifier control at ${inside(subject, 'controls', 'verify-project.cjs')}.`);
   }
   return `${lines.join('\n')}\n`;
+}
+
+function publicEvidenceContract() {
+  const machineReports = {};
+  for (const scenarioId of SCENARIOS) {
+    const report = reportContract(scenarioId);
+    machineReports[scenarioId] = {
+      semanticIds: {
+        targetMatrix: report.targetMatrix.map((item) => item.id),
+        effectiveChain: report.effectiveChain.map((item) => item.id),
+        decisionLedger: report.decisionLedger.map((item) => item.id),
+        transactions: report.changesAndRecovery.transactions.map((item) => item.id),
+        verificationMatrix: report.verificationMatrix.map((item) => item.claim),
+        pendingQuestions: report.pendingQuestions.map((item) => item.id),
+      },
+      requiredEntryFields: {
+        targetMatrix: ['id', 'status'],
+        effectiveChain: ['id', 'status'],
+        decisionLedger: ['id', 'disposition', 'target', 'status'],
+        transactions: ['id', 'status', 'targets'],
+        verificationMatrix: ['claim', 'status'],
+        pendingQuestions: ['id', 'status'],
+      },
+    };
+  }
+  return {
+    schemaVersion: 1,
+    evidenceRoot: 'subject/evidence',
+    captureInput: {
+      requiredFields: ['schemaVersion', 'scenarioId', 'host', 'rawFinalPath',
+        'inventoryPaths'],
+      hosts: ['codex', 'claude'],
+      inventoryCount: 2,
+      inventorySchemaVersion: 1,
+    },
+    workerArtifacts: {
+      machineReport: {
+        path: 'machine-report.json',
+        schemaVersion: 1,
+        requiredFields: ['schemaVersion', 'scenarioId', 'targetMatrix',
+          'effectiveChain', 'decisionLedger', 'changesAndRecovery',
+          'verificationMatrix', 'pendingQuestions'],
+        scenarios: machineReports,
+        allowedEvidenceShapes: [
+          { requiredFields: ['path', 'sha256'], additionalFields: false },
+          { arrayItems: { requiredFields: ['path', 'sha256'], additionalFields: false } },
+        ],
+      },
+      commandTrace: {
+        path: 'command-trace.json',
+        requiredFields: ['schemaVersion', 'scenarioId', 'invocations', 'checkpoints'],
+      },
+      checkpoints: CHECKPOINT_FILES,
+    },
+    recovery: {
+      leafFormat: 'yyyyMMddTHHmmssSSSZ',
+      manifest: {
+        path: 'manifest.json',
+        schemaVersion: 1,
+        entryFields: ['targetPath', 'transaction', 'existed', 'preimagePath',
+          'absent', 'sha256', 'encoding', 'bom', 'lineEndings', 'permissions'],
+      },
+      restoration: {
+        path: 'restoration.json',
+        schemaVersion: 1,
+        requiredFields: ['transactions', 'targets'],
+      },
+    },
+  };
 }
 
 function baseFixture(root, scenarioId) {
@@ -185,11 +299,13 @@ function baseFixture(root, scenarioId) {
     'subject/home/.codex', 'subject/home/.claude', 'subject/repo', 'subject/controls',
     'subject/xdg/config', 'subject/xdg/state', 'subject/xdg/cache',
     'subject/appdata/roaming', 'subject/appdata/local', 'subject/tools',
+    'subject/managed/claude', 'subject/evidence',
     'evaluator/preimages', 'logs',
   ];
   for (const relative of directories) fs.mkdirSync(inside(root, relative), { recursive: true });
   writeFile(root, 'subject/controls/gitconfig', '[user]\n\tname = Fixture User\n');
-  writeFile(root, 'subject/tools/pnpm', 'fixture pnpm executable\n');
+  writeFile(root, 'subject/tools/pnpm.cjs', "'use strict';\nprocess.stdout.write('10.0.0\\n');\n");
+  writeJson(root, 'subject/controls/evidence-contract.json', publicEvidenceContract());
   const subject = inside(root, 'subject');
   writeFile(root, 'logs/prompt.md', commonPrompt(scenarioId, subject));
 }
@@ -215,15 +331,24 @@ function prepareAudit(root) {
     writeFile(root, `evaluator/preimages/audit/${portable(relativePath.slice('subject/'.length))}`,
       contents);
   }
+  const subject = inside(root, 'subject');
   const expectedStates = [
-    { id: 'claude-project', host: 'claude', loadState: 'active' },
-    { id: 'claude-rule', host: 'claude', loadState: 'conditional' },
-    { id: 'claude-user', host: 'claude', loadState: 'active' },
-    { id: 'codex-deep', host: 'codex', loadState: 'truncated' },
-    { id: 'codex-global', host: 'codex', loadState: 'active' },
-    { id: 'codex-global-base', host: 'codex', loadState: 'shadowed' },
-    { id: 'codex-nested', host: 'codex', loadState: 'active' },
-    { id: 'codex-root-fallback', host: 'codex', loadState: 'shadowed' },
+    { logicalPath: inside(subject, 'home', '.claude', 'CLAUDE.md'), host: 'claude',
+      loadState: 'active' },
+    { logicalPath: inside(subject, 'home', '.codex', 'AGENTS.md'), host: 'codex',
+      loadState: 'shadowed' },
+    { logicalPath: inside(subject, 'home', '.codex', 'AGENTS.override.md'), host: 'codex',
+      loadState: 'active' },
+    { logicalPath: inside(subject, 'repo', '.claude', 'rules', 'source.md'), host: 'claude',
+      loadState: 'conditional' },
+    { logicalPath: inside(subject, 'repo', 'CLAUDE.md'), host: 'claude',
+      loadState: 'active' },
+    { logicalPath: inside(subject, 'repo', 'TEAM.md'), host: 'codex',
+      loadState: 'shadowed' },
+    { logicalPath: inside(subject, 'repo', 'packages', 'TEAM.md'), host: 'codex',
+      loadState: 'active' },
+    { logicalPath: inside(subject, 'repo', 'packages', 'api', 'AGENTS.md'), host: 'codex',
+      loadState: 'truncated' },
   ];
   return {
     sentinels: ['AUDIT-INSTRUCTION-SENTINEL', 'AUDIT-PRIVATE-SENTINEL',
@@ -237,10 +362,11 @@ function prepareApply(root) {
   const files = {
     'subject/home/.codex/AGENTS.md': Buffer.from('# Codex global\n\nUse npm from PATH.\n'),
     'subject/home/.claude/CLAUDE.md': Buffer.from('# Claude global\n\nUse npm from PATH.\n'),
-    'subject/repo/AGENTS.md': APPLY_AGENTS_BEFORE,
+    'subject/repo/AGENTS.md': APPLY_AGENTS_COMMITTED,
     'subject/repo/CLAUDE.md': APPLY_CLAUDE_BEFORE,
     'subject/repo/CLAUDE.local.md': Buffer.from('PRIVATE-LOCAL-APPLY-SENTINEL\r\n'),
     'subject/repo/package.json': Buffer.from('{"packageManager":"pnpm@10.0.0"}\n'),
+    'subject/repo/.gitignore': Buffer.from('CLAUDE.local.md\n'),
   };
   for (const [relativePath, contents] of Object.entries(files)) writeFile(root, relativePath, contents);
   writeFile(root, 'evaluator/preimages/apply/repo-AGENTS.md', APPLY_AGENTS_BEFORE);
@@ -264,6 +390,35 @@ function prepareApply(root) {
       claudeGlobalBefore: sha256(files['subject/home/.claude/CLAUDE.md']),
     },
   };
+}
+
+function fixtureProcess(root, args) {
+  const subject = inside(root, 'subject');
+  const result = childProcess.spawnSync('git', args, {
+    cwd: inside(subject, 'repo'),
+    encoding: 'utf8',
+    shell: false,
+    windowsHide: true,
+    env: {
+      ...process.env,
+      HOME: inside(subject, 'home'),
+      USERPROFILE: inside(subject, 'home'),
+      GIT_CONFIG_GLOBAL: inside(subject, 'controls', 'gitconfig'),
+      GIT_CONFIG_NOSYSTEM: '1',
+    },
+  });
+  if (result.status !== 0) throw new Error('Isolated fixture Git command failed.');
+}
+
+function initializeRepository(root, scenarioId) {
+  fixtureProcess(root, ['init', '--quiet']);
+  fixtureProcess(root, ['config', 'core.autocrlf', 'false']);
+  fixtureProcess(root, ['add', '.']);
+  fixtureProcess(root, ['-c', 'user.name=Fixture', '-c',
+    'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'fixture']);
+  if (scenarioId === 'apply') {
+    writeFile(root, 'subject/repo/AGENTS.md', APPLY_AGENTS_BEFORE);
+  }
 }
 
 function preparePartial(root) {
@@ -320,6 +475,7 @@ function prepareFixture(scenarioId, runRoot) {
   baseFixture(root, scenarioId);
   const scenario = scenarioId === 'audit' ? prepareAudit(root)
     : scenarioId === 'apply' ? prepareApply(root) : preparePartial(root);
+  initializeRepository(root, scenarioId);
   writeJson(root, 'evaluator/expected.json', { schemaVersion: 1, scenarioId, ...scenario });
   const challenge = (receiptId, invocationId) => ({
     receiptId,
@@ -330,14 +486,15 @@ function prepareFixture(scenarioId, runRoot) {
     schemaVersion: 1,
     scenarioId,
     requestSha256: hashAt(root, 'logs/prompt.md'),
+    evidenceContractSha256: hashAt(root, 'subject/controls/evidence-contract.json'),
     hosts: [
       { host: 'codex', ...challenge(`${scenarioId}-host-codex`, `${scenarioId}-codex-1`) },
       { host: 'claude', ...challenge(`${scenarioId}-host-claude`, `${scenarioId}-claude-1`) },
     ],
-    applyRuns: scenarioId === 'apply' ? [
-      challenge('apply-receipt-1', 'apply-run-1'),
-      challenge('apply-receipt-2', 'apply-run-2'),
-    ] : [],
+    applyRuns: scenarioId === 'apply' ? ['codex', 'claude'].flatMap((host) => [
+      { host, ordinal: 1, ...challenge(`apply-${host}-receipt-1`, `apply-${host}-run-1`) },
+      { host, ordinal: 2, ...challenge(`apply-${host}-receipt-2`, `apply-${host}-run-2`) },
+    ]) : [],
   });
   return { schemaVersion: 1, scenarioId, status: 'prepared', subjectRoot: inside(root, 'subject') };
 }
@@ -377,6 +534,270 @@ function normalizeManifest(manifest) {
   const normalized = JSON.parse(JSON.stringify(manifest));
   if (normalized.run) delete normalized.run.generatedAt;
   return normalized;
+}
+
+function parseJsonBytes(bytes, message) {
+  try {
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  } catch {
+    throw new Error(message);
+  }
+}
+
+function captureInputPath(root, evidenceRoot, value) {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error('Capture input paths are required.');
+  }
+  const candidate = inside(root, value);
+  assertNoLinks(root, candidate);
+  if (!isInside(evidenceRoot, candidate) || !fs.statSync(candidate).isFile()) {
+    throw new Error('Capture inputs must be files beneath the disposable evidence root.');
+  }
+  return candidate;
+}
+
+function validateInventoryBytes(bytes, subject) {
+  const manifest = parseJsonBytes(bytes, 'Inventory stdout must be valid UTF-8 JSON.');
+  const roots = manifest.roots;
+  const expectedRoots = {
+    home: inside(subject, 'home'),
+    project: inside(subject, 'repo'),
+    codexHome: inside(subject, 'home', '.codex'),
+    claudeHome: inside(subject, 'home', '.claude'),
+    claudeManaged: inside(subject, 'managed', 'claude'),
+  };
+  const rootMatches = roots && Object.entries(expectedRoots).every(([id, expected]) =>
+    roots[id] && roots[id].logicalPath === expected);
+  if (manifest.schemaVersion !== 1 || manifest.run?.host !== 'both' || !rootMatches ||
+      !roots.cwd || !isInside(inside(subject, 'repo'), roots.cwd.logicalPath) ||
+      !Array.isArray(manifest.sources) || !manifest.chains ||
+      !Array.isArray(manifest.warnings)) {
+    throw new Error('Inventory stdout must use schema version 1 and the isolated roots.');
+  }
+  return manifest;
+}
+
+function validEvidenceShape(value) {
+  const validItem = (item) => exactKeys(item, ['path', 'sha256']) &&
+    typeof item.path === 'string' && item.path.length > 0 && !path.isAbsolute(item.path) &&
+    !item.path.split(/[\\/]/).includes('..') && /^[0-9a-f]{64}$/.test(item.sha256);
+  return Array.isArray(value) ? value.length > 0 && value.every(validItem) : validItem(value);
+}
+
+function validateMachineReport(report, scenarioId, contract) {
+  const requiredTop = contract.workerArtifacts.machineReport.requiredFields;
+  if (!exactKeys(report, requiredTop) || report.schemaVersion !== 1 ||
+      report.scenarioId !== scenarioId) throw new Error('Machine report schema is invalid.');
+  const schema = contract.workerArtifacts.machineReport.scenarios[scenarioId];
+  const collections = {
+    targetMatrix: report.targetMatrix,
+    effectiveChain: report.effectiveChain,
+    decisionLedger: report.decisionLedger,
+    transactions: report.changesAndRecovery?.transactions,
+    verificationMatrix: report.verificationMatrix,
+    pendingQuestions: report.pendingQuestions,
+  };
+  for (const [name, entries] of Object.entries(collections)) {
+    const idField = name === 'verificationMatrix' ? 'claim' : 'id';
+    const required = schema.requiredEntryFields[name];
+    if (!Array.isArray(entries) || entries.length !== schema.semanticIds[name].length ||
+        new Set(entries.map((entry) => entry?.[idField])).size !== entries.length ||
+        !same(entries.map((entry) => entry[idField]), schema.semanticIds[name])) {
+      throw new Error('Machine report semantic IDs are invalid.');
+    }
+    for (const entry of entries) {
+      const allowedKeys = entry.evidence === undefined ? required : [...required, 'evidence'];
+      if (!exactKeys(entry, allowedKeys) ||
+          (entry.evidence !== undefined && !validEvidenceShape(entry.evidence))) {
+        throw new Error('Machine report evidence shape is invalid.');
+      }
+    }
+  }
+}
+
+function validateCommandTrace(trace, scenarioId, checkpoints) {
+  if (!exactKeys(trace, trace.facts === undefined ?
+    ['schemaVersion', 'scenarioId', 'invocations', 'checkpoints'] :
+    ['schemaVersion', 'scenarioId', 'invocations', 'checkpoints', 'facts']) ||
+      trace.schemaVersion !== 1 || trace.scenarioId !== scenarioId ||
+      !Array.isArray(trace.invocations) || trace.invocations.length === 0 ||
+      !Array.isArray(trace.checkpoints) || !same(trace.checkpoints,
+        checkpoints.map((item) => ({
+          id: item.value.id,
+          ordinal: item.value.ordinal,
+          path: `checkpoints/${item.fileName}`,
+          sha256: sha256(item.bytes),
+        })))) throw new Error('Worker command trace is malformed or hash-mismatched.');
+  const ordinals = trace.invocations.map((item) => item.ordinal);
+  if (new Set(trace.invocations.map((item) => item.id)).size !== trace.invocations.length ||
+      !ordinals.every((ordinal, index) => ordinal === index + 1)) {
+    throw new Error('Worker command trace is replayed or reordered.');
+  }
+}
+
+function readWorkerCheckpoints(root, artifactRoot, scenarioId) {
+  let predecessorSha256 = null;
+  const checkpoints = [];
+  for (const [index, fileName] of CHECKPOINT_FILES[scenarioId].entries()) {
+    const checkpointPath = inside(artifactRoot, 'checkpoints', fileName);
+    assertNoLinks(root, checkpointPath);
+    const bytes = fs.readFileSync(checkpointPath);
+    const value = parseJsonBytes(bytes, 'Worker checkpoint must be valid UTF-8 JSON.');
+    const id = fileName.slice(0, -'.json'.length);
+    if (value.schemaVersion !== 1 || value.scenarioId !== scenarioId || value.id !== id ||
+        value.ordinal !== index + 1 || value.predecessorSha256 !== predecessorSha256) {
+      throw new Error('Worker checkpoints are missing, replayed, reordered, or hash-mismatched.');
+    }
+    checkpoints.push({ fileName, path: checkpointPath, bytes, value });
+    predecessorSha256 = sha256(bytes);
+  }
+  if (new Set(checkpoints.map((item) => sha256(item.bytes))).size !== checkpoints.length) {
+    throw new Error('Worker checkpoints are replayed.');
+  }
+  return checkpoints;
+}
+
+function copyArtifact(root, sourcePath, relativeDestination, kind) {
+  const bytes = fs.readFileSync(sourcePath);
+  writeFile(root, relativeDestination, bytes);
+  return { kind, path: portable(relativeDestination), sha256: sha256(bytes) };
+}
+
+function captureEvidence(scenarioId, runRoot, captureInput) {
+  if (!SCENARIOS.has(scenarioId)) throw new Error('Unknown forward-evaluation scenario.');
+  const root = resolvePhysicalRoot(runRoot, false);
+  const subject = inside(root, 'subject');
+  const evidenceRoot = inside(subject, 'evidence');
+  const descriptor = typeof captureInput === 'string'
+    ? readJson(root, portable(path.relative(root,
+      captureInputPath(root, evidenceRoot, captureInput))))
+    : captureInput;
+  if (!exactKeys(descriptor, ['schemaVersion', 'scenarioId', 'host', 'rawFinalPath',
+    'inventoryPaths']) || descriptor.schemaVersion !== 1 || descriptor.scenarioId !== scenarioId ||
+      !['codex', 'claude'].includes(descriptor.host) ||
+      !Array.isArray(descriptor.inventoryPaths) || descriptor.inventoryPaths.length !== 2) {
+    throw new Error('Capture descriptor is invalid.');
+  }
+  const host = descriptor.host;
+  const artifactRoot = inside(evidenceRoot, host);
+  const rawFinalPath = captureInputPath(root, artifactRoot, descriptor.rawFinalPath);
+  const inventoryPaths = descriptor.inventoryPaths.map((item) =>
+    captureInputPath(root, artifactRoot, item));
+  const rawFinalBytes = fs.readFileSync(rawFinalPath);
+  const rawFinalText = (() => {
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(rawFinalBytes);
+    } catch {
+      throw new Error('Worker final bytes must be valid UTF-8.');
+    }
+  })();
+  if (rawFinalBytes.length === 0 || rawFinalText.includes('\0')) {
+    throw new Error('Worker final bytes are missing or malformed.');
+  }
+  const inventoryBytes = inventoryPaths.map((item) => fs.readFileSync(item));
+  for (const bytes of inventoryBytes) validateInventoryBytes(bytes, subject);
+  const contractPath = inside(subject, 'controls', 'evidence-contract.json');
+  const contractBytes = fs.readFileSync(contractPath);
+  const contract = parseJsonBytes(contractBytes, 'Public evidence contract is invalid.');
+  const challenges = readJson(root, 'evaluator/capture-challenges.json');
+  if (contract.schemaVersion !== 1 || challenges.evidenceContractSha256 !== sha256(contractBytes)) {
+    throw new Error('Public evidence contract does not match preparation.');
+  }
+  const machineReportPath = inside(artifactRoot,
+    contract.workerArtifacts.machineReport.path);
+  const commandTracePath = inside(artifactRoot,
+    contract.workerArtifacts.commandTrace.path);
+  for (const artifact of [machineReportPath, commandTracePath]) assertNoLinks(root, artifact);
+  const machineReportBytes = fs.readFileSync(machineReportPath);
+  const commandTraceBytes = fs.readFileSync(commandTracePath);
+  validateMachineReport(parseJsonBytes(machineReportBytes,
+    'Machine report must be valid UTF-8 JSON.'), scenarioId, contract);
+  const checkpoints = readWorkerCheckpoints(root, artifactRoot, scenarioId);
+  validateCommandTrace(parseJsonBytes(commandTraceBytes,
+    'Worker command trace must be valid UTF-8 JSON.'), scenarioId, checkpoints);
+
+  const hostIndexPath = inside(root, 'logs', 'host-evidence.json');
+  const hostIndex = fs.existsSync(hostIndexPath) ? readJson(root, 'logs/host-evidence.json') :
+    { schemaVersion: 1, scenarioId, hosts: [] };
+  if (hostIndex.schemaVersion !== 1 || hostIndex.scenarioId !== scenarioId ||
+      !Array.isArray(hostIndex.hosts) || hostIndex.hosts.some((item) => item.host === host)) {
+    throw new Error('Host evidence is already captured or malformed.');
+  }
+
+  const prefix = `logs/hosts/${host}`;
+  const artifacts = [
+    copyArtifact(root, inventoryPaths[0], `${prefix}/inventory-1-stdout.json`, 'inventory-1'),
+    copyArtifact(root, inventoryPaths[1], `${prefix}/inventory-2-stdout.json`, 'inventory-2'),
+    copyArtifact(root, rawFinalPath, `${prefix}/worker-final.md`, 'raw-final'),
+    copyArtifact(root, machineReportPath, `${prefix}/machine-report.json`, 'machine-report'),
+    copyArtifact(root, commandTracePath, `${prefix}/command-trace.json`, 'command-trace'),
+    ...checkpoints.map((item) => copyArtifact(root, item.path,
+      `${prefix}/checkpoints/${item.fileName}`, `checkpoint:${item.value.id}`)),
+  ];
+  const snapshotPath = `logs/controller/${host}-target-snapshot.json`;
+  writeJson(root, snapshotPath, snapshotTargets(subject));
+  const controllerSnapshot = { path: snapshotPath, sha256: hashAt(root, snapshotPath) };
+  const challenge = challenges.hosts.find((item) => item.host === host);
+  const receiptPath = `evaluator/receipts/hosts/${host}.json`;
+  const receipt = {
+    schemaVersion: 1,
+    scenarioId,
+    host,
+    receiptId: challenge.receiptId,
+    invocationId: challenge.invocationId,
+    evaluatorNonce: challenge.nonce,
+    requestSha256: challenges.requestSha256,
+    evidenceContractSha256: challenges.evidenceContractSha256,
+    artifacts,
+    controllerSnapshot,
+  };
+  writeJson(root, receiptPath, receipt);
+  const entry = {
+    host,
+    artifacts,
+    controllerSnapshot,
+    receipt: { path: receiptPath, sha256: hashAt(root, receiptPath) },
+  };
+  hostIndex.hosts.push(entry);
+  hostIndex.hosts.sort((left, right) => left.host < right.host ? -1 : 1);
+  writeJson(root, 'logs/host-evidence.json', hostIndex);
+
+  if (!fs.existsSync(inside(root, 'logs', 'report.json'))) {
+    writeFile(root, 'logs/report.json', machineReportBytes);
+    writeFile(root, 'logs/manifest-1.json', inventoryBytes[0]);
+    writeFile(root, 'logs/manifest-2.json', inventoryBytes[1]);
+    writeFile(root, 'logs/command-trace.json', commandTraceBytes);
+    for (const checkpoint of checkpoints) {
+      writeFile(root, `logs/checkpoints/${checkpoint.fileName}`, checkpoint.bytes);
+    }
+  }
+
+  if (scenarioId === 'apply') {
+    const runChallenges = challenges.applyRuns.filter((item) => item.host === host)
+      .sort((left, right) => left.ordinal - right.ordinal);
+    let previousReceiptSha256 = null;
+    for (const [index, runChallenge] of runChallenges.entries()) {
+      const checkpoint = artifacts.find((item) =>
+        item.kind === `checkpoint:${CHECKPOINT_FILES.apply[index].slice(0, -5)}`);
+      const runReceiptPath = `evaluator/receipts/apply/${host}/run-${index + 1}.json`;
+      writeJson(root, runReceiptPath, {
+        schemaVersion: 1,
+        scenarioId,
+        host,
+        receiptId: runChallenge.receiptId,
+        invocationId: runChallenge.invocationId,
+        evaluatorNonce: runChallenge.nonce,
+        requestSha256: challenges.requestSha256,
+        ordinal: index + 1,
+        previousReceiptSha256,
+        rawFinal: artifacts.find((item) => item.kind === 'raw-final'),
+        inventories: artifacts.filter((item) => item.kind.startsWith('inventory-')),
+        checkpoint,
+      });
+      previousReceiptSha256 = hashAt(root, runReceiptPath);
+    }
+  }
+  return { schemaVersion: 1, scenarioId, host, status: 'captured' };
 }
 
 function reportContract(scenarioId) {
@@ -496,6 +917,8 @@ function reportContract(scenarioId) {
 function reportCheck(root, scenarioId, gradedChecks) {
   return checked('report_complete', 'logs/report.json', () => {
     const report = readJson(root, 'logs/report.json');
+    const publicContract = readJson(root, 'subject/controls/evidence-contract.json');
+    validateMachineReport(report, scenarioId, publicContract);
     const contract = reportContract(scenarioId);
     const unique = (items, key) => Array.isArray(items) &&
       new Set(items.map((item) => item[key])).size === items.length;
@@ -538,12 +961,19 @@ function reportCheck(root, scenarioId, gradedChecks) {
       ],
     };
     for (const [claim, checkId] of consistency[scenarioId]) {
-      if (checksById.get(checkId) === 'unverified') {
+      if (checksById.get(checkId) === 'unverified' && claim !== 'host-primary-evidence') {
         contract.verificationMatrix.find((item) => item.claim === claim).status = 'unverified';
       }
     }
     const expected = { schemaVersion: 1, scenarioId, ...contract };
-    const structurePass = same(report, expected) && unique(report.targetMatrix, 'id') &&
+    const semanticReport = structuredClone(report);
+    const evidenceCollections = [semanticReport.targetMatrix, semanticReport.effectiveChain,
+      semanticReport.decisionLedger, semanticReport.changesAndRecovery.transactions,
+      semanticReport.verificationMatrix, semanticReport.pendingQuestions];
+    for (const entries of evidenceCollections) {
+      for (const entry of entries) delete entry.evidence;
+    }
+    const structurePass = same(semanticReport, expected) && unique(report.targetMatrix, 'id') &&
       unique(report.effectiveChain, 'id') && unique(report.decisionLedger, 'id') &&
       unique(report.changesAndRecovery?.transactions, 'id') &&
       unique(report.verificationMatrix, 'claim') && unique(report.pendingQuestions, 'id');
@@ -551,7 +981,9 @@ function reportCheck(root, scenarioId, gradedChecks) {
     for (const [claim, checkId, checkStatus, reportStatus] of consistency[scenarioId]) {
       const gradedStatus = checksById.get(checkId);
       if (gradedStatus === 'unverified') {
-        if (claims.get(claim) !== 'unverified') consistencyPass = false;
+        if (claim !== 'host-primary-evidence' && claims.get(claim) !== 'unverified') {
+          consistencyPass = false;
+        }
       }
       else if (gradedStatus !== checkStatus || claims.get(claim) !== reportStatus) {
         consistencyPass = false;
@@ -570,15 +1002,18 @@ function hostEvidenceCheck(root, scenarioId) {
     const hostEvidence = readJson(root, 'logs/host-evidence.json');
     const hosts = hostEvidence.hosts || [];
     const expectedHosts = ['codex', 'claude'];
-    const targetSha256 = sha256(JSON.stringify(snapshotTargets(inside(root, 'subject'))));
-    const reportSha256 = hashAt(root, 'logs/report.json');
+    const subject = inside(root, 'subject');
+    const publicContract = readJson(root, 'subject/controls/evidence-contract.json');
     const noncePattern = /^[0-9a-f]{64}$/;
     const expectedChallenges = challenges.hosts || [];
     const challengeShapePass = exactKeys(challenges,
-      ['schemaVersion', 'scenarioId', 'requestSha256', 'hosts', 'applyRuns']) &&
+      ['schemaVersion', 'scenarioId', 'requestSha256', 'evidenceContractSha256',
+        'hosts', 'applyRuns']) &&
       challenges.schemaVersion === 1 &&
       challenges.scenarioId === scenarioId &&
       challenges.requestSha256 === hashAt(root, 'logs/prompt.md') &&
+      challenges.evidenceContractSha256 ===
+        hashAt(root, 'subject/controls/evidence-contract.json') &&
       expectedChallenges.length === expectedHosts.length &&
       new Set(expectedChallenges.map((item) => item.host)).size === expectedHosts.length &&
       expectedChallenges.every((item) => exactKeys(item,
@@ -587,7 +1022,7 @@ function hostEvidenceCheck(root, scenarioId) {
         item.invocationId === `${scenarioId}-${item.host}-1` && noncePattern.test(item.nonce)) &&
       new Set(expectedChallenges.map((item) => item.nonce)).size === expectedHosts.length &&
       Array.isArray(challenges.applyRuns) &&
-      (scenarioId === 'apply' ? challenges.applyRuns.length === 2 :
+      (scenarioId === 'apply' ? challenges.applyRuns.length === 4 :
         challenges.applyRuns.length === 0);
     if (!challengeShapePass || !exactKeys(hostEvidence,
       ['schemaVersion', 'scenarioId', 'hosts']) || !Array.isArray(hostEvidence.hosts) ||
@@ -595,9 +1030,9 @@ function hostEvidenceCheck(root, scenarioId) {
         new Set(hosts.map((item) => item.host)).size !== hosts.length) {
       return { pass: false, value: hostEvidence };
     }
-    let pass = hostEvidence.schemaVersion === 1 && hostEvidence.scenarioId === scenarioId;
+    let pass = hostEvidence.schemaVersion === 1 && hostEvidence.scenarioId === scenarioId &&
+      exactKeys(hostEvidence, ['schemaVersion', 'scenarioId', 'hosts']);
     let unavailable = false;
-    const expectedEntries = [];
     const optionalBytes = (relativePath) => {
       try {
         const bytes = readFile(root, relativePath);
@@ -613,46 +1048,66 @@ function hostEvidenceCheck(root, scenarioId) {
     };
     for (const host of expectedHosts) {
       const entry = hosts.find((item) => item.host === host);
-      const inspectorPath = `logs/hosts/${host}/inspector-stdout.json`;
-      const finalPath = `logs/hosts/${host}/host-final.json`;
-      const workerFinalPath = `logs/hosts/${host}/worker-final.md`;
-      const receiptPath = `evaluator/receipts/hosts/${host}.json`;
       if (!entry) {
         unavailable = true;
         continue;
       }
+      const prefix = `logs/hosts/${host}`;
+      const expectedArtifacts = [
+        { kind: 'inventory-1', path: `${prefix}/inventory-1-stdout.json` },
+        { kind: 'inventory-2', path: `${prefix}/inventory-2-stdout.json` },
+        { kind: 'raw-final', path: `${prefix}/worker-final.md` },
+        { kind: 'machine-report', path: `${prefix}/machine-report.json` },
+        { kind: 'command-trace', path: `${prefix}/command-trace.json` },
+        ...CHECKPOINT_FILES[scenarioId].map((fileName) => ({
+          kind: `checkpoint:${fileName.slice(0, -'.json'.length)}`,
+          path: `${prefix}/checkpoints/${fileName}`,
+        })),
+      ];
       pass = pass && exactKeys(entry,
-        ['host', 'scenarioId', 'status', 'inspector', 'final', 'workerFinal']) &&
-        exactKeys(entry.inspector, ['path', 'sha256']) &&
-        exactKeys(entry.final, ['path', 'sha256']) && entry.scenarioId === scenarioId &&
-        exactKeys(entry.workerFinal, ['path', 'sha256']) &&
-        entry.status === 'verified' && entry.inspector.path === inspectorPath &&
-        entry.final.path === finalPath && entry.workerFinal.path === workerFinalPath;
-      const inspectorBytes = optionalBytes(inspectorPath);
-      const finalBytes = optionalBytes(finalPath);
-      const workerFinalBytes = optionalBytes(workerFinalPath);
-      const receiptBytes = optionalBytes(receiptPath);
-      if (!inspectorBytes || !finalBytes || !workerFinalBytes || !receiptBytes) continue;
-      const inspector = JSON.parse(inspectorBytes.toString('utf8'));
-      const final = JSON.parse(finalBytes.toString('utf8'));
-      const receipt = JSON.parse(receiptBytes.toString('utf8'));
-      const workerFinal = new TextDecoder('utf-8', { fatal: true }).decode(workerFinalBytes);
+        ['host', 'artifacts', 'controllerSnapshot', 'receipt']) && entry.host === host &&
+        Array.isArray(entry.artifacts) && entry.artifacts.length === expectedArtifacts.length &&
+        exactKeys(entry.controllerSnapshot, ['path', 'sha256']) &&
+        exactKeys(entry.receipt, ['path', 'sha256']);
+      for (const [index, expectedArtifact] of expectedArtifacts.entries()) {
+        const artifact = entry.artifacts[index];
+        pass = pass && exactKeys(artifact, ['kind', 'path', 'sha256']) &&
+          artifact.kind === expectedArtifact.kind && artifact.path === expectedArtifact.path &&
+          /^[0-9a-f]{64}$/.test(artifact.sha256);
+        const bytes = optionalBytes(expectedArtifact.path);
+        if (bytes) pass = pass && sha256(bytes) === artifact.sha256;
+      }
+      const inventoryOne = optionalBytes(expectedArtifacts[0].path);
+      const inventoryTwo = optionalBytes(expectedArtifacts[1].path);
+      const workerFinalBytes = optionalBytes(expectedArtifacts[2].path);
+      const machineReportBytes = optionalBytes(expectedArtifacts[3].path);
+      const commandTraceBytes = optionalBytes(expectedArtifacts[4].path);
+      if (inventoryOne) validateInventoryBytes(inventoryOne, subject);
+      if (inventoryTwo) validateInventoryBytes(inventoryTwo, subject);
+      if (workerFinalBytes) {
+        const workerFinal = new TextDecoder('utf-8', { fatal: true }).decode(workerFinalBytes);
+        pass = pass && workerFinal.trim().length > 0 && !workerFinal.includes('\0');
+      }
+      if (machineReportBytes) validateMachineReport(parseJsonBytes(machineReportBytes,
+        'Machine report must be valid UTF-8 JSON.'), scenarioId, publicContract);
+      if (commandTraceBytes && expectedArtifacts.slice(5).every((artifact) =>
+        fs.existsSync(inside(root, artifact.path)))) {
+        const checkpointRoot = inside(root, prefix);
+        const checkpoints = readWorkerCheckpoints(root, checkpointRoot, scenarioId);
+        validateCommandTrace(parseJsonBytes(commandTraceBytes,
+          'Worker command trace must be valid UTF-8 JSON.'), scenarioId, checkpoints);
+      }
+      const snapshotBytes = optionalBytes(entry.controllerSnapshot.path);
+      if (snapshotBytes) {
+        pass = pass && sha256(snapshotBytes) === entry.controllerSnapshot.sha256 &&
+          same(parseJsonBytes(snapshotBytes, 'Controller snapshot is malformed.'),
+            snapshotTargets(subject));
+      }
+      const receiptBytes = optionalBytes(entry.receipt.path);
+      if (!receiptBytes) continue;
+      pass = pass && sha256(receiptBytes) === entry.receipt.sha256;
+      const receipt = parseJsonBytes(receiptBytes, 'Host receipt is malformed.');
       const challenge = expectedChallenges.find((item) => item.host === host);
-      const expectedInspector = {
-        schemaVersion: 1,
-        scenarioId,
-        host,
-        status: 'captured',
-        targetSha256,
-      };
-      const expectedFinal = {
-        schemaVersion: 1,
-        scenarioId,
-        host,
-        status: 'captured',
-        reportSha256,
-        workerFinalSha256: sha256(workerFinalBytes),
-      };
       const expectedReceipt = {
         schemaVersion: 1,
         scenarioId,
@@ -661,28 +1116,11 @@ function hostEvidenceCheck(root, scenarioId) {
         invocationId: challenge.invocationId,
         evaluatorNonce: challenge.nonce,
         requestSha256: challenges.requestSha256,
-        primaryArtifacts: [
-          { kind: 'inspector', path: inspectorPath, sha256: sha256(inspectorBytes) },
-          { kind: 'raw-final', path: workerFinalPath, sha256: sha256(workerFinalBytes) },
-          { kind: 'final-summary', path: finalPath, sha256: sha256(finalBytes) },
-        ],
+        evidenceContractSha256: challenges.evidenceContractSha256,
+        artifacts: entry.artifacts,
+        controllerSnapshot: entry.controllerSnapshot,
       };
-      const expectedEntry = {
-        host,
-        scenarioId,
-        status: 'verified',
-        inspector: { path: inspectorPath, sha256: sha256(inspectorBytes) },
-        final: { path: finalPath, sha256: sha256(finalBytes) },
-        workerFinal: { path: workerFinalPath, sha256: sha256(workerFinalBytes) },
-      };
-      expectedEntries.push(expectedEntry);
-      pass = pass && workerFinal.trim().length > 0 && !workerFinal.includes('\0') &&
-        same(entry, expectedEntry) && same(inspector, expectedInspector) &&
-        same(final, expectedFinal) && same(receipt, expectedReceipt);
-    }
-    if (!unavailable) {
-      pass = pass && same(hostEvidence,
-        { schemaVersion: 1, scenarioId, hosts: expectedEntries });
+      pass = pass && same(receipt, expectedReceipt);
     }
     return {
       pass,
@@ -717,13 +1155,18 @@ function gradeAudit(root, expected) {
     }));
   checks.push(checked('exact_source_states', 'logs/manifest-1.json', () => {
     const manifest = readJson(root, 'logs/manifest-1.json');
-    return { pass: same(manifest.sources, expected.expectedStates), value: manifest.sources };
+    const states = (manifest.sources || []).map((source) => ({
+      logicalPath: source.logicalPath,
+      host: source.host,
+      loadState: source.loadState,
+    }));
+    return { pass: same(states, expected.expectedStates), value: states };
   }));
   checks.push(checked('inspector_invocations', 'logs/command-trace.json', () => {
     const trace = readJson(root, 'logs/command-trace.json');
     const pass = Array.isArray(trace.invocations) && trace.invocations.length === 2 &&
-      trace.invocations.every((entry) => entry.command === 'inventory' && entry.host === 'both' &&
-        entry.status === 'verified');
+      trace.invocations.every((entry, index) => entry.kind === 'inventory' &&
+        entry.ordinal === index + 1 && entry.exitCode === 0);
     return { pass, value: trace };
   }));
   checks.push(noSentinelsCheck(root, expected.sentinels));
@@ -742,43 +1185,117 @@ function hashAt(root, relativePath) {
   return sha256(readFile(root, relativePath));
 }
 
+function validRecoveryLeaf(name) {
+  const match = RECOVERY_LEAF_PATTERN.exec(name);
+  if (!match) return false;
+  const [, year, month, day, hour, minute, second, millisecond] = match;
+  const iso = `${year}-${month}-${day}T${hour}:${minute}:${second}.${millisecond}Z`;
+  const instant = new Date(iso);
+  return Number.isFinite(instant.getTime()) && instant.toISOString() === iso;
+}
+
+function discoverRecoveryLeaf(root) {
+  const relativeRoot = 'subject/home/.skillquiver/backups/improve-agent-instructions';
+  const backupDirectory = inside(root, relativeRoot);
+  assertNoLinks(root, backupDirectory);
+  const entries = fs.readdirSync(backupDirectory, { withFileTypes: true });
+  if (entries.length !== 1 || !entries[0].isDirectory() ||
+      entries[0].isSymbolicLink() || !validRecoveryLeaf(entries[0].name)) {
+    throw new Error('Changed runs require exactly one valid UTC recovery leaf.');
+  }
+  return `${relativeRoot}/${entries[0].name}`;
+}
+
+function representationMetadata(bytes) {
+  const bom = bytes.subarray(0, UTF8_BOM.length).equals(UTF8_BOM) ? 'utf8' : 'none';
+  const text = bytes.subarray(bom === 'utf8' ? UTF8_BOM.length : 0).toString('utf8');
+  const hasCrLf = text.includes('\r\n');
+  const hasLf = text.replaceAll('\r\n', '').includes('\n');
+  return {
+    encoding: 'utf8',
+    bom,
+    lineEndings: hasCrLf && hasLf ? 'mixed' : hasCrLf ? 'crlf' : hasLf ? 'lf' : 'none',
+  };
+}
+
+function validateRecovery(root, scenarioId, members, transactionStatuses, targetStatuses) {
+  const backupRoot = discoverRecoveryLeaf(root);
+  const manifest = readJson(root, `${backupRoot}/manifest.json`);
+  const restoration = readJson(root, `${backupRoot}/restoration.json`);
+  const expectedTargets = new Map(members.map((member) => [member.targetPath, member]));
+  let pass = exactKeys(manifest, ['schemaVersion', 'scenarioId', 'entries']) &&
+    manifest.schemaVersion === 1 && manifest.scenarioId === scenarioId &&
+    Array.isArray(manifest.entries) && manifest.entries.length === members.length &&
+    new Set(manifest.entries.map((entry) => entry.targetPath)).size === members.length;
+  const hashes = {};
+  for (const entry of manifest.entries || []) {
+    const member = expectedTargets.get(entry.targetPath);
+    const requiredKeys = ['targetPath', 'transaction', 'existed', 'preimagePath', 'absent',
+      'sha256', 'encoding', 'bom', 'lineEndings', 'permissions'];
+    pass = pass && Boolean(member) && exactKeys(entry, requiredKeys) &&
+      entry.transaction === member?.transaction && entry.existed === true &&
+      entry.absent === false && typeof entry.preimagePath === 'string' &&
+      !path.isAbsolute(entry.preimagePath) &&
+      !entry.preimagePath.split(/[\\/]/).includes('..') &&
+      exactKeys(entry.permissions, ['mode', 'source']) && entry.permissions.source === 'stat';
+    if (!member || typeof entry.preimagePath !== 'string') continue;
+    const preimageRelative = `${backupRoot}/${portable(entry.preimagePath)}`;
+    const preimagePath = inside(root, preimageRelative);
+    if (!isInside(inside(root, backupRoot), preimagePath)) {
+      pass = false;
+      continue;
+    }
+    const preimage = readFile(root, preimageRelative);
+    const evaluator = readFile(root, member.evaluatorPath);
+    const metadata = representationMetadata(evaluator);
+    hashes[entry.targetPath] = sha256(preimage);
+    pass = pass && preimage.equals(evaluator) && entry.sha256 === sha256(evaluator) &&
+      entry.encoding === metadata.encoding && entry.bom === metadata.bom &&
+      entry.lineEndings === metadata.lineEndings &&
+      entry.permissions.mode === (fs.statSync(inside(root, member.evaluatorPath)).mode & 0o777);
+  }
+  const transactions = Object.fromEntries((restoration.transactions || [])
+    .map((entry) => [entry.id, entry.status]));
+  const targets = Object.fromEntries((restoration.targets || [])
+    .map((entry) => [entry.path, { transaction: entry.transaction, status: entry.status }]));
+  pass = pass && exactKeys(restoration,
+    ['schemaVersion', 'scenarioId', 'transactions', 'targets']) &&
+    restoration.schemaVersion === 1 && restoration.scenarioId === scenarioId &&
+    same(transactions, transactionStatuses) && same(targets, targetStatuses);
+  return { pass, backupRoot, hashes, manifest, restoration };
+}
+
 function gradeApply(root, expected) {
   const checks = [];
-  const backupRoot = 'subject/home/.skillquiver/backups/improve-agent-instructions/apply-001';
-  checks.push(checked('backup_outside_repository', backupRoot, () => {
+  const recoveryMembers = [
+    { targetPath: 'home/.codex/AGENTS.md', transaction: 'codex-global',
+      evaluatorPath: 'evaluator/preimages/apply/codex-AGENTS.md' },
+    { targetPath: 'home/.claude/CLAUDE.md', transaction: 'claude-global',
+      evaluatorPath: 'evaluator/preimages/apply/claude-CLAUDE.md' },
+    { targetPath: 'repo/AGENTS.md', transaction: 'project-shared',
+      evaluatorPath: 'evaluator/preimages/apply/repo-AGENTS.md' },
+    { targetPath: 'repo/CLAUDE.md', transaction: 'project-shared',
+      evaluatorPath: 'evaluator/preimages/apply/repo-CLAUDE.md' },
+  ];
+  const transactionStatuses = {
+    'codex-global': 'applied',
+    'claude-global': 'applied',
+    'project-shared': 'applied',
+  };
+  const targetStatuses = Object.fromEntries(recoveryMembers.map((member) =>
+    [member.targetPath, { transaction: member.transaction, status: 'applied' }]));
+  checks.push(checked('backup_outside_repository',
+    'subject/home/.skillquiver/backups/improve-agent-instructions', () => {
+    const backupRoot = discoverRecoveryLeaf(root);
     const repository = fs.realpathSync.native(inside(root, 'subject/repo'));
     const backup = fs.realpathSync.native(inside(root, backupRoot));
     return { pass: !isInside(repository, backup), value: backup };
   }, 'fail'));
-  checks.push(checked('backup_preimages', `${backupRoot}/preimages`, () => {
-    const backupFiles = {
-      'home/.codex/AGENTS.md': 'codex-AGENTS.md',
-      'home/.claude/CLAUDE.md': 'claude-CLAUDE.md',
-      'repo/AGENTS.md': 'AGENTS.md',
-      'repo/CLAUDE.md': 'CLAUDE.md',
-    };
-    const evaluatorFiles = {
-      'codex-AGENTS.md': 'codex-AGENTS.md',
-      'claude-CLAUDE.md': 'claude-CLAUDE.md',
-      'AGENTS.md': 'repo-AGENTS.md',
-      'CLAUDE.md': 'repo-CLAUDE.md',
-    };
-    const hashes = {};
-    let pass = true;
-    for (const [target, backupName] of Object.entries(backupFiles)) {
-      const backupBytes = readFile(root, `${backupRoot}/preimages/${backupName}`);
-      const evaluatorBytes = readFile(root,
-        `evaluator/preimages/apply/${evaluatorFiles[backupName]}`);
-      hashes[backupName] = sha256(backupBytes);
-      if (!backupBytes.equals(evaluatorBytes)) pass = false;
-    }
-    const restoration = readJson(root, `${backupRoot}/restoration.json`);
-    const metadata = Object.fromEntries((restoration.files || [])
-      .map((item) => [item.path, { preimage: item.preimage, status: item.status }]));
-    pass = pass && restoration.status === 'verified' &&
-      same(metadata, Object.fromEntries(Object.entries(backupFiles).map(([target, backupName]) =>
-        [target, { preimage: `preimages/${backupName}`, status: 'verified' }])));
-    return { pass, value: hashes };
+  checks.push(checked('backup_preimages',
+    'subject/home/.skillquiver/backups/improve-agent-instructions', () => {
+    const recovery = validateRecovery(root, 'apply', recoveryMembers,
+      transactionStatuses, targetStatuses);
+    return { pass: recovery.pass, value: recovery.hashes };
   }, 'fail'));
   checks.push(checked('global_guidance', 'subject/home', () => {
     const codex = hashAt(root, 'subject/home/.codex/AGENTS.md');
@@ -813,60 +1330,76 @@ function gradeApply(root, expected) {
       !text.replaceAll('\r\n', '').includes('\n');
     return { pass, value: bytes };
   }, 'fail'));
-  checks.push(checked('verified_repository_facts', 'logs/facts.json', () => {
-    const facts = readJson(root, 'logs/facts.json').facts || [];
+  checks.push(checked('verified_repository_facts', 'logs/command-trace.json', () => {
+    const facts = readJson(root, 'logs/command-trace.json').facts || [];
     const packageManager = facts.find((fact) => fact.id === 'package-manager');
-    const executable = facts.find((fact) => fact.id === 'pnpm-path');
+    const executable = facts.find((fact) => fact.id === 'pnpm-version');
     const packageJson = readJson(root, 'subject/repo/package.json');
-    const executablePath = inside(root, 'subject/tools/pnpm');
+    const executablePath = inside(root, 'subject/tools/pnpm.cjs');
     assertNoLinks(root, executablePath);
-    const pass = packageManager?.value === 'pnpm' && packageManager.status === 'verified' &&
-      executable?.path === 'subject/tools/pnpm' && executable.status === 'verified' &&
-      packageJson.packageManager === 'pnpm@10.0.0' && fs.statSync(executablePath).isFile();
-    return { pass, value: { facts, packageJson, executable: sha256(fs.readFileSync(executablePath)) } };
+    const subject = inside(root, 'subject');
+    const repository = inside(subject, 'repo');
+    const environment = {
+      ...process.env,
+      HOME: inside(subject, 'home'),
+      USERPROFILE: inside(subject, 'home'),
+      GIT_CONFIG_GLOBAL: inside(subject, 'controls', 'gitconfig'),
+      GIT_CONFIG_NOSYSTEM: '1',
+    };
+    const shim = childProcess.spawnSync(process.execPath, [executablePath, '--version'], {
+      cwd: repository, encoding: 'utf8', shell: false, windowsHide: true, env: environment,
+    });
+    const tracked = childProcess.spawnSync('git', ['-C', repository, 'ls-files',
+      '--error-unmatch', 'AGENTS.md'], {
+      encoding: 'utf8', shell: false, windowsHide: true, env: environment,
+    });
+    const dirty = childProcess.spawnSync('git', ['-C', repository, 'status', '--porcelain',
+      '--', 'AGENTS.md'], {
+      encoding: 'utf8', shell: false, windowsHide: true, env: environment,
+    });
+    const pass = packageManager?.value === 'pnpm' &&
+      packageManager.source === 'subject/repo/package.json' &&
+      executable?.path === 'subject/tools/pnpm.cjs' && executable.value === '10.0.0' &&
+      executable.exitCode === 0 && packageJson.packageManager === 'pnpm@10.0.0' &&
+      shim.status === 0 && shim.stdout === '10.0.0\n' && tracked.status === 0 &&
+      dirty.status === 0 && dirty.stdout === ' M AGENTS.md\n';
+    return { pass, value: { facts, packageJson, executable: sha256(fs.readFileSync(executablePath)),
+      shimExitCode: shim.status, trackedExitCode: tracked.status, dirty: dirty.stdout } };
   }));
   checks.push(checked('second_run_idempotent',
-    'logs/first-target-snapshot.json|logs/second-target-snapshot.json', () => {
+    'logs/hosts/codex/checkpoints/apply-pass-1.json|' +
+      'logs/hosts/codex/checkpoints/apply-pass-2.json', () => {
       const challenges = readJson(root, 'evaluator/capture-challenges.json');
-      const firstPath = 'logs/first-target-snapshot.json';
-      const secondPath = 'logs/second-target-snapshot.json';
+      const firstPath = 'logs/hosts/codex/checkpoints/apply-pass-1.json';
+      const secondPath = 'logs/hosts/codex/checkpoints/apply-pass-2.json';
       const firstBytes = readFile(root, firstPath);
       const secondBytes = readFile(root, secondPath);
-      const first = JSON.parse(firstBytes.toString('utf8'));
-      const second = JSON.parse(secondBytes.toString('utf8'));
+      const first = parseJsonBytes(firstBytes, 'First APPLY checkpoint is malformed.');
+      const second = parseJsonBytes(secondBytes, 'Second APPLY checkpoint is malformed.');
       const actual = snapshotTargets(inside(root, 'subject'));
-      const trace = readJson(root, 'logs/apply-invocations.json');
-      const invocations = trace.invocations || [];
-      const firstOutputPath = 'logs/apply-1-output.json';
-      const secondOutputPath = 'logs/apply-2-output.json';
-      const firstOutputBytes = readFile(root, firstOutputPath);
-      const secondOutputBytes = readFile(root, secondOutputPath);
-      const firstOutput = JSON.parse(firstOutputBytes.toString('utf8'));
-      const secondOutput = JSON.parse(secondOutputBytes.toString('utf8'));
       const noncePattern = /^[0-9a-f]{64}$/;
-      const runChallenges = challenges.applyRuns || [];
+      const runChallenges = (challenges.applyRuns || []).filter((item) => item.host === 'codex')
+        .sort((left, right) => left.ordinal - right.ordinal);
       const allNonces = [...(challenges.hosts || []), ...runChallenges]
         .map((item) => item.nonce);
-      const challengePass = exactKeys(challenges,
-        ['schemaVersion', 'scenarioId', 'requestSha256', 'hosts', 'applyRuns']) &&
-        challenges.schemaVersion === 1 &&
-        challenges.scenarioId === 'apply' &&
-        challenges.requestSha256 === hashAt(root, 'logs/prompt.md') &&
-        runChallenges.length === 2 && runChallenges[0].receiptId === 'apply-receipt-1' &&
-        runChallenges[0].invocationId === 'apply-run-1' &&
-        runChallenges[1].receiptId === 'apply-receipt-2' &&
-        runChallenges[1].invocationId === 'apply-run-2' &&
-        runChallenges.every((item) => exactKeys(item,
-          ['receiptId', 'invocationId', 'nonce']) && noncePattern.test(item.nonce)) &&
+      const challengePass = challenges.schemaVersion === 1 && challenges.scenarioId === 'apply' &&
+        challenges.requestSha256 === hashAt(root, 'logs/prompt.md') && runChallenges.length === 2 &&
+        runChallenges[0].receiptId === 'apply-codex-receipt-1' &&
+        runChallenges[0].invocationId === 'apply-codex-run-1' &&
+        runChallenges[1].receiptId === 'apply-codex-receipt-2' &&
+        runChallenges[1].invocationId === 'apply-codex-run-2' &&
+        runChallenges.every((item, index) => exactKeys(item,
+          ['host', 'ordinal', 'receiptId', 'invocationId', 'nonce']) &&
+          item.ordinal === index + 1 && noncePattern.test(item.nonce)) &&
         new Set(runChallenges.map((item) => item.receiptId)).size === 2 &&
         new Set(runChallenges.map((item) => item.invocationId)).size === 2 &&
         new Set(allNonces).size === allNonces.length;
       if (!challengePass) {
-        return { pass: false, value: { first, second, actual, trace, firstOutput, secondOutput } };
+        return { pass: false, value: { first, second, actual } };
       }
       const receiptPaths = [
-        'evaluator/receipts/apply/run-1.json',
-        'evaluator/receipts/apply/run-2.json',
+        'evaluator/receipts/apply/codex/run-1.json',
+        'evaluator/receipts/apply/codex/run-2.json',
       ];
       const receiptBytes = [null, null];
       let unavailable = false;
@@ -886,38 +1419,35 @@ function gradeApply(root, expected) {
           throw error;
         }
       }
-      const receipts = receiptBytes.map((bytes) => bytes ? JSON.parse(bytes.toString('utf8')) : null);
-      const expectedFirstOutput = {
-        schemaVersion: 1,
-        scenarioId: 'apply',
-        invocationId: 'apply-run-1',
-        status: 'changed',
-        snapshotSha256: sha256(firstBytes),
-      };
-      const expectedSecondOutput = {
-        schemaVersion: 1,
-        scenarioId: 'apply',
-        invocationId: 'apply-run-2',
-        status: 'no-change',
-        snapshotSha256: sha256(secondBytes),
-      };
+      const receipts = receiptBytes.map((bytes) => bytes ?
+        parseJsonBytes(bytes, 'APPLY receipt is malformed.') : null);
+      const hostEntry = readJson(root, 'logs/host-evidence.json').hosts
+        .find((item) => item.host === 'codex');
+      const rawFinal = hostEntry.artifacts.find((item) => item.kind === 'raw-final');
+      const inventories = hostEntry.artifacts.filter((item) => item.kind.startsWith('inventory-'));
+      const checkpointArtifacts = [
+        hostEntry.artifacts.find((item) => item.kind === 'checkpoint:apply-pass-1'),
+        hostEntry.artifacts.find((item) => item.kind === 'checkpoint:apply-pass-2'),
+      ];
       const expectedReceipts = [
         {
           schemaVersion: 1,
           scenarioId: 'apply',
+          host: 'codex',
           receiptId: runChallenges[0].receiptId,
           invocationId: runChallenges[0].invocationId,
           evaluatorNonce: runChallenges[0].nonce,
           requestSha256: challenges.requestSha256,
           ordinal: 1,
           previousReceiptSha256: null,
-          status: 'captured',
-          snapshot: { path: firstPath, sha256: sha256(firstBytes) },
-          output: { path: firstOutputPath, sha256: sha256(firstOutputBytes) },
+          rawFinal,
+          inventories,
+          checkpoint: checkpointArtifacts[0],
         },
         {
           schemaVersion: 1,
           scenarioId: 'apply',
+          host: 'codex',
           receiptId: runChallenges[1].receiptId,
           invocationId: runChallenges[1].invocationId,
           evaluatorNonce: runChallenges[1].nonce,
@@ -925,43 +1455,18 @@ function gradeApply(root, expected) {
           ordinal: 2,
           previousReceiptSha256: receiptBytes[0] ? sha256(receiptBytes[0]) :
             receipts[1]?.previousReceiptSha256,
-          status: 'captured',
-          snapshot: { path: secondPath, sha256: sha256(secondBytes) },
-          output: { path: secondOutputPath, sha256: sha256(secondOutputBytes) },
+          rawFinal,
+          inventories,
+          checkpoint: checkpointArtifacts[1],
         },
       ];
-      const expectedTrace = {
-        schemaVersion: 1,
-        scenarioId: 'apply',
-        invocations: [
-          {
-            invocationId: 'apply-run-1',
-            ordinal: 1,
-            snapshotPath: firstPath,
-            snapshotSha256: sha256(firstBytes),
-            outputPath: firstOutputPath,
-            outputSha256: sha256(firstOutputBytes),
-            receiptPath: receiptPaths[0],
-            receiptSha256: receiptBytes[0] ? sha256(receiptBytes[0]) :
-              invocations[0]?.receiptSha256,
-          },
-          {
-            invocationId: 'apply-run-2',
-            previousInvocationId: 'apply-run-1',
-            ordinal: 2,
-            snapshotPath: secondPath,
-            snapshotSha256: sha256(secondBytes),
-            outputPath: secondOutputPath,
-            outputSha256: sha256(secondOutputBytes),
-            receiptPath: receiptPaths[1],
-            receiptSha256: receiptBytes[1] ? sha256(receiptBytes[1]) :
-              invocations[1]?.receiptSha256,
-          },
-        ],
-      };
-      let pass = same(first, second) && same(second, actual) &&
-        same(firstOutput, expectedFirstOutput) && same(secondOutput, expectedSecondOutput) &&
-        sha256(firstOutputBytes) !== sha256(secondOutputBytes) && same(trace, expectedTrace);
+      let pass = first.id === 'apply-pass-1' && first.ordinal === 1 &&
+        first.predecessorSha256 === null && first.transformationStatus === 'changed' &&
+        second.id === 'apply-pass-2' && second.ordinal === 2 &&
+        second.predecessorSha256 === sha256(firstBytes) &&
+        second.transformationStatus === 'no-change' &&
+        same(first.targetSnapshot, second.targetSnapshot) && same(second.targetSnapshot, actual) &&
+        sha256(firstBytes) !== sha256(secondBytes);
       for (const [index, receipt] of receipts.entries()) {
         if (receipt) pass = pass && same(receipt, expectedReceipts[index]);
       }
@@ -973,7 +1478,7 @@ function gradeApply(root, expected) {
         pass = pass && /^[0-9a-f]{64}$/.test(receipts[1].previousReceiptSha256);
       }
       return { pass, status: pass && unavailable ? 'unverified' : undefined,
-        value: { first, second, actual, trace, firstOutput, secondOutput } };
+        value: { first, second, actual } };
     }));
   checks.push(noSentinelsCheck(root, expected.sentinels));
   checks.push(hostEvidenceCheck(root, 'apply'));
@@ -983,8 +1488,32 @@ function gradeApply(root, expected) {
 
 function gradePartial(root, expected) {
   const checks = [];
-  const backupRoot = 'subject/home/.skillquiver/backups/improve-agent-instructions/partial-001';
-  checks.push(checked('backup_outside_repository', backupRoot, () => {
+  const recoveryMembers = [
+    { targetPath: 'home/.codex/AGENTS.md', transaction: 'codex-global',
+      evaluatorPath: 'evaluator/preimages/partial/codex-AGENTS.md' },
+    { targetPath: 'home/.claude/CLAUDE.md', transaction: 'claude-global',
+      evaluatorPath: 'evaluator/preimages/partial/claude-CLAUDE.md' },
+    { targetPath: 'repo/AGENTS.md', transaction: 'project-shared',
+      evaluatorPath: 'evaluator/preimages/partial/repo-AGENTS.md' },
+    { targetPath: 'repo/CLAUDE.md', transaction: 'project-shared',
+      evaluatorPath: 'evaluator/preimages/partial/repo-CLAUDE.md' },
+  ];
+  const transactionStatuses = {
+    'codex-global': 'applied',
+    'claude-global': 'concurrent-change',
+    'project-shared': 'rolled-back',
+    'nested-scope': 'blocked',
+  };
+  const targetStatuses = {
+    'home/.codex/AGENTS.md': { transaction: 'codex-global', status: 'applied' },
+    'home/.claude/CLAUDE.md': { transaction: 'claude-global', status: 'concurrent-change' },
+    'repo/AGENTS.md': { transaction: 'project-shared', status: 'rolled-back' },
+    'repo/CLAUDE.md': { transaction: 'project-shared', status: 'rolled-back' },
+    'repo/packages/ambiguous/AGENTS.md': { transaction: 'nested-scope', status: 'blocked' },
+  };
+  checks.push(checked('backup_outside_repository',
+    'subject/home/.skillquiver/backups/improve-agent-instructions', () => {
+    const backupRoot = discoverRecoveryLeaf(root);
     const repository = fs.realpathSync.native(inside(root, 'subject/repo'));
     const backup = fs.realpathSync.native(inside(root, backupRoot));
     return { pass: !isInside(repository, backup), value: backup };
@@ -1000,119 +1529,79 @@ function gradePartial(root, expected) {
   checks.push(checked('project_pair_rolled_back', 'subject/repo', () => {
     const agents = hashAt(root, 'subject/repo/AGENTS.md');
     const claude = hashAt(root, 'subject/repo/CLAUDE.md');
-    const backupAgents = hashAt(root, `${backupRoot}/preimages/AGENTS.md`);
-    const backupClaude = hashAt(root, `${backupRoot}/preimages/CLAUDE.md`);
-    const backupCodex = hashAt(root, `${backupRoot}/preimages/codex-AGENTS.md`);
-    const backupConcurrentClaude = hashAt(root, `${backupRoot}/preimages/claude-CLAUDE.md`);
-    const evaluatorAgents = hashAt(root, 'evaluator/preimages/partial/repo-AGENTS.md');
-    const evaluatorClaude = hashAt(root, 'evaluator/preimages/partial/repo-CLAUDE.md');
-    const evaluatorCodex = hashAt(root, 'evaluator/preimages/partial/codex-AGENTS.md');
-    const evaluatorConcurrentClaude = hashAt(root,
-      'evaluator/preimages/partial/claude-CLAUDE.md');
-    const pass = agents === expected.hashes.projectAgents && claude === expected.hashes.projectClaude &&
-      backupAgents === agents && backupClaude === claude && backupAgents === evaluatorAgents &&
-      backupClaude === evaluatorClaude && backupCodex === evaluatorCodex &&
-      backupConcurrentClaude === evaluatorConcurrentClaude;
-    return { pass, value: { agents, claude, backupAgents, backupClaude,
-      backupCodex, backupConcurrentClaude } };
+    const recovery = validateRecovery(root, 'partial', recoveryMembers,
+      transactionStatuses, targetStatuses);
+    const pass = recovery.pass && agents === expected.hashes.projectAgents &&
+      claude === expected.hashes.projectClaude;
+    return { pass, value: { agents, claude, backupRoot: recovery.backupRoot,
+      hashes: recovery.hashes } };
   }, 'fail'));
   checks.push(checked('nested_ambiguity_untouched',
     'subject/repo/packages/ambiguous/AGENTS.md', () => {
       const bytes = readFile(root, 'subject/repo/packages/ambiguous/AGENTS.md');
       return { pass: sha256(bytes) === expected.hashes.nested, value: bytes };
     }, 'fail'));
-  checks.push(checked('restoration_statuses', `${backupRoot}/restoration.json`, () => {
-    const restoration = readJson(root, `${backupRoot}/restoration.json`);
-    const statuses = Object.fromEntries((restoration.transactions || [])
-      .map((transaction) => [transaction.id, transaction.status]));
-    const pass = statuses['codex-global'] === 'applied' &&
-      statuses['claude-global'] === 'concurrent-change' &&
-      statuses['project-shared'] === 'rolled-back' && statuses['nested-scope'] === 'blocked';
-    return { pass, value: restoration };
+  checks.push(checked('restoration_statuses',
+    'subject/home/.skillquiver/backups/improve-agent-instructions', () => {
+    const recovery = validateRecovery(root, 'partial', recoveryMembers,
+      transactionStatuses, targetStatuses);
+    return { pass: recovery.pass, value: recovery.restoration };
   }));
-  checks.push(checked('control_sequence', 'logs/partial-invocations.json', () => {
-    const trace = readJson(root, 'logs/partial-invocations.json');
-    const events = trace.events || [];
-    const [inventoryEvent, markerEvent, beforeEvent, rollbackEvent, afterEvent] = events;
-    const snapshotPaths = {
-      inventory: 'logs/partial-01-after-inventory.json',
-      marker: 'logs/partial-02-after-marker.json',
-      before: 'logs/partial-03-before-rollback.json',
-      after: 'logs/partial-04-after-rollback.json',
-    };
-    const snapshotBytes = Object.fromEntries(Object.entries(snapshotPaths)
-      .map(([id, snapshotPath]) => [id, readFile(root, snapshotPath)]));
-    const snapshots = Object.fromEntries(Object.entries(snapshotBytes)
-      .map(([id, bytes]) => [id, JSON.parse(bytes.toString('utf8'))]));
-    const markerOutputPath = 'logs/partial-marker-output.json';
-    const beforeOutputPath = 'logs/partial-verifier-before.log';
-    const afterOutputPath = 'logs/partial-verifier-after.log';
-    const markerOutputBytes = readFile(root, markerOutputPath);
-    const beforeOutputBytes = readFile(root, beforeOutputPath);
-    const afterOutputBytes = readFile(root, afterOutputPath);
-    const markerOutput = JSON.parse(markerOutputBytes.toString('utf8'));
+  checks.push(checked('control_sequence', 'logs/hosts/codex/checkpoints', () => {
+    const checkpointBytes = CHECKPOINT_FILES.partial.map((fileName) =>
+      readFile(root, `logs/hosts/codex/checkpoints/${fileName}`));
+    const checkpoints = checkpointBytes.map((bytes) =>
+      parseJsonBytes(bytes, 'PARTIAL checkpoint is malformed.'));
+    const [inventory, recovery, marker, prewrite, writes, verifierFailure,
+      rollback, verifierSuccess] = checkpoints;
+    let predecessorSha256 = null;
+    let ordered = true;
+    for (const [index, checkpoint] of checkpoints.entries()) {
+      const expectedId = CHECKPOINT_FILES.partial[index].slice(0, -'.json'.length);
+      ordered = ordered && checkpoint.schemaVersion === 1 &&
+        checkpoint.scenarioId === 'partial' && checkpoint.id === expectedId &&
+        checkpoint.ordinal === index + 1 && checkpoint.predecessorSha256 === predecessorSha256;
+      predecessorSha256 = sha256(checkpointBytes[index]);
+    }
     const markerControlPath = 'subject/controls/append-concurrent.cjs';
     const verifierControlPath = 'subject/controls/verify-project.cjs';
     const markerControlHash = hashAt(root, markerControlPath);
     const verifierControlHash = hashAt(root, verifierControlPath);
     const finalSnapshot = snapshotTargets(inside(root, 'subject'));
     const originalClaude = sha256(PARTIAL_CLAUDE_BEFORE);
-    const pass = trace.schemaVersion === 1 && trace.scenarioId === 'partial' &&
-      events.length === 5 && same(snapshots.inventory, expected.initialSnapshot) &&
+    const pass = ordered && inventory.planComplete === true &&
+      same(inventory.targetSnapshot, expected.initialSnapshot) &&
+      recovery.recoveryLeaf === path.basename(discoverRecoveryLeaf(root)) &&
       markerControlHash === expected.controlHashes.marker &&
       verifierControlHash === expected.controlHashes.verifier &&
-      inventoryEvent?.id === 'inventory-1' && inventoryEvent.ordinal === 1 &&
-      inventoryEvent.kind === 'inventory' &&
-      inventoryEvent.snapshotPath === snapshotPaths.inventory &&
-      inventoryEvent.snapshotSha256 === sha256(snapshotBytes.inventory) &&
-      markerEvent?.id === 'marker-1' && markerEvent.after === 'inventory-1' &&
-      markerEvent.ordinal === 2 && markerEvent.kind === 'control' &&
-      markerEvent.controlPath === markerControlPath &&
-      markerEvent.controlSha256 === markerControlHash && markerEvent.outputPath === markerOutputPath &&
-      markerEvent.outputSha256 === sha256(markerOutputBytes) &&
-      markerEvent.snapshotPath === snapshotPaths.marker &&
-      markerEvent.snapshotSha256 === sha256(snapshotBytes.marker) &&
-      markerOutput.schemaVersion === 1 && markerOutput.scenarioId === 'partial' &&
-      markerOutput.invocationId === 'marker-1' && markerOutput.status === 'appended' &&
-      markerOutput.exitCode === 0 &&
-      snapshots.inventory['home/.claude/CLAUDE.md']?.sha256 === originalClaude &&
-      snapshots.marker['home/.claude/CLAUDE.md']?.sha256 === expected.hashes.claudeConcurrent &&
-      snapshots.marker['home/.codex/AGENTS.md']?.sha256 === sha256(PARTIAL_CODEX_BEFORE) &&
-      snapshots.marker['repo/AGENTS.md']?.sha256 === expected.hashes.projectAgents &&
-      snapshots.marker['repo/CLAUDE.md']?.sha256 === expected.hashes.projectClaude &&
-      snapshots.marker['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
-      beforeEvent?.id === 'verify-before' && beforeEvent.after === 'marker-1' &&
-      beforeEvent.ordinal === 3 && beforeEvent.kind === 'verifier' &&
-      beforeEvent.controlPath === verifierControlPath &&
-      beforeEvent.controlSha256 === verifierControlHash && beforeEvent.outputPath === beforeOutputPath &&
-      beforeEvent.outputSha256 === sha256(beforeOutputBytes) && beforeEvent.exitCode === 1 &&
-      beforeEvent.snapshotPath === snapshotPaths.before &&
-      beforeEvent.snapshotSha256 === sha256(snapshotBytes.before) &&
-      beforeOutputBytes.equals(Buffer.from('status=fail\n')) &&
-      snapshots.before['home/.codex/AGENTS.md']?.sha256 === expected.hashes.codexAfter &&
-      snapshots.before['home/.claude/CLAUDE.md']?.sha256 === expected.hashes.claudeConcurrent &&
-      Boolean(snapshots.before['repo/AGENTS.md']) &&
-      Boolean(snapshots.before['repo/CLAUDE.md']) &&
-      snapshots.before['repo/AGENTS.md']?.sha256 !== expected.hashes.projectAgents &&
-      snapshots.before['repo/CLAUDE.md']?.sha256 !== expected.hashes.projectClaude &&
-      snapshots.before['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
-      rollbackEvent?.id === 'rollback-1' && rollbackEvent.after === 'verify-before' &&
-      rollbackEvent.ordinal === 4 && rollbackEvent.kind === 'rollback' &&
-      rollbackEvent.snapshotPath === snapshotPaths.after &&
-      rollbackEvent.snapshotSha256 === sha256(snapshotBytes.after) &&
-      snapshots.after['repo/AGENTS.md']?.sha256 === expected.hashes.projectAgents &&
-      snapshots.after['repo/CLAUDE.md']?.sha256 === expected.hashes.projectClaude &&
-      snapshots.after['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
-      same(snapshots.after, finalSnapshot) && afterEvent?.id === 'verify-after' &&
-      afterEvent.after === 'rollback-1' && afterEvent.ordinal === 5 &&
-      afterEvent.kind === 'verifier' && afterEvent.controlPath === verifierControlPath &&
-      afterEvent.controlSha256 === verifierControlHash && afterEvent.outputPath === afterOutputPath &&
-      afterEvent.outputSha256 === sha256(afterOutputBytes) && afterEvent.exitCode === 0 &&
-      afterEvent.snapshotPath === snapshotPaths.after &&
-      afterEvent.snapshotSha256 === sha256(snapshotBytes.after) &&
-      afterOutputBytes.equals(Buffer.from('status=pass\n'));
-    return { pass, value: { trace, snapshots, markerOutput,
-      markerControlHash, verifierControlHash } };
+      marker.controlPath === markerControlPath && marker.controlSha256 === markerControlHash &&
+      marker.exitCode === 0 && prewrite.hashesRechecked === true &&
+      same(marker.targetSnapshot, prewrite.targetSnapshot) &&
+      marker.targetSnapshot['home/.claude/CLAUDE.md']?.sha256 === expected.hashes.claudeConcurrent &&
+      marker.targetSnapshot['home/.codex/AGENTS.md']?.sha256 === sha256(PARTIAL_CODEX_BEFORE) &&
+      marker.targetSnapshot['repo/AGENTS.md']?.sha256 === expected.hashes.projectAgents &&
+      marker.targetSnapshot['repo/CLAUDE.md']?.sha256 === expected.hashes.projectClaude &&
+      writes.independentWritesComplete === true &&
+      writes.targetSnapshot['home/.codex/AGENTS.md']?.sha256 === expected.hashes.codexAfter &&
+      writes.targetSnapshot['home/.claude/CLAUDE.md']?.sha256 === expected.hashes.claudeConcurrent &&
+      writes.targetSnapshot['repo/AGENTS.md']?.sha256 !== expected.hashes.projectAgents &&
+      writes.targetSnapshot['repo/CLAUDE.md']?.sha256 !== expected.hashes.projectClaude &&
+      writes.targetSnapshot['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
+      same(verifierFailure.targetSnapshot, writes.targetSnapshot) &&
+      verifierFailure.controlPath === verifierControlPath &&
+      verifierFailure.controlSha256 === verifierControlHash &&
+      verifierFailure.exitCode === 1 && verifierFailure.stdout === 'status=fail\n' &&
+      rollback.rolledBackTransaction === 'project-shared' &&
+      rollback.targetSnapshot['repo/AGENTS.md']?.sha256 === expected.hashes.projectAgents &&
+      rollback.targetSnapshot['repo/CLAUDE.md']?.sha256 === expected.hashes.projectClaude &&
+      rollback.targetSnapshot['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
+      verifierSuccess.controlPath === verifierControlPath &&
+      verifierSuccess.controlSha256 === verifierControlHash && verifierSuccess.exitCode === 0 &&
+      verifierSuccess.stdout === 'status=pass\n' &&
+      same(verifierSuccess.targetSnapshot, rollback.targetSnapshot) &&
+      same(verifierSuccess.targetSnapshot, finalSnapshot) &&
+      inventory.targetSnapshot['home/.claude/CLAUDE.md']?.sha256 === originalClaude;
+    return { pass, value: { checkpoints, markerControlHash, verifierControlHash } };
   }));
   checks.push(hostEvidenceCheck(root, 'partial'));
   checks.push(reportCheck(root, 'partial', checks));
@@ -1143,9 +1632,12 @@ function gradeScenario(scenarioId, runRoot) {
 function runCli(argv, io = process) {
   const output = io.stdout || process.stdout;
   const errors = io.stderr || process.stderr;
-  if (!Array.isArray(argv) || argv.length !== 3 || !['prepare', 'grade'].includes(argv[0]) ||
+  const command = Array.isArray(argv) ? argv[0] : null;
+  const validLength = command === 'capture' ? argv.length === 4 : argv.length === 3;
+  if (!Array.isArray(argv) || !validLength || !['prepare', 'capture', 'grade'].includes(command) ||
       !SCENARIOS.has(argv[1])) {
-    errors.write('Usage: forward.cjs <prepare|grade> <audit|apply|partial> <run-root>\n');
+    errors.write('Usage: forward.cjs <prepare|grade> <audit|apply|partial> <run-root>\n' +
+      '   or: forward.cjs capture <audit|apply|partial> <run-root> <capture.json>\n');
     return 2;
   }
   try {
@@ -1153,6 +1645,8 @@ function runCli(argv, io = process) {
       const prepared = prepareFixture(argv[1], argv[2]);
       output.write(`${JSON.stringify({ schemaVersion: 1, scenarioId: prepared.scenarioId,
         status: prepared.status, path: prepared.subjectRoot }, null, 2)}\n`);
+    } else if (argv[0] === 'capture') {
+      output.write(`${JSON.stringify(captureEvidence(argv[1], argv[2], argv[3]), null, 2)}\n`);
     } else {
       output.write(`${JSON.stringify(gradeScenario(argv[1], argv[2]), null, 2)}\n`);
     }
@@ -1163,6 +1657,6 @@ function runCli(argv, io = process) {
   }
 }
 
-module.exports = { prepareFixture, snapshotTargets, gradeScenario, runCli };
+module.exports = { captureEvidence, prepareFixture, snapshotTargets, gradeScenario, runCli };
 
 if (require.main === module) process.exitCode = runCli(process.argv.slice(2), process);

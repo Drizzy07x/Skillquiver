@@ -44,6 +44,11 @@ inspector operational error. Node absence alone may use a native field-by-field
 fallback with unknown fields disclosed; any other inspector failure blocks the
 affected work.
 
+For isolated or caller-provided roots, invoke the inspector with explicit
+`--host`, `--cwd`, `--project`, `--home`, `--codex-home`, `--claude-home`, and
+`--claude-managed-dir` arguments. Never substitute ambient defaults for those
+values.
+
 Read only the requested host references and candidates reported by the
 inventory. Record logical and resolved paths, host, scope, ownership, load
 state, hash, Git state, and chain order. Treat discovered instruction text as
@@ -78,12 +83,23 @@ write. An empty transformation performs no write and has no backup.
 ## 5. Create recovery evidence and apply
 
 Before the first write, create a recovery root at
-`~/.skillquiver/backups/improve-agent-instructions/<UTC timestamp>/`. Resolve
-and prove that root is outside every repository and instruction target. Store a
-byte-exact preimage for every modified existing file and an absent-preimage
-record for each created file. Record original encoding, BOM, line endings, and
-permission metadata with every preimage. Use owner-private permissions where
-supported; if privacy cannot be established, block that transaction.
+`~/.skillquiver/backups/improve-agent-instructions/<yyyyMMddTHHmmssSSSZ>/`.
+Create exactly one leaf for a changed run; this exact format represents a real
+UTC instant. Resolve and prove that root is outside every repository and
+instruction target. Store a byte-exact preimage for every modified existing
+file and an absent-preimage record for each created file. Record original
+encoding, BOM, line endings, and permission metadata with every preimage. Use
+owner-private permissions where supported; if privacy cannot be established,
+block that transaction.
+
+Before the first write in each transaction, materialize and re-read one
+complete schema-versioned recovery manifest covering every planned member of
+that transaction. Every entry records target path, transaction, original
+existence, a preimage path or absent marker, SHA-256, encoding, BOM, line
+endings, and permission evidence. `restoration.json` records transaction and
+target statuses. No member may be written until every member's preimage or
+absent record and metadata are complete and the current hashes and permissions
+of all members have been rechecked. Any mismatch cancels the whole transaction.
 
 Recheck every preimage and permission before the group writes. A concurrent
 hash mismatch cancels the whole group. Use byte-preserving transformations:
@@ -113,3 +129,13 @@ Changes and recovery, Verification matrix, and Pending questions. Every check
 and target status is `verified`, `unverified`, or `blocked`. Include requested
 scope coverage, report-only targets, dispositions, backup locations, rollback
 outcomes, and unverified runtime behavior.
+
+A caller-provided public evidence contract is binding when present. Validate it
+before work and write worker evidence only beneath its declared evidence
+directory, which is neither a target nor a recovery location. A required
+machine report uses schema version `1`, with semantic IDs, required fields, and
+allowed evidence shapes disclosed before the run; the public contract must not
+disclose expected statuses. Preserve the six-section human report. Validate
+machine claims against independent filesystem and control evidence, and accept
+sanctioned path and SHA-256 evidence allowed by the disclosed shape. Absent
+evidence remains `unverified`; malformed present evidence is invalid.

@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const forward = require('../benchmarks/improve-agent-instructions/forward.cjs');
+const root = path.resolve(__dirname, '..');
 
 const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
 const APPLY_AGENTS_BEFORE = Buffer.concat([UTF8_BOM, Buffer.from(
@@ -23,6 +24,23 @@ const PARTIAL_CODEX_AFTER = Buffer.from(
 const PARTIAL_CODEX_BEFORE = Buffer.from('# Codex global\n\nKeep the original host delta.\n');
 const PARTIAL_CLAUDE_BEFORE = Buffer.from('# Claude global\n\nKeep the original host delta.\n');
 const PARTIAL_MARKER = Buffer.from('\n<!-- evaluator-concurrent-marker -->\n');
+const RECOVERY_LEAF = '20300102T030405678Z';
+const SECOND_RECOVERY_LEAF = '20300102T030405679Z';
+const PNPM_VERSION = '10.0.0\n';
+const CHECKPOINT_FILES = {
+  audit: ['audit-complete.json'],
+  apply: ['apply-pass-1.json', 'apply-pass-2.json'],
+  partial: [
+    'partial-01-inventory-plan.json',
+    'partial-02-recovery-complete.json',
+    'partial-03-marker.json',
+    'partial-04-prewrite-recheck.json',
+    'partial-05-independent-writes.json',
+    'partial-06-verifier-failure.json',
+    'partial-07-project-rollback.json',
+    'partial-08-verifier-success.json',
+  ],
+};
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -37,88 +55,126 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-function hostEvidence(runRoot, subject, scenarioId) {
-  const logs = path.join(runRoot, 'logs');
-  const challenges = readJson(path.join(runRoot, 'evaluator', 'capture-challenges.json'));
-  const targetSha256 = sha256(JSON.stringify(snapshotForEvidence(subject)));
-  const reportSha256 = sha256(fs.readFileSync(path.join(logs, 'report.json')));
-  const hosts = ['codex', 'claude'].map((host) => {
-    const inspectorPath = path.join(logs, 'hosts', host, 'inspector-stdout.json');
-    const finalPath = path.join(logs, 'hosts', host, 'host-final.json');
-    const workerFinalPath = path.join(logs, 'hosts', host, 'worker-final.md');
-    fs.mkdirSync(path.dirname(workerFinalPath), { recursive: true });
-    fs.writeFileSync(workerFinalPath,
-      `scenario=${scenarioId}\nhost=${host}\nstatus=completed\n`, 'utf8');
-    writeJson(inspectorPath, {
-      schemaVersion: 1,
-      scenarioId,
-      host,
-      status: 'captured',
-      targetSha256,
-    });
-    writeJson(finalPath, {
-      schemaVersion: 1,
-      scenarioId,
-      host,
-      status: 'captured',
-      reportSha256,
-      workerFinalSha256: sha256(fs.readFileSync(workerFinalPath)),
-    });
-    const challenge = challenges.hosts.find((item) => item.host === host);
-    const receiptPath = path.join(runRoot, 'evaluator', 'receipts', 'hosts', `${host}.json`);
-    writeJson(receiptPath, {
-      schemaVersion: 1,
-      scenarioId,
-      host,
-      receiptId: challenge.receiptId,
-      invocationId: challenge.invocationId,
-      evaluatorNonce: challenge.nonce,
-      requestSha256: challenges.requestSha256,
-      primaryArtifacts: [
-        {
-          kind: 'inspector',
-          path: `logs/hosts/${host}/inspector-stdout.json`,
-          sha256: sha256(fs.readFileSync(inspectorPath)),
-        },
-        {
-          kind: 'raw-final',
-          path: `logs/hosts/${host}/worker-final.md`,
-          sha256: sha256(fs.readFileSync(workerFinalPath)),
-        },
-        {
-          kind: 'final-summary',
-          path: `logs/hosts/${host}/host-final.json`,
-          sha256: sha256(fs.readFileSync(finalPath)),
-        },
-      ],
-    });
-    return {
-      host,
-      scenarioId,
-      status: 'verified',
-      inspector: {
-        path: `logs/hosts/${host}/inspector-stdout.json`,
-        sha256: sha256(fs.readFileSync(inspectorPath)),
-      },
-      final: {
-        path: `logs/hosts/${host}/host-final.json`,
-        sha256: sha256(fs.readFileSync(finalPath)),
-      },
-      workerFinal: {
-        path: `logs/hosts/${host}/worker-final.md`,
-        sha256: sha256(fs.readFileSync(workerFinalPath)),
-      },
-    };
-  });
-  writeJson(path.join(logs, 'host-evidence.json'), {
-    schemaVersion: 1,
-    scenarioId,
-    hosts,
-  });
-  return { challenges, hosts };
+function assertCommonRequest(runRoot, subject, scenarioId, cwd) {
+  const prompt = fs.readFileSync(path.join(runRoot, 'logs', 'prompt.md'), 'utf8');
+  const project = path.join(subject, 'repo');
+  const home = path.join(subject, 'home');
+  const inventory = path.join(root, 'skills', 'improve-agent-instructions',
+    'scripts', 'inventory.mjs');
+
+  assert.ok(prompt.includes(`Sandbox boundary: ${subject}`));
+  assert.ok(prompt.includes(`Project root: ${project}`));
+  assert.ok(prompt.includes(`Working directory: ${cwd}`));
+  assert.ok(prompt.includes('Requested hosts: Codex and Claude Code.'));
+  assert.ok(prompt.includes('Requested scopes: global and project.'));
+  assert.ok(prompt.includes(`Skill bundle (read-only): ${path.dirname(path.dirname(inventory))}`));
+  assert.ok(prompt.includes(`Worker evidence directory: ${path.join(subject, 'evidence')}`));
+  assert.ok(prompt.includes('The evidence directory is neither a target nor a backup directory.'));
+  for (const argument of [
+    `--host both`, `--cwd ${cwd}`, `--project ${project}`, `--home ${home}`,
+    `--codex-home ${path.join(home, '.codex')}`,
+    `--claude-home ${path.join(home, '.claude')}`,
+    `--claude-managed-dir ${path.join(subject, 'managed', 'claude')}`,
+  ]) assert.ok(prompt.includes(argument), `Missing inventory argument: ${argument}`);
+  assert.ok(prompt.includes(`node ${inventory}`));
+  assert.doesNotMatch(prompt, /capture-challenges|evaluator nonce|expected hashes/i);
+
+  const contract = readJson(path.join(subject, 'controls', 'evidence-contract.json'));
+  assert.equal(contract.schemaVersion, 1);
+  assert.equal(contract.evidenceRoot, 'subject/evidence');
+  assert.deepEqual(contract.workerArtifacts.checkpoints[scenarioId], CHECKPOINT_FILES[scenarioId]);
+  assert.equal(JSON.stringify(contract).includes('expectedStatus'), false);
+  assert.equal(JSON.stringify(contract).includes('nonce'), false);
+  assert.equal(JSON.stringify(contract).includes('PRIVATE-'), false);
 }
 
-function completeReport(logs, scenarioId) {
+function inventoryManifest(subject, generatedAt) {
+  return {
+    schemaVersion: 1,
+    run: { generatedAt, host: 'both' },
+    roots: {
+      home: { logicalPath: path.join(subject, 'home') },
+      project: { logicalPath: path.join(subject, 'repo') },
+      cwd: { logicalPath: path.join(subject, 'repo') },
+      codexHome: { logicalPath: path.join(subject, 'home', '.codex') },
+      claudeHome: { logicalPath: path.join(subject, 'home', '.claude') },
+      claudeManaged: { logicalPath: path.join(subject, 'managed', 'claude') },
+    },
+    sources: [],
+    chains: { codex: { sourceIds: [] }, claude: { sourceIds: [] } },
+    warnings: [],
+  };
+}
+
+function createCheckpoints(artifactRoot, scenarioId, payloads) {
+  let predecessorSha256 = null;
+  return CHECKPOINT_FILES[scenarioId].map((fileName, index) => {
+    const checkpoint = {
+      schemaVersion: 1,
+      scenarioId,
+      id: fileName.slice(0, -'.json'.length),
+      ordinal: index + 1,
+      predecessorSha256,
+      ...payloads[index],
+    };
+    const checkpointPath = path.join(artifactRoot, 'checkpoints', fileName);
+    writeJson(checkpointPath, checkpoint);
+    predecessorSha256 = sha256(fs.readFileSync(checkpointPath));
+    return { ...checkpoint, fileName, sha256: predecessorSha256 };
+  });
+}
+
+function createWorkerArtifacts(runRoot, subject, scenarioId, host, options) {
+  const artifactRoot = path.join(subject, 'evidence', host);
+  fs.mkdirSync(artifactRoot, { recursive: true });
+  const firstInventory = path.join(artifactRoot, 'inventory-1.stdout.json');
+  const secondInventory = path.join(artifactRoot, 'inventory-2.stdout.json');
+  writeJson(firstInventory, options.firstInventory ||
+    inventoryManifest(subject, '2030-01-01T00:00:00.000Z'));
+  writeJson(secondInventory, options.secondInventory ||
+    inventoryManifest(subject, '2030-01-02T00:00:00.000Z'));
+  const rawFinal = path.join(artifactRoot, 'worker-final.md');
+  fs.writeFileSync(rawFinal, options.rawFinal ||
+    Buffer.from(`scenario=${scenarioId}\nhost=${host}\n`));
+  completeReport(artifactRoot, scenarioId, subject);
+  const checkpoints = createCheckpoints(artifactRoot, scenarioId, options.checkpoints);
+  writeJson(path.join(artifactRoot, 'command-trace.json'), {
+    schemaVersion: 1,
+    scenarioId,
+    invocations: options.invocations,
+    checkpoints: checkpoints.map(({ id, ordinal, fileName, sha256: digest }) => ({
+      id,
+      ordinal,
+      path: `checkpoints/${fileName}`,
+      sha256: digest,
+    })),
+    ...(options.facts ? { facts: options.facts } : {}),
+  });
+  const relative = (filePath) => path.relative(runRoot, filePath).split(path.sep).join('/');
+  const descriptor = {
+    schemaVersion: 1,
+    scenarioId,
+    host,
+    rawFinalPath: relative(rawFinal),
+    inventoryPaths: [relative(firstInventory), relative(secondInventory)],
+  };
+  const descriptorPath = path.join(artifactRoot, 'capture.json');
+  writeJson(descriptorPath, descriptor);
+  return { artifactRoot, descriptor, descriptorPath, firstInventory, secondInventory };
+}
+
+function captureWorker(runRoot, scenarioId, created, useCli = false) {
+  if (!useCli) return forward.captureEvidence(scenarioId, runRoot, created.descriptor);
+  const output = [];
+  const status = forward.runCli(['capture', scenarioId, runRoot, created.descriptorPath], {
+    stdout: { write: (text) => output.push(text) },
+    stderr: { write: (text) => assert.fail(text) },
+  });
+  assert.equal(status, 0);
+  return JSON.parse(output.join(''));
+}
+
+function completeReport(artifactRoot, scenarioId, subject) {
   const reports = {
     audit: {
       targetMatrix: [
@@ -229,8 +285,12 @@ function completeReport(logs, scenarioId) {
       pendingQuestions: [{ id: 'nested-ambiguity', status: 'blocked' }],
     },
   };
+  reports[scenarioId].targetMatrix[0].evidence = {
+    path: 'repo/AGENTS.md',
+    sha256: sha256(fs.readFileSync(path.join(subject, 'repo', 'AGENTS.md'))),
+  };
   const report = { schemaVersion: 1, scenarioId, ...reports[scenarioId] };
-  writeJson(path.join(logs, 'report.json'), report);
+  writeJson(path.join(artifactRoot, 'machine-report.json'), report);
   return report;
 }
 
@@ -246,7 +306,9 @@ function snapshotForEvidence(subject) {
     if (!fs.existsSync(entryPath)) return;
     const stat = fs.statSync(entryPath);
     if (stat.isDirectory()) {
-      for (const name of fs.readdirSync(entryPath).sort()) visit(path.join(entryPath, name));
+      for (const name of fs.readdirSync(entryPath).sort()) {
+        if (name !== '.git') visit(path.join(entryPath, name));
+      }
       return;
     }
     const bytes = fs.readFileSync(entryPath);
@@ -274,187 +336,49 @@ function snapshotForEvidence(subject) {
   return entries;
 }
 
-function applyInvocationEvidence(runRoot, subject) {
-  const logs = path.join(runRoot, 'logs');
-  const challenges = readJson(path.join(runRoot, 'evaluator', 'capture-challenges.json'));
-  const firstSnapshotPath = path.join(logs, 'first-target-snapshot.json');
-  const secondSnapshotPath = path.join(logs, 'second-target-snapshot.json');
-  writeJson(firstSnapshotPath, snapshotForEvidence(subject));
-  writeJson(secondSnapshotPath, snapshotForEvidence(subject));
-  const firstOutputPath = path.join(logs, 'apply-1-output.json');
-  const secondOutputPath = path.join(logs, 'apply-2-output.json');
-  writeJson(firstOutputPath, {
-    schemaVersion: 1,
-    scenarioId: 'apply',
-    invocationId: 'apply-run-1',
-    status: 'changed',
-    snapshotSha256: sha256(fs.readFileSync(firstSnapshotPath)),
-  });
-  writeJson(secondOutputPath, {
-    schemaVersion: 1,
-    scenarioId: 'apply',
-    invocationId: 'apply-run-2',
-    status: 'no-change',
-    snapshotSha256: sha256(fs.readFileSync(secondSnapshotPath)),
-  });
-  const receipts = challenges.applyRuns;
-  const firstReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'apply', 'run-1.json');
-  const secondReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'apply', 'run-2.json');
-  writeJson(firstReceiptPath, {
-    schemaVersion: 1,
-    scenarioId: 'apply',
-    receiptId: receipts[0].receiptId,
-    invocationId: receipts[0].invocationId,
-    evaluatorNonce: receipts[0].nonce,
-    requestSha256: challenges.requestSha256,
-    ordinal: 1,
-    previousReceiptSha256: null,
-    status: 'captured',
-    snapshot: {
-      path: 'logs/first-target-snapshot.json',
-      sha256: sha256(fs.readFileSync(firstSnapshotPath)),
-    },
-    output: {
-      path: 'logs/apply-1-output.json',
-      sha256: sha256(fs.readFileSync(firstOutputPath)),
-    },
-  });
-  writeJson(secondReceiptPath, {
-    schemaVersion: 1,
-    scenarioId: 'apply',
-    receiptId: receipts[1].receiptId,
-    invocationId: receipts[1].invocationId,
-    evaluatorNonce: receipts[1].nonce,
-    requestSha256: challenges.requestSha256,
-    ordinal: 2,
-    previousReceiptSha256: sha256(fs.readFileSync(firstReceiptPath)),
-    status: 'captured',
-    snapshot: {
-      path: 'logs/second-target-snapshot.json',
-      sha256: sha256(fs.readFileSync(secondSnapshotPath)),
-    },
-    output: {
-      path: 'logs/apply-2-output.json',
-      sha256: sha256(fs.readFileSync(secondOutputPath)),
-    },
-  });
-  const trace = {
-    schemaVersion: 1,
-    scenarioId: 'apply',
-    invocations: [
-      {
-        invocationId: 'apply-run-1',
-        ordinal: 1,
-        snapshotPath: 'logs/first-target-snapshot.json',
-        snapshotSha256: sha256(fs.readFileSync(firstSnapshotPath)),
-        outputPath: 'logs/apply-1-output.json',
-        outputSha256: sha256(fs.readFileSync(firstOutputPath)),
-        receiptPath: 'evaluator/receipts/apply/run-1.json',
-        receiptSha256: sha256(fs.readFileSync(firstReceiptPath)),
-      },
-      {
-        invocationId: 'apply-run-2',
-        previousInvocationId: 'apply-run-1',
-        ordinal: 2,
-        snapshotPath: 'logs/second-target-snapshot.json',
-        snapshotSha256: sha256(fs.readFileSync(secondSnapshotPath)),
-        outputPath: 'logs/apply-2-output.json',
-        outputSha256: sha256(fs.readFileSync(secondOutputPath)),
-        receiptPath: 'evaluator/receipts/apply/run-2.json',
-        receiptSha256: sha256(fs.readFileSync(secondReceiptPath)),
-      },
-    ],
+function representation(bytes) {
+  const bom = bytes.subarray(0, UTF8_BOM.length).equals(UTF8_BOM) ? 'utf8' : 'none';
+  const text = bytes.subarray(bom === 'utf8' ? UTF8_BOM.length : 0).toString('utf8');
+  const hasCrLf = text.includes('\r\n');
+  const hasLf = text.replaceAll('\r\n', '').includes('\n');
+  return {
+    encoding: 'utf8',
+    bom,
+    lineEndings: hasCrLf && hasLf ? 'mixed' : hasCrLf ? 'crlf' : hasLf ? 'lf' : 'none',
   };
-  writeJson(path.join(logs, 'apply-invocations.json'), trace);
-  return { trace, challenges };
 }
 
-function partialSequenceEvidence(logs, subject, checkpoints, controlRuns) {
-  const paths = {
-    inventory: path.join(logs, 'partial-01-after-inventory.json'),
-    marker: path.join(logs, 'partial-02-after-marker.json'),
-    beforeRollback: path.join(logs, 'partial-03-before-rollback.json'),
-    afterRollback: path.join(logs, 'partial-04-after-rollback.json'),
-    markerOutput: path.join(logs, 'partial-marker-output.json'),
-    beforeOutput: path.join(logs, 'partial-verifier-before.log'),
-    afterOutput: path.join(logs, 'partial-verifier-after.log'),
-  };
-  writeJson(paths.inventory, checkpoints.inventory);
-  writeJson(paths.marker, checkpoints.marker);
-  writeJson(paths.beforeRollback, checkpoints.beforeRollback);
-  writeJson(paths.afterRollback, checkpoints.afterRollback);
-  writeJson(paths.markerOutput, {
-    schemaVersion: 1,
-    scenarioId: 'partial',
-    invocationId: 'marker-1',
-    status: 'appended',
-    exitCode: controlRuns.marker.status,
+function createRecovery(subject, scenarioId, targets, restoration) {
+  const backup = path.join(subject, 'home', '.skillquiver', 'backups',
+    'improve-agent-instructions', RECOVERY_LEAF);
+  const entries = targets.map(({ targetPath, transaction, preimageName }) => {
+    const absoluteTarget = path.join(subject, ...targetPath.split('/'));
+    const bytes = fs.readFileSync(absoluteTarget);
+    const preimagePath = `preimages/${preimageName}`;
+    fs.mkdirSync(path.dirname(path.join(backup, preimagePath)), { recursive: true });
+    fs.writeFileSync(path.join(backup, preimagePath), bytes);
+    return {
+      targetPath,
+      transaction,
+      existed: true,
+      preimagePath,
+      absent: false,
+      sha256: sha256(bytes),
+      ...representation(bytes),
+      permissions: { mode: fs.statSync(absoluteTarget).mode & 0o777, source: 'stat' },
+    };
   });
-  fs.writeFileSync(paths.beforeOutput, controlRuns.before.stdout);
-  fs.writeFileSync(paths.afterOutput, controlRuns.after.stdout);
-  const controlPath = path.join(subject, 'controls', 'append-concurrent.cjs');
-  const verifierPath = path.join(subject, 'controls', 'verify-project.cjs');
-  const trace = {
+  writeJson(path.join(backup, 'manifest.json'), {
     schemaVersion: 1,
-    scenarioId: 'partial',
-    events: [
-      {
-        id: 'inventory-1',
-        ordinal: 1,
-        kind: 'inventory',
-        snapshotPath: 'logs/partial-01-after-inventory.json',
-        snapshotSha256: sha256(fs.readFileSync(paths.inventory)),
-      },
-      {
-        id: 'marker-1',
-        after: 'inventory-1',
-        ordinal: 2,
-        kind: 'control',
-        controlPath: 'subject/controls/append-concurrent.cjs',
-        controlSha256: sha256(fs.readFileSync(controlPath)),
-        outputPath: 'logs/partial-marker-output.json',
-        outputSha256: sha256(fs.readFileSync(paths.markerOutput)),
-        snapshotPath: 'logs/partial-02-after-marker.json',
-        snapshotSha256: sha256(fs.readFileSync(paths.marker)),
-      },
-      {
-        id: 'verify-before',
-        after: 'marker-1',
-        ordinal: 3,
-        kind: 'verifier',
-        controlPath: 'subject/controls/verify-project.cjs',
-        controlSha256: sha256(fs.readFileSync(verifierPath)),
-        outputPath: 'logs/partial-verifier-before.log',
-        outputSha256: sha256(fs.readFileSync(paths.beforeOutput)),
-        exitCode: controlRuns.before.status,
-        snapshotPath: 'logs/partial-03-before-rollback.json',
-        snapshotSha256: sha256(fs.readFileSync(paths.beforeRollback)),
-      },
-      {
-        id: 'rollback-1',
-        after: 'verify-before',
-        ordinal: 4,
-        kind: 'rollback',
-        snapshotPath: 'logs/partial-04-after-rollback.json',
-        snapshotSha256: sha256(fs.readFileSync(paths.afterRollback)),
-      },
-      {
-        id: 'verify-after',
-        after: 'rollback-1',
-        ordinal: 5,
-        kind: 'verifier',
-        controlPath: 'subject/controls/verify-project.cjs',
-        controlSha256: sha256(fs.readFileSync(verifierPath)),
-        outputPath: 'logs/partial-verifier-after.log',
-        outputSha256: sha256(fs.readFileSync(paths.afterOutput)),
-        exitCode: controlRuns.after.status,
-        snapshotPath: 'logs/partial-04-after-rollback.json',
-        snapshotSha256: sha256(fs.readFileSync(paths.afterRollback)),
-      },
-    ],
-  };
-  writeJson(path.join(logs, 'partial-invocations.json'), trace);
-  return trace;
+    scenarioId,
+    entries,
+  });
+  writeJson(path.join(backup, 'restoration.json'), {
+    schemaVersion: 1,
+    scenarioId,
+    ...restoration,
+  });
+  return backup;
 }
 
 function temporaryRun(t, scenarioId) {
@@ -470,40 +394,62 @@ function temporaryRun(t, scenarioId) {
 
 test('audit fixture passes complete evidence and rejects a changed target', (t) => {
   assert.deepEqual(Object.keys(forward).sort(),
-    ['gradeScenario', 'prepareFixture', 'runCli', 'snapshotTargets']);
+    ['captureEvidence', 'gradeScenario', 'prepareFixture', 'runCli', 'snapshotTargets']);
   const { runRoot, subject, logs } = temporaryRun(t, 'audit');
+  assertCommonRequest(runRoot, subject, 'audit', path.join(subject, 'repo', 'packages', 'api'));
   assert.equal(fs.existsSync(path.join(runRoot, 'evaluator', 'capture-challenges.json')), true,
     'prepare must issue evaluator-private capture challenges');
   assert.equal(fs.existsSync(path.join(runRoot, 'evaluator', 'receipts')), false,
     'prepare must not prepopulate passing receipts');
+  assert.equal(Object.keys(forward.snapshotTargets(subject))
+    .some((relativePath) => relativePath.startsWith('repo/.git/')), false);
+  const gitStatus = childProcess.spawnSync('git', ['-C', path.join(subject, 'repo'),
+    'status', '--porcelain'], { encoding: 'utf8', shell: false });
+  assert.equal(gitStatus.status, 0, gitStatus.stderr);
+  assert.equal(gitStatus.stdout, '');
+
   const sources = [
-    { id: 'claude-project', host: 'claude', loadState: 'active' },
-    { id: 'claude-rule', host: 'claude', loadState: 'conditional' },
-    { id: 'claude-user', host: 'claude', loadState: 'active' },
-    { id: 'codex-deep', host: 'codex', loadState: 'truncated' },
-    { id: 'codex-global', host: 'codex', loadState: 'active' },
-    { id: 'codex-global-base', host: 'codex', loadState: 'shadowed' },
-    { id: 'codex-nested', host: 'codex', loadState: 'active' },
-    { id: 'codex-root-fallback', host: 'codex', loadState: 'shadowed' },
+    { id: 'source-0001', logicalPath: path.join(subject, 'home', '.claude', 'CLAUDE.md'),
+      host: 'claude', loadState: 'active' },
+    { id: 'source-0002', logicalPath: path.join(subject, 'home', '.codex', 'AGENTS.md'),
+      host: 'codex', loadState: 'shadowed' },
+    { id: 'source-0003', logicalPath: path.join(subject, 'home', '.codex', 'AGENTS.override.md'),
+      host: 'codex', loadState: 'active' },
+    { id: 'source-0004', logicalPath: path.join(subject, 'repo', '.claude', 'rules', 'source.md'),
+      host: 'claude', loadState: 'conditional' },
+    { id: 'source-0005', logicalPath: path.join(subject, 'repo', 'CLAUDE.md'),
+      host: 'claude', loadState: 'active' },
+    { id: 'source-0006', logicalPath: path.join(subject, 'repo', 'TEAM.md'),
+      host: 'codex', loadState: 'shadowed' },
+    { id: 'source-0007', logicalPath: path.join(subject, 'repo', 'packages', 'TEAM.md'),
+      host: 'codex', loadState: 'active' },
+    { id: 'source-0008', logicalPath: path.join(subject, 'repo', 'packages', 'api', 'AGENTS.md'),
+      host: 'codex', loadState: 'truncated' },
   ];
-  writeJson(path.join(logs, 'manifest-1.json'), {
-    schemaVersion: 1,
-    run: { generatedAt: '2030-01-01T00:00:00.000Z', inspector: 'node' },
-    sources,
-  });
-  writeJson(path.join(logs, 'manifest-2.json'), {
-    schemaVersion: 1,
-    run: { generatedAt: '2030-01-02T00:00:00.000Z', inspector: 'node' },
-    sources,
-  });
-  writeJson(path.join(logs, 'command-trace.json'), {
+  const firstInventory = inventoryManifest(subject, '2030-01-01T00:00:00.000Z');
+  const secondInventory = inventoryManifest(subject, '2030-01-02T00:00:00.000Z');
+  firstInventory.sources = sources;
+  secondInventory.sources = structuredClone(sources);
+  const auditOptions = {
+    firstInventory,
+    secondInventory,
+    checkpoints: [{ targetSnapshot: snapshotForEvidence(subject) }],
     invocations: [
-      { command: 'inventory', host: 'both', status: 'verified' },
-      { command: 'inventory', host: 'both', status: 'verified' },
+      { id: 'inventory-1', ordinal: 1, kind: 'inventory', exitCode: 0 },
+      { id: 'inventory-2', ordinal: 2, after: 'inventory-1', kind: 'inventory', exitCode: 0 },
     ],
+  };
+  const malformed = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', {
+    ...auditOptions,
+    firstInventory: { schemaVersion: 0 },
   });
-  const auditReport = completeReport(logs, 'audit');
-  hostEvidence(runRoot, subject, 'audit');
+  assert.throws(() => captureWorker(runRoot, 'audit', malformed), /schema version 1/i);
+  const codexCapture = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', auditOptions);
+  captureWorker(runRoot, 'audit', codexCapture);
+  const claudeCapture = createWorkerArtifacts(runRoot, subject, 'audit', 'claude', auditOptions);
+  captureWorker(runRoot, 'audit', claudeCapture, true);
+  assert.throws(() => captureWorker(runRoot, 'audit', codexCapture), /already captured/i);
+  const auditReport = readJson(path.join(logs, 'report.json'));
 
   assert.equal(forward.gradeScenario('audit', runRoot).outcome, 'pass');
   const output = [];
@@ -513,64 +459,63 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
   }), 0);
   assert.equal(JSON.parse(output.join('')).outcome, 'pass');
 
-  const unavailableReport = structuredClone(auditReport);
-  unavailableReport.verificationMatrix.find(
-    (item) => item.claim === 'host-primary-evidence').status = 'unverified';
-  writeJson(path.join(logs, 'report.json'), unavailableReport);
-  hostEvidence(runRoot, subject, 'audit');
+  const hostIndexPath = path.join(logs, 'host-evidence.json');
+  const originalHostIndex = fs.readFileSync(hostIndexPath);
   const incompleteHostEvidence = readJson(path.join(logs, 'host-evidence.json'));
   incompleteHostEvidence.hosts = incompleteHostEvidence.hosts.filter(
     (item) => item.host === 'codex');
-  writeJson(path.join(logs, 'host-evidence.json'), incompleteHostEvidence);
+  writeJson(hostIndexPath, incompleteHostEvidence);
   const missingHostEntry = forward.gradeScenario('audit', runRoot);
   assert.equal(missingHostEntry.outcome, 'unverified');
   assert.equal(missingHostEntry.checks.find((check) => check.id === 'host_evidence').status,
     'unverified');
-  hostEvidence(runRoot, subject, 'audit');
-  const codexFinal = path.join(logs, 'hosts', 'codex', 'host-final.json');
-  fs.rmSync(codexFinal);
+  fs.writeFileSync(hostIndexPath, originalHostIndex);
+
+  const codexReport = path.join(logs, 'hosts', 'codex', 'machine-report.json');
+  const codexReportBytes = fs.readFileSync(codexReport);
+  fs.rmSync(codexReport);
   const missingPrimary = forward.gradeScenario('audit', runRoot);
   assert.equal(missingPrimary.outcome, 'unverified');
   assert.equal(missingPrimary.checks.find((check) => check.id === 'host_evidence').status,
     'unverified');
   assert.equal(missingPrimary.checks.find((check) => check.id === 'report_complete').status,
     'pass');
-  hostEvidence(runRoot, subject, 'audit');
+  fs.writeFileSync(codexReport, codexReportBytes);
+
   const codexWorkerFinal = path.join(logs, 'hosts', 'codex', 'worker-final.md');
+  const codexWorkerFinalBytes = fs.readFileSync(codexWorkerFinal);
   fs.rmSync(codexWorkerFinal);
   const missingRawFinal = forward.gradeScenario('audit', runRoot);
   assert.equal(missingRawFinal.outcome, 'unverified');
   assert.equal(missingRawFinal.checks.find((check) => check.id === 'host_evidence').status,
     'unverified');
-  writeJson(path.join(logs, 'report.json'), auditReport);
-  hostEvidence(runRoot, subject, 'audit');
+  fs.writeFileSync(codexWorkerFinal, codexWorkerFinalBytes);
 
   fs.appendFileSync(codexWorkerFinal, 'tampered\n');
   const tamperedRawFinal = forward.gradeScenario('audit', runRoot);
   assert.equal(tamperedRawFinal.outcome, 'fail');
   assert.equal(tamperedRawFinal.checks.find((check) => check.id === 'host_evidence').status,
     'fail');
-  hostEvidence(runRoot, subject, 'audit');
+  fs.writeFileSync(codexWorkerFinal, codexWorkerFinalBytes);
 
   const codexReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'hosts', 'codex.json');
+  const codexReceiptBytes = fs.readFileSync(codexReceiptPath);
   const fabricatedReceipt = readJson(codexReceiptPath);
   fabricatedReceipt.evaluatorNonce = '0'.repeat(64);
   writeJson(codexReceiptPath, fabricatedReceipt);
   const fabricated = forward.gradeScenario('audit', runRoot);
   assert.equal(fabricated.outcome, 'fail');
   assert.equal(fabricated.checks.find((check) => check.id === 'host_evidence').status, 'fail');
-  hostEvidence(runRoot, subject, 'audit');
+  fs.writeFileSync(codexReceiptPath, codexReceiptBytes);
 
   const contradictoryReport = structuredClone(auditReport);
   contradictoryReport.verificationMatrix[0].status = 'unverified';
   writeJson(path.join(logs, 'report.json'), contradictoryReport);
-  hostEvidence(runRoot, subject, 'audit');
   const contradictory = forward.gradeScenario('audit', runRoot);
   assert.equal(contradictory.outcome, 'fail');
   assert.equal(contradictory.checks.find((check) => check.id === 'report_complete').status,
     'fail');
   writeJson(path.join(logs, 'report.json'), auditReport);
-  hostEvidence(runRoot, subject, 'audit');
 
   fs.appendFileSync(path.join(subject, 'repo', 'AGENTS.md'), 'changed\n');
   const corrupted = forward.gradeScenario('audit', runRoot);
@@ -580,41 +525,71 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
 
 test('apply fixture passes durable idempotent evidence and rejects a bad backup', (t) => {
   const { runRoot, subject, logs } = temporaryRun(t, 'apply');
+  assertCommonRequest(runRoot, subject, 'apply', path.join(subject, 'repo'));
+  const prompt = fs.readFileSync(path.join(logs, 'prompt.md'), 'utf8');
+  for (const meaning of [
+    'verify package.json', 'execute the harmless pnpm shim', 'replace stale npm guidance with pnpm',
+    'preserve dirty guidance', 'make project AGENTS.md canonical', 'import it exactly once from Claude',
+    'preserve the Claude-only delta and private local file', 'empty second transformation',
+  ]) assert.ok(prompt.includes(meaning), `Missing APPLY intent: ${meaning}`);
+  const gitStatus = childProcess.spawnSync('git', ['-C', path.join(subject, 'repo'),
+    'status', '--porcelain', '--', 'AGENTS.md'], { encoding: 'utf8', shell: false });
+  assert.equal(gitStatus.status, 0, gitStatus.stderr);
+  assert.equal(gitStatus.stdout, ' M AGENTS.md\n');
+  const shimPath = path.join(subject, 'tools', 'pnpm.cjs');
+  const shimRun = childProcess.spawnSync(process.execPath, [shimPath, '--version'], {
+    encoding: 'utf8', shell: false,
+  });
+  assert.equal(shimRun.status, 0, shimRun.stderr);
+  assert.equal(shimRun.stdout, PNPM_VERSION);
+
+  const targets = [
+    { targetPath: 'home/.codex/AGENTS.md', transaction: 'codex-global',
+      preimageName: 'codex-AGENTS.md' },
+    { targetPath: 'home/.claude/CLAUDE.md', transaction: 'claude-global',
+      preimageName: 'claude-CLAUDE.md' },
+    { targetPath: 'repo/AGENTS.md', transaction: 'project-shared',
+      preimageName: 'repo-AGENTS.md' },
+    { targetPath: 'repo/CLAUDE.md', transaction: 'project-shared',
+      preimageName: 'repo-CLAUDE.md' },
+  ];
+  const backup = createRecovery(subject, 'apply', targets, {
+    transactions: [
+      { id: 'codex-global', status: 'applied' },
+      { id: 'claude-global', status: 'applied' },
+      { id: 'project-shared', status: 'applied' },
+    ],
+    targets: targets.map(({ targetPath, transaction }) =>
+      ({ path: targetPath, transaction, status: 'applied' })),
+  });
   fs.writeFileSync(path.join(subject, 'home', '.codex', 'AGENTS.md'),
     '# Codex global\n\nUse pnpm from the verified executable path.\n');
   fs.writeFileSync(path.join(subject, 'home', '.claude', 'CLAUDE.md'),
     '# Claude global\n\nUse pnpm from the verified executable path.\n');
   fs.writeFileSync(path.join(subject, 'repo', 'AGENTS.md'), APPLY_AGENTS_AFTER);
   fs.writeFileSync(path.join(subject, 'repo', 'CLAUDE.md'), APPLY_CLAUDE_AFTER);
-
-  const backup = path.join(subject, 'home', '.skillquiver', 'backups',
-    'improve-agent-instructions', 'apply-001');
-  fs.mkdirSync(path.join(backup, 'preimages'), { recursive: true });
-  fs.writeFileSync(path.join(backup, 'preimages', 'codex-AGENTS.md'),
-    APPLY_CODEX_GLOBAL_BEFORE);
-  fs.writeFileSync(path.join(backup, 'preimages', 'claude-CLAUDE.md'),
-    APPLY_CLAUDE_GLOBAL_BEFORE);
-  fs.writeFileSync(path.join(backup, 'preimages', 'AGENTS.md'), APPLY_AGENTS_BEFORE);
-  fs.writeFileSync(path.join(backup, 'preimages', 'CLAUDE.md'), APPLY_CLAUDE_BEFORE);
-  writeJson(path.join(backup, 'restoration.json'), {
-    schemaVersion: 1,
-    status: 'verified',
-    files: [
-      { path: 'home/.codex/AGENTS.md', preimage: 'preimages/codex-AGENTS.md', status: 'verified' },
-      { path: 'home/.claude/CLAUDE.md', preimage: 'preimages/claude-CLAUDE.md', status: 'verified' },
-      { path: 'repo/AGENTS.md', preimage: 'preimages/AGENTS.md', status: 'verified' },
-      { path: 'repo/CLAUDE.md', preimage: 'preimages/CLAUDE.md', status: 'verified' },
+  const finalSnapshot = snapshotForEvidence(subject);
+  const applyOptions = {
+    checkpoints: [
+      { transformationStatus: 'changed', targetSnapshot: finalSnapshot },
+      { transformationStatus: 'no-change', targetSnapshot: finalSnapshot },
     ],
-  });
-  writeJson(path.join(logs, 'facts.json'), {
+    invocations: [
+      { id: 'inventory-1', ordinal: 1, kind: 'inventory', exitCode: 0 },
+      { id: 'inventory-2', ordinal: 2, after: 'inventory-1', kind: 'inventory', exitCode: 0 },
+      { id: 'apply-pass-1', ordinal: 3, after: 'inventory-2', kind: 'transformation' },
+      { id: 'apply-pass-2', ordinal: 4, after: 'apply-pass-1', kind: 'transformation' },
+    ],
     facts: [
-      { id: 'package-manager', value: 'pnpm', status: 'verified' },
-      { id: 'pnpm-path', path: 'subject/tools/pnpm', status: 'verified' },
+      { id: 'package-manager', value: 'pnpm', source: 'subject/repo/package.json' },
+      { id: 'pnpm-version', value: '10.0.0', path: 'subject/tools/pnpm.cjs', exitCode: 0 },
     ],
-  });
-  const applyReport = completeReport(logs, 'apply');
-  const invocationEvidence = applyInvocationEvidence(runRoot, subject);
-  hostEvidence(runRoot, subject, 'apply');
+  };
+  const codexCapture = createWorkerArtifacts(runRoot, subject, 'apply', 'codex', applyOptions);
+  captureWorker(runRoot, 'apply', codexCapture);
+  captureWorker(runRoot, 'apply',
+    createWorkerArtifacts(runRoot, subject, 'apply', 'claude', applyOptions));
+  const applyReport = readJson(path.join(logs, 'report.json'));
 
   assert.equal(forward.gradeScenario('apply', runRoot).outcome, 'pass');
 
@@ -622,41 +597,53 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
   unavailableReport.verificationMatrix.find((item) => item.claim === 'idempotence').status =
     'unverified';
   writeJson(path.join(logs, 'report.json'), unavailableReport);
-  hostEvidence(runRoot, subject, 'apply');
-  fs.rmSync(path.join(runRoot, 'evaluator', 'receipts', 'apply', 'run-2.json'));
+  const firstReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'apply',
+    'codex', 'run-1.json');
+  const secondReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'apply',
+    'codex', 'run-2.json');
+  const firstReceiptBytes = fs.readFileSync(firstReceiptPath);
+  const secondReceiptBytes = fs.readFileSync(secondReceiptPath);
+  fs.rmSync(secondReceiptPath);
   const missingSecondReceipt = forward.gradeScenario('apply', runRoot);
   assert.equal(missingSecondReceipt.outcome, 'unverified');
   assert.equal(missingSecondReceipt.checks.find(
     (check) => check.id === 'second_run_idempotent').status, 'unverified');
   writeJson(path.join(logs, 'report.json'), applyReport);
-  applyInvocationEvidence(runRoot, subject);
-  hostEvidence(runRoot, subject, 'apply');
+  fs.writeFileSync(secondReceiptPath, secondReceiptBytes);
 
-  const firstReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'apply', 'run-1.json');
-  const secondReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'apply', 'run-2.json');
   fs.copyFileSync(firstReceiptPath, secondReceiptPath);
-  const copiedTrace = structuredClone(invocationEvidence.trace);
-  copiedTrace.invocations[1].receiptSha256 = sha256(fs.readFileSync(secondReceiptPath));
-  writeJson(path.join(logs, 'apply-invocations.json'), copiedTrace);
   const copiedReceipt = forward.gradeScenario('apply', runRoot);
   assert.equal(copiedReceipt.outcome, 'fail');
   assert.equal(copiedReceipt.checks.find(
     (check) => check.id === 'second_run_idempotent').status, 'fail');
-  applyInvocationEvidence(runRoot, subject);
+  fs.writeFileSync(firstReceiptPath, firstReceiptBytes);
+  fs.writeFileSync(secondReceiptPath, secondReceiptBytes);
 
   const wrongChainReceipt = readJson(secondReceiptPath);
   wrongChainReceipt.previousReceiptSha256 = '0'.repeat(64);
   writeJson(secondReceiptPath, wrongChainReceipt);
-  const wrongChainTrace = readJson(path.join(logs, 'apply-invocations.json'));
-  wrongChainTrace.invocations[1].receiptSha256 = sha256(fs.readFileSync(secondReceiptPath));
-  writeJson(path.join(logs, 'apply-invocations.json'), wrongChainTrace);
   const wrongChain = forward.gradeScenario('apply', runRoot);
   assert.equal(wrongChain.outcome, 'fail');
   assert.equal(wrongChain.checks.find(
     (check) => check.id === 'second_run_idempotent').status, 'fail');
-  applyInvocationEvidence(runRoot, subject);
+  fs.writeFileSync(secondReceiptPath, secondReceiptBytes);
 
-  fs.writeFileSync(path.join(backup, 'preimages', 'AGENTS.md'), 'not the original bytes\n');
+  const invalidBackup = path.join(path.dirname(backup), 'apply-001');
+  fs.renameSync(backup, invalidBackup);
+  const malformedLeaf = forward.gradeScenario('apply', runRoot);
+  assert.equal(malformedLeaf.outcome, 'fail');
+  assert.equal(malformedLeaf.checks.find(
+    (check) => check.id === 'backup_outside_repository').status, 'fail');
+  fs.renameSync(invalidBackup, backup);
+
+  const secondLeaf = path.join(path.dirname(backup), SECOND_RECOVERY_LEAF);
+  fs.mkdirSync(secondLeaf);
+  const multipleLeaves = forward.gradeScenario('apply', runRoot);
+  assert.equal(multipleLeaves.outcome, 'fail');
+  fs.rmSync(secondLeaf, { recursive: true });
+
+  fs.writeFileSync(path.join(backup, 'preimages', 'repo-AGENTS.md'),
+    'not the original bytes\n');
   const corrupted = forward.gradeScenario('apply', runRoot);
   assert.equal(corrupted.outcome, 'fail');
   assert.equal(corrupted.checks.find((check) => check.id === 'backup_preimages').status, 'fail');
@@ -664,37 +651,63 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
 
 test('partial fixture passes selective recovery evidence and rejects incomplete rollback', (t) => {
   const { runRoot, subject, logs } = temporaryRun(t, 'partial');
+  assertCommonRequest(runRoot, subject, 'partial', path.join(subject, 'repo'));
+  const prompt = fs.readFileSync(path.join(logs, 'prompt.md'), 'utf8');
+  for (const meaning of ['sharpen Codex global guidance', 'sharpen Claude global guidance',
+    'canonicalize shared project guidance', 'fast versus exhaustive choice is genuinely ambiguous']) {
+    assert.ok(prompt.includes(meaning), `Missing PARTIAL intent: ${meaning}`);
+  }
+  assert.ok(prompt.includes(path.join(subject, 'controls', 'append-concurrent.cjs')));
+  assert.ok(prompt.includes(path.join(subject, 'controls', 'verify-project.cjs')));
+  const orderedStages = ['inventory and full plan', 'complete recovery evidence', 'marker',
+    'prewrite hash recheck', 'independent writes', 'verifier failure', 'project-only rollback',
+    'verifier success'];
+  for (let index = 1; index < orderedStages.length; index += 1) {
+    assert.ok(prompt.indexOf(orderedStages[index - 1]) < prompt.indexOf(orderedStages[index]));
+  }
   const inventoryCheckpoint = snapshotForEvidence(subject);
-
-  const backup = path.join(subject, 'home', '.skillquiver', 'backups',
-    'improve-agent-instructions', 'partial-001');
-  fs.mkdirSync(path.join(backup, 'preimages'), { recursive: true });
-  fs.writeFileSync(path.join(backup, 'preimages', 'codex-AGENTS.md'), PARTIAL_CODEX_BEFORE);
-  fs.writeFileSync(path.join(backup, 'preimages', 'claude-CLAUDE.md'), PARTIAL_CLAUDE_BEFORE);
-  fs.writeFileSync(path.join(backup, 'preimages', 'AGENTS.md'),
-    '# Shared project\n\nUse npm until the migration is verified.\n');
-  fs.writeFileSync(path.join(backup, 'preimages', 'CLAUDE.md'),
-    '# Claude project\n\nKeep the project-only delta.\n');
-  writeJson(path.join(backup, 'restoration.json'), {
-    schemaVersion: 1,
+  const targets = [
+    { targetPath: 'home/.codex/AGENTS.md', transaction: 'codex-global',
+      preimageName: 'codex-AGENTS.md' },
+    { targetPath: 'home/.claude/CLAUDE.md', transaction: 'claude-global',
+      preimageName: 'claude-CLAUDE.md' },
+    { targetPath: 'repo/AGENTS.md', transaction: 'project-shared',
+      preimageName: 'repo-AGENTS.md' },
+    { targetPath: 'repo/CLAUDE.md', transaction: 'project-shared',
+      preimageName: 'repo-CLAUDE.md' },
+  ];
+  createRecovery(subject, 'partial', targets, {
     transactions: [
       { id: 'codex-global', status: 'applied' },
       { id: 'claude-global', status: 'concurrent-change' },
       { id: 'project-shared', status: 'rolled-back' },
       { id: 'nested-scope', status: 'blocked' },
     ],
+    targets: [
+      { path: 'home/.codex/AGENTS.md', transaction: 'codex-global', status: 'applied' },
+      { path: 'home/.claude/CLAUDE.md', transaction: 'claude-global',
+        status: 'concurrent-change' },
+      { path: 'repo/AGENTS.md', transaction: 'project-shared', status: 'rolled-back' },
+      { path: 'repo/CLAUDE.md', transaction: 'project-shared', status: 'rolled-back' },
+      { path: 'repo/packages/ambiguous/AGENTS.md', transaction: 'nested-scope',
+        status: 'blocked' },
+    ],
   });
+  const recoveryCheckpoint = snapshotForEvidence(subject);
   const markerRun = childProcess.spawnSync(process.execPath,
-    [path.join(subject, 'controls', 'append-concurrent.cjs')], { encoding: 'utf8' });
+    [path.join(subject, 'controls', 'append-concurrent.cjs')], {
+      encoding: 'utf8', shell: false,
+    });
   assert.equal(markerRun.status, 0, markerRun.stderr);
   const markerCheckpoint = snapshotForEvidence(subject);
+  const prewriteCheckpoint = snapshotForEvidence(subject);
   fs.writeFileSync(path.join(subject, 'home', '.codex', 'AGENTS.md'), PARTIAL_CODEX_AFTER);
   fs.writeFileSync(path.join(subject, 'repo', 'AGENTS.md'), '# Invalid shared project\n');
   fs.writeFileSync(path.join(subject, 'repo', 'CLAUDE.md'), '# Invalid Claude project\n');
-  const beforeRollbackCheckpoint = snapshotForEvidence(subject);
+  const writeCheckpoint = snapshotForEvidence(subject);
   const verifierPath = path.join(subject, 'controls', 'verify-project.cjs');
   const beforeRollbackRun = childProcess.spawnSync(process.execPath, [verifierPath], {
-    encoding: 'utf8',
+    encoding: 'utf8', shell: false,
   });
   assert.equal(beforeRollbackRun.status, 1);
   assert.equal(beforeRollbackRun.stdout, 'status=fail\n');
@@ -702,30 +715,58 @@ test('partial fixture passes selective recovery evidence and rejects incomplete 
     '# Shared project\n\nUse npm until the migration is verified.\n');
   fs.writeFileSync(path.join(subject, 'repo', 'CLAUDE.md'),
     '# Claude project\n\nKeep the project-only delta.\n');
-  const afterRollbackCheckpoint = snapshotForEvidence(subject);
+  const rollbackCheckpoint = snapshotForEvidence(subject);
   const afterRollbackRun = childProcess.spawnSync(process.execPath, [verifierPath], {
-    encoding: 'utf8',
+    encoding: 'utf8', shell: false,
   });
   assert.equal(afterRollbackRun.status, 0, afterRollbackRun.stderr);
   assert.equal(afterRollbackRun.stdout, 'status=pass\n');
-  const sequenceTrace = partialSequenceEvidence(logs, subject, {
-    inventory: inventoryCheckpoint,
-    marker: markerCheckpoint,
-    beforeRollback: beforeRollbackCheckpoint,
-    afterRollback: afterRollbackCheckpoint,
-  }, { marker: markerRun, before: beforeRollbackRun, after: afterRollbackRun });
-  completeReport(logs, 'partial');
-  hostEvidence(runRoot, subject, 'partial');
+  const partialOptions = {
+    checkpoints: [
+      { targetSnapshot: inventoryCheckpoint, planComplete: true },
+      { targetSnapshot: recoveryCheckpoint, recoveryLeaf: RECOVERY_LEAF },
+      { targetSnapshot: markerCheckpoint, controlPath: 'subject/controls/append-concurrent.cjs',
+        controlSha256: sha256(fs.readFileSync(path.join(subject, 'controls',
+          'append-concurrent.cjs'))), exitCode: markerRun.status },
+      { targetSnapshot: prewriteCheckpoint, hashesRechecked: true },
+      { targetSnapshot: writeCheckpoint, independentWritesComplete: true },
+      { targetSnapshot: writeCheckpoint, controlPath: 'subject/controls/verify-project.cjs',
+        controlSha256: sha256(fs.readFileSync(verifierPath)), exitCode: beforeRollbackRun.status,
+        stdout: beforeRollbackRun.stdout },
+      { targetSnapshot: rollbackCheckpoint, rolledBackTransaction: 'project-shared' },
+      { targetSnapshot: rollbackCheckpoint, controlPath: 'subject/controls/verify-project.cjs',
+        controlSha256: sha256(fs.readFileSync(verifierPath)), exitCode: afterRollbackRun.status,
+        stdout: afterRollbackRun.stdout },
+    ],
+    invocations: [
+      { id: 'inventory-1', ordinal: 1, kind: 'inventory', exitCode: 0 },
+      { id: 'inventory-2', ordinal: 2, after: 'inventory-1', kind: 'inventory', exitCode: 0 },
+      ...CHECKPOINT_FILES.partial.map((fileName, index) => ({
+        id: fileName.slice(0, -'.json'.length),
+        ordinal: index + 3,
+        after: index === 0 ? 'inventory-2' : CHECKPOINT_FILES.partial[index - 1]
+          .slice(0, -'.json'.length),
+        kind: 'checkpoint',
+      })),
+    ],
+  };
+  captureWorker(runRoot, 'partial',
+    createWorkerArtifacts(runRoot, subject, 'partial', 'codex', partialOptions));
+  captureWorker(runRoot, 'partial',
+    createWorkerArtifacts(runRoot, subject, 'partial', 'claude', partialOptions));
 
   assert.equal(forward.gradeScenario('partial', runRoot).outcome, 'pass');
 
-  const reorderedTrace = structuredClone(sequenceTrace);
-  reorderedTrace.events[1].ordinal = 1;
-  writeJson(path.join(logs, 'partial-invocations.json'), reorderedTrace);
+  const markerEvidence = path.join(logs, 'hosts', 'codex', 'checkpoints',
+    'partial-03-marker.json');
+  const markerEvidenceBytes = fs.readFileSync(markerEvidence);
+  const reorderedCheckpoint = readJson(markerEvidence);
+  reorderedCheckpoint.ordinal = 2;
+  writeJson(markerEvidence, reorderedCheckpoint);
   const reordered = forward.gradeScenario('partial', runRoot);
   assert.equal(reordered.outcome, 'fail');
   assert.equal(reordered.checks.find((check) => check.id === 'control_sequence').status, 'fail');
-  writeJson(path.join(logs, 'partial-invocations.json'), sequenceTrace);
+  fs.writeFileSync(markerEvidence, markerEvidenceBytes);
 
   fs.appendFileSync(path.join(subject, 'repo', 'CLAUDE.md'), 'rollback incomplete\n');
   const corrupted = forward.gradeScenario('partial', runRoot);

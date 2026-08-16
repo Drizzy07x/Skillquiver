@@ -635,6 +635,14 @@ test('audit-first authorization remains transaction-safe', () => {
     'second dry-run transformation is empty');
   assert.match(report, /Target matrix, Effective chain, Decision ledger, Changes and recovery, Verification matrix, and Pending questions/);
   assert.match(report, /`verified`, `unverified`, or `blocked`/);
+  assert.match(report, /caller-provided public evidence contract is binding/);
+  assert.match(report, /evidence directory.*neither a target nor a recovery location/);
+  assert.match(report, /machine report uses schema version `1`/);
+  assert.match(report, /semantic IDs, required fields, and allowed evidence shapes disclosed before the run/);
+  assert.match(report, /must not disclose expected statuses/);
+  assert.match(report, /independent filesystem and control evidence/);
+  assert.match(report, /sanctioned path and SHA-256 evidence/);
+  assert.match(report, /Absent evidence remains `unverified`; malformed present evidence is invalid/);
   assert.match(metadata, /allow_implicit_invocation: true/);
   assert.match(metadata, /default_prompt: "Audit the active AGENTS\.md and CLAUDE\.md chain; write only when this request explicitly authorizes named scopes\."/);
   assert.match(boundaries, /Explicitly authorized AGENTS\.md or CLAUDE\.md file maintenance through improve-agent-instructions is allowed/);
@@ -652,15 +660,29 @@ test('audit-first inventory and recovery contracts remain complete', () => {
   assert.match(inventory, /stdout is the inventory contract and stderr is diagnostic/);
   assert.match(inventory, /Do not silently bypass an inspector operational error/);
   assert.match(inventory, /Node absence alone may use a native field-by-field fallback with unknown fields disclosed/);
+  assert.match(inventory, /isolated or caller-provided roots.*explicit `--host`, `--cwd`, `--project`, `--home`, `--codex-home`, `--claude-home`, and `--claude-managed-dir` arguments/);
+  assert.match(inventory, /Never substitute ambient defaults for those values/);
   assert.match(classify, /`keep`, `move`, `sharpen`, `disclose`, `remove`, `enforce-elsewhere`, or `blocked-decision`/);
   assert.match(transactions, /An empty transformation performs no write and has no backup/);
-  assert.match(recovery, /~\/\.skillquiver\/backups\/improve-agent-instructions\/<UTC timestamp>\//);
+  assert.match(recovery, /~\/\.skillquiver\/backups\/improve-agent-instructions\/<yyyyMMddTHHmmssSSSZ>\//);
+  assert.match(recovery, /exact format represents a real UTC instant/);
+  assert.doesNotMatch(recovery, /<UTC timestamp>/);
   assert.match(recovery, /Resolve and prove that root is outside every repository and instruction target/);
   assert.match(recovery, /byte-exact preimage for every modified existing file and an absent-preimage record for each created file/);
+  assert.match(recovery, /materialize and re-read one complete schema-versioned recovery manifest/);
+  assert.match(recovery, /every planned member of that transaction/);
+  assert.match(recovery, /target path, transaction, original existence, a preimage path or absent marker, SHA-256, encoding, BOM, line endings, and permission evidence/);
+  assert.match(recovery, /`restoration\.json` records transaction and target statuses/);
+  assert.match(recovery, /No member may be written until every member's preimage or absent record and metadata are complete/);
+  assert.match(recovery, /current hashes and permissions of all members have been rechecked/);
   assert.match(recovery, /Use owner-private permissions where supported/);
   assert.match(recovery, /privacy cannot be established, block that transaction/);
   assertInOrder(recovery, 'Before the first write, create a recovery root',
     'Recheck every preimage and permission before the group writes');
+  assertInOrder(recovery, 'materialize and re-read one complete schema-versioned recovery manifest',
+    'No member may be written until');
+  assertInOrder(recovery, 'current hashes and permissions of all members have been rechecked',
+    'Use byte-preserving transformations');
   assertInOrder(recovery, 'A concurrent hash mismatch cancels the whole group',
     'Use byte-preserving transformations');
   assertInOrder(recovery, 'rollback restores the original bytes and permissions',
