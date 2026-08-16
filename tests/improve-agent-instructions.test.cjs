@@ -640,3 +640,70 @@ test('audit-first authorization remains transaction-safe', () => {
   assert.match(boundaries, /Explicitly authorized AGENTS\.md or CLAUDE\.md file maintenance through improve-agent-instructions is allowed/);
   assert.match(boundaries, /unavailable runtime loading remains unverified/);
 });
+
+// Defect: a complete mode list can still silently bypass inspection or lose recovery evidence.
+test('audit-first inventory and recovery contracts remain complete', () => {
+  const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
+  const inventory = compact(section(skill, '## 2. Build the inventory'));
+  const classify = compact(section(skill, '## 3. Classify meanings and decisions'));
+  const transactions = compact(section(skill, '## 4. Form transactions'));
+  const recovery = compact(section(skill, '## 5. Create recovery evidence and apply'));
+
+  assert.match(inventory, /stdout is the inventory contract and stderr is diagnostic/);
+  assert.match(inventory, /Do not silently bypass an inspector operational error/);
+  assert.match(inventory, /Node absence alone may use a native field-by-field fallback with unknown fields disclosed/);
+  assert.match(classify, /`keep`, `move`, `sharpen`, `disclose`, `remove`, `enforce-elsewhere`, or `blocked-decision`/);
+  assert.match(transactions, /An empty transformation performs no write and has no backup/);
+  assert.match(recovery, /~\/\.skillquiver\/backups\/improve-agent-instructions\/<UTC timestamp>\//);
+  assert.match(recovery, /Resolve and prove that root is outside every repository and instruction target/);
+  assert.match(recovery, /byte-exact preimage for every modified existing file and an absent-preimage record for each created file/);
+  assert.match(recovery, /Use owner-private permissions where supported/);
+  assert.match(recovery, /privacy cannot be established, block that transaction/);
+  assertInOrder(recovery, 'Before the first write, create a recovery root',
+    'Recheck every preimage and permission before the group writes');
+  assertInOrder(recovery, 'A concurrent hash mismatch cancels the whole group',
+    'Use byte-preserving transformations');
+  assertInOrder(recovery, 'rollback restores the original bytes and permissions',
+    'A rollback failure stops later writes');
+});
+
+// Defect: global parity can be protected while root dual-host instructions and host references regress.
+test('audit-first project and host-reference contracts remain complete', () => {
+  const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
+  const codex = fs.readFileSync(path.join(skillRoot, 'references', 'codex.md'), 'utf8');
+  const claude = fs.readFileSync(path.join(skillRoot, 'references', 'claude.md'), 'utf8');
+  const resolve = compact(section(skill, '## 1. Resolve mode, hosts, scopes, and authorization'));
+  const codexAll = compact(codex);
+  const codexDiscovery = compact(section(codex, '## Discovery and inventory'));
+  const claudeSources = compact(section(claude, '## Sources and order'));
+  const claudeVerification = compact(section(claude, '## Safe verification'));
+
+  assert.match(resolve, /Make `AGENTS\.md` the canonical shared project contract/);
+  assert.match(resolve, /Root `CLAUDE\.md` imports `@AGENTS\.md`/);
+  assert.match(resolve, /`\.claude\/CLAUDE\.md` imports `@\.\.\/AGENTS\.md`/);
+  assert.match(resolve, /Keep only Claude-specific deltas after the import/);
+  assert.match(resolve, /Never copy shared rules into `CLAUDE\.md`/);
+  assert.match(resolve, /Never assume that Codex expands `@` imports/);
+  assertInOrder(resolve, 'Make `AGENTS.md` the canonical shared project contract',
+    'Root `CLAUDE.md` imports `@AGENTS.md`');
+
+  assert.match(codexDiscovery, /selected, shadowed, empty, and truncated/);
+  assert.match(codexDiscovery, /configuration sources and physical paths/);
+  assert.match(codexDiscovery, /default 32 KiB project budget/);
+  assert.match(codexDiscovery, /cwd fallback/);
+  assert.match(codexAll, /read-only fresh-session probes/);
+  assert.match(codexAll, /documented behavior from local policy/);
+
+  assert.match(claudeSources, /Managed OS locations/);
+  assert.match(claudeSources, /managed `claudeMd`/);
+  assert.match(claudeSources, /`CLAUDE_CONFIG_DIR`/);
+  assert.match(claudeSources, /Within-directory order/);
+  assert.match(claudeSources, /code spans and fenced blocks/);
+  assert.match(claudeSources, /four-hop imports/);
+  assert.match(claudeSources, /external approval/);
+  assert.match(claudeSources, /user and project recursive rules/);
+  assert.match(claudeSources, /`paths` conditions/);
+  assert.match(claudeSources, /excludes, setting sources, and additional directories/);
+  assert.match(claudeVerification, /safe `\/context` and `\/memory` verification boundaries/);
+  assert.match(claudeVerification, /runtime loading as unverified/);
+});
