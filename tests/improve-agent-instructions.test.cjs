@@ -180,6 +180,202 @@ test('deterministic audit rejects Codex keys outside the top level', (t) => {
     (source) => source.logicalPath === path.join(project, 'TEAM.md')), false);
 });
 
+test('inventory resolves Claude sources, links, and Git state', (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-claude-'));
+  const home = path.join(temporaryRoot, 'home');
+  const claudeHome = path.join(home, '.claude');
+  const managedDirectory = path.join(temporaryRoot, 'managed');
+  const project = path.join(temporaryRoot, 'project');
+  const physicalModule = path.join(project, 'physical-module');
+  const logicalModule = path.join(project, 'module-link');
+  const cwd = path.join(logicalModule, 'app');
+  const outsideDirectory = path.join(temporaryRoot, 'outside');
+  const externalImport = path.join(outsideDirectory, 'external.md');
+  const inventoryPath = path.join(skillRoot, 'scripts', 'inventory.mjs');
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+
+  fs.mkdirSync(path.join(claudeHome, 'rules'), { recursive: true });
+  fs.mkdirSync(path.join(managedDirectory), { recursive: true });
+  fs.mkdirSync(path.join(project, '.claude', 'rules', 'nested'), { recursive: true });
+  fs.mkdirSync(path.join(project, 'imports'), { recursive: true });
+  fs.mkdirSync(path.join(physicalModule, 'app'), { recursive: true });
+  fs.mkdirSync(outsideDirectory, { recursive: true });
+  fs.symlinkSync(physicalModule, logicalModule,
+    process.platform === 'win32' ? 'junction' : 'dir');
+
+  const externalPath = externalImport.replaceAll('\\', '/');
+  const fixtures = new Map([
+    [path.join(managedDirectory, 'CLAUDE.md'),
+      Buffer.from('\ufeffMANAGED-INSTRUCTION-SENTINEL\r\n', 'utf16le')],
+    [path.join(managedDirectory, 'managed-settings.json'), JSON.stringify({
+      claudeMd: 'MANAGED-VIRTUAL-SENTINEL',
+      claudeMdExcludes: [path.join(managedDirectory, 'CLAUDE.md')],
+      apiKey: 'SECRET-SETTING-SENTINEL',
+    })],
+    [path.join(claudeHome, 'CLAUDE.md'), Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      Buffer.from('USER-INSTRUCTION-SENTINEL\r\n@user-one.md\r\n' +
+        '`@inline-hidden.md`\r\n```md\r\n@fenced-hidden.md\r\n```\r\n'),
+    ])],
+    [path.join(claudeHome, 'user-one.md'),
+      '@user-two.md\nUSER-ONE-INSTRUCTION-SENTINEL\n'],
+    [path.join(claudeHome, 'user-two.md'),
+      '@user-one.md\n@user-three.md\nUSER-TWO-INSTRUCTION-SENTINEL\n'],
+    [path.join(claudeHome, 'user-three.md'), '@user-four.md\n'],
+    [path.join(claudeHome, 'user-four.md'), '@user-five.md\n'],
+    [path.join(claudeHome, 'user-five.md'), 'DEPTH-LIMIT-SENTINEL\n'],
+    [path.join(claudeHome, 'rules', 'always.md'), 'ALWAYS-RULE-SENTINEL\n'],
+    [path.join(claudeHome, 'settings.json'), JSON.stringify({
+      claudeMd: 'USER-VIRTUAL-SENTINEL',
+      claudeMdExcludes: [path.join(project, 'unused-user-exclude.md')],
+      token: 'SECRET-SETTING-SENTINEL',
+    })],
+    [path.join(project, 'CLAUDE.md'),
+      `PROJECT-DIRTY-SENTINEL\n@imports/relative.md\n@${externalPath}\n`],
+    [path.join(project, '.claude', 'CLAUDE.md'), 'PROJECT-UNTRACKED-SENTINEL\n'],
+    [path.join(project, 'CLAUDE.local.md'),
+      Buffer.from('\ufeffPROJECT-LOCAL-SENTINEL\r\n', 'utf16le')],
+    [path.join(project, 'imports', 'relative.md'),
+      '@../physical-module/imported.md\nRELATIVE-IMPORT-SENTINEL\n'],
+    [path.join(physicalModule, 'imported.md'), 'MODULE-IMPORT-SENTINEL\n'],
+    [path.join(physicalModule, 'CLAUDE.md'), 'LINKED-INSTRUCTION-SENTINEL\n'],
+    [path.join(project, '.claude', 'rules', 'nested', 'conditional.md'),
+      '---\npaths:\n  - "src/**/*.js"\n  - "tests/**"\n---\nCONDITIONAL-RULE-SENTINEL\n'],
+    [path.join(project, '.claude', 'settings.json'), JSON.stringify({
+      claudeMd: 'PROJECT-VIRTUAL-SENTINEL',
+      claudeMdExcludes: [path.join(project, 'CLAUDE.local.md')],
+      privateValue: 'SECRET-SETTING-SENTINEL',
+    })],
+    [path.join(project, '.claude', 'settings.local.json'), JSON.stringify({
+      claudeMdExcludes: [path.join(project, 'unused-local-exclude.md')],
+      password: 'SECRET-SETTING-SENTINEL',
+    })],
+    [externalImport, 'EXTERNAL-INSTRUCTION-SENTINEL\n'],
+    [path.join(project, '.gitignore'), 'CLAUDE.local.md\n'],
+  ]);
+  for (const [filePath, contents] of fixtures) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, contents);
+  }
+
+  childProcess.execFileSync('git', ['init', '--quiet', project]);
+  childProcess.execFileSync('git', ['-C', project, 'config', 'core.autocrlf', 'false']);
+  childProcess.execFileSync('git', ['-C', project, 'add', '.gitignore', 'CLAUDE.md',
+    'imports/relative.md', 'physical-module/CLAUDE.md',
+    'physical-module/imported.md']);
+  childProcess.execFileSync('git', ['-C', project, '-c', 'user.name=Fixture',
+    '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'fixture']);
+  fs.appendFileSync(path.join(project, 'CLAUDE.md'), 'DIRTY-AFTER-COMMIT\n');
+
+  const result = childProcess.spawnSync(process.execPath, [inventoryPath,
+    '--home', home,
+    '--claude-home', claudeHome,
+    '--claude-managed-dir', managedDirectory,
+    '--claude-setting-sources', 'user,project,local',
+    '--project', project,
+    '--cwd', cwd,
+    '--host', 'claude'], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      CLAUDE_CONFIG_DIR: path.join(temporaryRoot, 'ambient-claude-home'),
+    },
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  const manifest = JSON.parse(result.stdout);
+  const sourceAt = (logicalPath, origin) => manifest.sources.find((source) =>
+    source.logicalPath === path.resolve(logicalPath) &&
+    (origin === undefined || source.origin === origin));
+  const warningCodes = manifest.warnings.map((entry) => entry.code);
+
+  assert.equal(manifest.roots.claudeHome.logicalPath, path.resolve(claudeHome));
+  assert.equal(manifest.roots.claudeManaged.logicalPath, path.resolve(managedDirectory));
+  assert.deepEqual(manifest.chains.claude.settingSources, {
+    state: 'explicit',
+    sources: ['user', 'project', 'local'],
+  });
+  assert.deepEqual(manifest.chains.claude.excludes, [
+    path.join(managedDirectory, 'CLAUDE.md'),
+    path.join(project, 'CLAUDE.local.md'),
+    path.join(project, 'unused-local-exclude.md'),
+    path.join(project, 'unused-user-exclude.md'),
+  ].map((entry) => path.resolve(entry)).sort());
+  assert.equal(manifest.chains.claude.maxImportDepth, 4);
+  assert.equal(manifest.chains.claude.coverage, 'partial');
+
+  const managed = sourceAt(path.join(managedDirectory, 'CLAUDE.md'));
+  const user = sourceAt(path.join(claudeHome, 'CLAUDE.md'));
+  const userOne = sourceAt(path.join(claudeHome, 'user-one.md'), 'import');
+  const userFour = sourceAt(path.join(claudeHome, 'user-four.md'), 'import');
+  const userFive = sourceAt(path.join(claudeHome, 'user-five.md'), 'import');
+  const projectRoot = sourceAt(path.join(project, 'CLAUDE.md'));
+  const projectAlternative = sourceAt(path.join(project, '.claude', 'CLAUDE.md'));
+  const projectLocal = sourceAt(path.join(project, 'CLAUDE.local.md'));
+  const relativeImport = sourceAt(path.join(project, 'imports', 'relative.md'), 'import');
+  const external = sourceAt(externalImport, 'import');
+  const linked = sourceAt(path.join(logicalModule, 'CLAUDE.md'));
+  const unconditionalRule = sourceAt(path.join(claudeHome, 'rules', 'always.md'), 'rule');
+  const conditionalRule = sourceAt(
+    path.join(project, '.claude', 'rules', 'nested', 'conditional.md'), 'rule');
+
+  assert.equal(managed.loadState, 'active');
+  assert.equal(managed.encoding, 'utf16le');
+  assert.equal(managed.lineEndings, 'crlf');
+  assert.equal(managed.ownership, 'managed');
+  assert.equal(sourceAt(path.join(managedDirectory, 'managed-settings.json'),
+    'managed-settings').loadState, 'active');
+  assert.equal(user.encoding, 'utf8-bom');
+  assert.equal(user.lineEndings, 'crlf');
+  assert.equal(user.ownership, 'user');
+  assert.equal(userOne.import.parentSourceId, user.id);
+  assert.equal(userOne.import.depth, 1);
+  assert.equal(userFour.import.depth, 4);
+  assert.equal(userFive.loadState, 'approval-blocked');
+  assert.equal(userFive.import.depth, 5);
+  assert.equal(projectRoot.gitState, 'modified');
+  assert.equal(projectAlternative.gitState, 'untracked');
+  assert.equal(projectRoot.loadState, 'conditional');
+  assert.equal(projectAlternative.loadState, 'conditional');
+  assert.equal(projectLocal.gitState, 'ignored');
+  assert.equal(projectLocal.loadState, 'excluded');
+  assert.equal(relativeImport.import.parentSourceId, projectRoot.id);
+  assert.equal(relativeImport.import.depth, 1);
+  assert.equal(external.loadState, 'conditional');
+  assert.equal(external.approval, 'unknown');
+  assert.equal(external.ownership, 'external');
+  assert.equal(external.gitState, 'outside-repository');
+  assert.equal(linked.resolvedPath,
+    path.join(fs.realpathSync.native(physicalModule), 'CLAUDE.md'));
+  assert.notEqual(linked.logicalPath, linked.resolvedPath);
+  assert.equal(linked.ownership, 'project');
+  assert.equal(linked.gitState, 'tracked-clean');
+  assert.deepEqual(unconditionalRule.conditions, []);
+  assert.equal(unconditionalRule.loadState, 'active');
+  assert.deepEqual(conditionalRule.conditions, ['src/**/*.js', 'tests/**']);
+  assert.equal(conditionalRule.loadState, 'conditional');
+  assert.ok(manifest.chains.claude.conditionalSourceIds.includes(conditionalRule.id));
+  assert.ok(manifest.chains.claude.conditionalSourceIds.includes(external.id));
+  assert.ok(warningCodes.includes('import-cycle'));
+  assert.ok(warningCodes.includes('import-depth-exceeded'));
+  assert.ok(warningCodes.includes('external-import-approval-unknown'));
+  assert.ok(warningCodes.includes('claude-project-file-ambiguity'));
+  assert.equal(sourceAt(path.join(claudeHome, 'inline-hidden.md')), undefined);
+  assert.equal(sourceAt(path.join(claudeHome, 'fenced-hidden.md')), undefined);
+
+  const binarySort = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+  assert.deepEqual(manifest.sources.map((source) => source.logicalPath),
+    manifest.sources.map((source) => source.logicalPath).sort(binarySort));
+  assert.deepEqual(manifest.sources.map((source) => source.id),
+    manifest.sources.map((_, index) => `source-${String(index + 1).padStart(4, '0')}`));
+  assert.equal(result.stdout.trimStart().startsWith('{'), true);
+  assert.equal(result.stdout.trimEnd().endsWith('}'), true);
+  assert.doesNotMatch(result.stdout, /SECRET-SETTING-SENTINEL/);
+  assert.doesNotMatch(result.stdout, /INSTRUCTION-SENTINEL/);
+  assert.doesNotMatch(JSON.stringify(manifest.warnings), /SENTINEL/);
+});
+
 test('dual-host projects keep shared guidance canonical', () => {
   const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
 
