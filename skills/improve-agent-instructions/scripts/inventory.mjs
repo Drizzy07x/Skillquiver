@@ -571,6 +571,36 @@ function makeClaudeSource(logicalPath, scope, origin, options, dependencies,
   };
 }
 
+function makeBlockedImportSource(logicalPath, scope, parent, depth, options, dependencies) {
+  const fileSystem = dependencies.fs ?? fs;
+  const resolvedPath = resolvePhysical(logicalPath, fileSystem);
+  const ownership = claudeOwnership(resolvedPath, options, fileSystem);
+  return {
+    id: null,
+    host: 'claude',
+    scope,
+    origin: 'import',
+    logicalPath: path.resolve(logicalPath),
+    resolvedPath,
+    ownership,
+    exists: null,
+    loadState: 'approval-blocked',
+    loadPosition: null,
+    byteCount: null,
+    byteContribution: 0,
+    sha256: null,
+    encoding: 'binary-or-unknown',
+    lineEndings: 'unknown',
+    gitState: dependencies.gitState(logicalPath, resolvedPath, ownership !== 'managed'),
+    import: { parentSourceId: parent, depth },
+    approval: null,
+    conditions: [],
+    inactiveReason: 'import-depth-exceeded',
+    _text: null,
+    _chainOrder: null,
+  };
+}
+
 function parseClaudeSettings(settingsPath, scope, origin, options, dependencies,
   warnings, managed) {
   const fileSystem = dependencies.fs ?? fs;
@@ -852,7 +882,8 @@ function buildClaudeInventory(options, dependencies, sources, warnings) {
   };
 
   const walkImports = (parent, rootScope, depth, stack) => {
-    if (!parent.exists || parent._text === null ||
+    if (!['user', 'project'].includes(parent.ownership) ||
+        !parent.exists || parent._text === null ||
         ['excluded', 'unreadable', 'empty', 'missing', 'approval-blocked'].includes(
           parent.loadState)) return;
     for (const importValue of parseClaudeImports(parent._text)) {
@@ -863,16 +894,22 @@ function buildClaudeInventory(options, dependencies, sources, warnings) {
         partialCoverage = true;
         continue;
       }
-      const source = makeClaudeSource(logicalPath, rootScope, 'import', options, dependencies);
-      source.import = { parentSourceId: parent, depth };
       maxImportDepth = Math.max(maxImportDepth, Math.min(depth, 4));
+      let source;
       if (depth > 4) {
-        source.loadState = 'approval-blocked';
-        source.inactiveReason = 'import-depth-exceeded';
-        source.byteContribution = 0;
+        source = makeBlockedImportSource(
+          logicalPath, rootScope, parent, depth, options, dependencies);
         warnings.push(warning('import-depth-exceeded', logicalPath, null, 'claude'));
         partialCoverage = true;
-      } else if (rootScope === 'project' && source.ownership === 'external') {
+      } else {
+        source = makeClaudeSource(logicalPath, rootScope, 'import', options, dependencies);
+        source.import = { parentSourceId: parent, depth };
+      }
+      if (depth <= 4 && ['missing', 'unreadable'].includes(source.loadState)) {
+        warnings.push(warning('source-unreadable', logicalPath, null, 'claude'));
+        partialCoverage = true;
+      } else if (depth <= 4 && rootScope === 'project' &&
+          source.ownership === 'external') {
         source.loadState = 'conditional';
         source.inactiveReason = 'external-import-approval-unknown';
         source.approval = 'unknown';
@@ -896,9 +933,10 @@ function buildClaudeInventory(options, dependencies, sources, warnings) {
     const source = makeClaudeSource(
       logicalPath, scope, origin, options, dependencies, { managed });
     applyExcludes(source);
-    addSource(source);
-    queueSource(source);
-    walkImports(source, scope, 1, [source.resolvedPath]);
+    if (addSource(source)) {
+      queueSource(source);
+      walkImports(source, scope, 1, [source.resolvedPath]);
+    }
     return source;
   };
 

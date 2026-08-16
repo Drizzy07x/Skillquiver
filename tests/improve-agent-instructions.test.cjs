@@ -31,6 +31,27 @@ function snapshotTree(directory) {
   return snapshot;
 }
 
+function runClaudeInventory({ home, managedDirectory, project, cwd = project,
+  addDirectories = [], environment = {} }) {
+  const inventoryPath = path.join(skillRoot, 'scripts', 'inventory.mjs');
+  const args = [inventoryPath,
+    '--home', home,
+    '--claude-home', path.join(home, '.claude'),
+    '--claude-managed-dir', managedDirectory,
+    '--claude-setting-sources', 'user,project,local',
+    '--project', project,
+    '--cwd', cwd,
+    '--host', 'claude'];
+  for (const directory of addDirectories) args.push('--claude-add-dir', directory);
+  const result = childProcess.spawnSync(process.execPath, args, {
+    encoding: 'utf8',
+    env: { ...process.env, ...environment },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  return JSON.parse(result.stdout);
+}
+
 test('deterministic audit is read-only and secret-free', async (t) => {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-inventory-'));
   const home = path.join(temporaryRoot, 'home');
@@ -374,6 +395,132 @@ test('inventory resolves Claude sources, links, and Git state', (t) => {
   assert.doesNotMatch(result.stdout, /SECRET-SETTING-SENTINEL/);
   assert.doesNotMatch(result.stdout, /INSTRUCTION-SENTINEL/);
   assert.doesNotMatch(JSON.stringify(manifest.warnings), /SENTINEL/);
+});
+
+test('Claude report-only sources do not recurse imports', (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-report-only-'));
+  const home = path.join(temporaryRoot, 'home');
+  const managedDirectory = path.join(temporaryRoot, 'managed');
+  const project = path.join(temporaryRoot, 'project');
+  const outside = path.join(temporaryRoot, 'outside');
+  const externalDirectory = path.join(outside, 'external-project');
+  const externalLink = path.join(project, 'external-link');
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+
+  fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+  fs.mkdirSync(managedDirectory, { recursive: true });
+  fs.mkdirSync(project, { recursive: true });
+  fs.mkdirSync(externalDirectory, { recursive: true });
+  fs.writeFileSync(path.join(managedDirectory, 'CLAUDE.md'),
+    '@../outside/managed-child.md\n');
+  fs.writeFileSync(path.join(outside, 'managed-child.md'), 'MANAGED-CHILD-SENTINEL\n');
+  fs.writeFileSync(path.join(externalDirectory, 'CLAUDE.md'), '@child.md\n');
+  fs.writeFileSync(path.join(externalDirectory, 'child.md'), 'EXTERNAL-CHILD-SENTINEL\n');
+  fs.symlinkSync(externalDirectory, externalLink,
+    process.platform === 'win32' ? 'junction' : 'dir');
+
+  const manifest = runClaudeInventory({
+    home,
+    managedDirectory,
+    project,
+    addDirectories: [externalLink],
+    environment: { CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD: '1' },
+  });
+  const sourceAt = (logicalPath) => manifest.sources.find(
+    (source) => source.logicalPath === path.resolve(logicalPath));
+
+  assert.equal(sourceAt(path.join(managedDirectory, 'CLAUDE.md')).ownership, 'managed');
+  assert.equal(sourceAt(path.join(externalLink, 'CLAUDE.md')).ownership, 'external');
+  assert.equal(sourceAt(path.join(outside, 'managed-child.md')), undefined);
+  assert.equal(sourceAt(path.join(externalLink, 'child.md')), undefined);
+});
+
+test('Claude import depth stops before reading hop five', (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-depth-cap-'));
+  const home = path.join(temporaryRoot, 'home');
+  const claudeHome = path.join(home, '.claude');
+  const managedDirectory = path.join(temporaryRoot, 'managed');
+  const project = path.join(temporaryRoot, 'project');
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+
+  fs.mkdirSync(claudeHome, { recursive: true });
+  fs.mkdirSync(managedDirectory, { recursive: true });
+  fs.mkdirSync(project, { recursive: true });
+  fs.writeFileSync(path.join(claudeHome, 'CLAUDE.md'), '@one.md\n');
+  fs.writeFileSync(path.join(claudeHome, 'one.md'), '@two.md\n');
+  fs.writeFileSync(path.join(claudeHome, 'two.md'), '@three.md\n');
+  fs.writeFileSync(path.join(claudeHome, 'three.md'), '@four.md\n');
+  fs.writeFileSync(path.join(claudeHome, 'four.md'), '@five.md\n');
+  fs.writeFileSync(path.join(claudeHome, 'five.md'), 'FIFTH-HOP-BODY-SENTINEL\n');
+
+  const manifest = runClaudeInventory({ home, managedDirectory, project });
+  const fifthHop = manifest.sources.find((source) =>
+    source.logicalPath === path.join(claudeHome, 'five.md'));
+
+  assert.equal(fifthHop.loadState, 'approval-blocked');
+  assert.equal(fifthHop.import.depth, 5);
+  assert.equal(fifthHop.exists, null);
+  assert.equal(fifthHop.byteCount, null);
+  assert.equal(fifthHop.sha256, null);
+});
+
+test('Claude broken imports warn and make coverage partial', (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-broken-import-'));
+  const home = path.join(temporaryRoot, 'home');
+  const claudeHome = path.join(home, '.claude');
+  const managedDirectory = path.join(temporaryRoot, 'managed');
+  const project = path.join(temporaryRoot, 'project');
+  const missingImport = path.join(claudeHome, 'missing.md');
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+
+  fs.mkdirSync(claudeHome, { recursive: true });
+  fs.mkdirSync(managedDirectory, { recursive: true });
+  fs.mkdirSync(project, { recursive: true });
+  fs.writeFileSync(path.join(claudeHome, 'CLAUDE.md'), '@missing.md\n');
+
+  const manifest = runClaudeInventory({ home, managedDirectory, project });
+  const missing = manifest.sources.find((source) =>
+    source.logicalPath === missingImport && source.origin === 'import');
+  const warning = manifest.warnings.find((entry) =>
+    entry.code === 'source-unreadable' && entry.logicalPath === missingImport);
+
+  assert.equal(missing.loadState, 'missing');
+  assert.equal(warning.host, 'claude');
+  assert.equal(warning.field, null);
+  assert.equal(manifest.chains.claude.coverage, 'partial');
+});
+
+test('Claude discovery deduplicates repeated additional sources', (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-deduplicate-'));
+  const home = path.join(temporaryRoot, 'home');
+  const managedDirectory = path.join(temporaryRoot, 'managed');
+  const project = path.join(temporaryRoot, 'project');
+  const additionalDirectory = path.join(project, 'additional');
+  const additionalFile = path.join(additionalDirectory, 'CLAUDE.md');
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+
+  fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+  fs.mkdirSync(managedDirectory, { recursive: true });
+  fs.mkdirSync(additionalDirectory, { recursive: true });
+  fs.writeFileSync(additionalFile, 'ADDITIONAL-SOURCE-SENTINEL\n');
+
+  const manifest = runClaudeInventory({
+    home,
+    managedDirectory,
+    project,
+    addDirectories: [additionalDirectory, additionalDirectory],
+    environment: { CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD: '1' },
+  });
+  const matches = manifest.sources.filter((source) =>
+    source.logicalPath === additionalFile && source.origin === 'additional-directory');
+  const chainIds = [
+    ...manifest.chains.claude.sourceIds,
+    ...manifest.chains.claude.conditionalSourceIds,
+  ];
+
+  assert.equal(matches.length, 1);
+  assert.equal(chainIds.includes(null), false);
+  assert.equal(new Set(chainIds).size, chainIds.length);
 });
 
 test('dual-host projects keep shared guidance canonical', () => {
