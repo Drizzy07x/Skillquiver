@@ -41,11 +41,19 @@ function isInside(parent, child) {
     (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`));
 }
 
-function findGitRoot(cwd, execFile) {
+function gitEnvironment(environment) {
+  return { ...environment, GIT_OPTIONAL_LOCKS: '0' };
+}
+
+function findGitRoot(cwd, execFile, environment) {
   try {
     return path.resolve(execFile(
       'git', ['-C', cwd, 'rev-parse', '--show-toplevel'],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim());
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        env: gitEnvironment(environment),
+      }).trim());
   } catch {
     return cwd;
   }
@@ -74,7 +82,7 @@ export function parseArgs(argv, runtime = {}) {
     }
 
     const property = SCALAR_FLAGS.get(flag);
-    if (!property) throw new UsageError(`Unknown flag ${flag}.`);
+    if (!property) throw new UsageError('unknown flag.');
     if (seen.has(flag)) throw new UsageError(`Repeated flag ${flag}.`);
     const value = argv[index + 1];
     if (value === undefined || value.startsWith('--')) {
@@ -101,7 +109,7 @@ export function parseArgs(argv, runtime = {}) {
 
   const project = values.project
     ? resolveFrom(ambientCwd, values.project)
-    : findGitRoot(cwd, execFile);
+    : findGitRoot(cwd, execFile, environment);
   if (!isInside(project, cwd)) {
     throw new UsageError('The working directory is outside the project root.');
   }
@@ -295,11 +303,18 @@ function parseCodexConfig(codexHome, fileSystem, warnings) {
     },
   ];
 
-  const lines = contents.split(/\r\n|\n|\r/);
+  let topLevel = true;
+  const lines = contents.split(/\r\n|\n|\r/).map((line) => {
+    if (/^\s*\[/.test(line)) topLevel = false;
+    return { line, topLevel };
+  });
   for (const entry of supported) {
-    const matching = lines.filter((line) => new RegExp(`^\\s*${entry.key}\\b`).test(line));
+    const matching = lines.filter(({ line }) =>
+      new RegExp(`^\\s*${entry.key}\\b`).test(line));
     if (matching.length === 0) continue;
-    const value = matching.length === 1 ? entry.parse(matching[0]) : null;
+    const value = matching.length === 1 && matching[0].topLevel
+      ? entry.parse(matching[0].line)
+      : null;
     if (value === null) {
       warnings.push(warning('config-invalid', configPath, entry.key));
     } else {
@@ -309,21 +324,29 @@ function parseCodexConfig(codexHome, fileSystem, warnings) {
   return result;
 }
 
-function gitStateFor(logicalPath, project, execFile) {
+function gitStateFor(logicalPath, project, execFile, environment) {
   if (!isInside(project, logicalPath)) return 'not-applicable';
   const relative = path.relative(project, logicalPath);
   try {
     const output = execFile(
       'git', ['-C', project, 'status', '--porcelain=v1', '--ignored',
         '--untracked-files=all', '--', relative],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        env: gitEnvironment(environment),
+      });
     const marker = output.slice(0, 2);
     if (marker === '??') return 'untracked';
     if (marker === '!!') return 'ignored';
     if (marker.trim()) return 'modified';
     try {
       execFile('git', ['-C', project, 'ls-files', '--error-unmatch', '--', relative],
-        { encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] });
+        {
+          encoding: 'utf8',
+          stdio: ['ignore', 'ignore', 'ignore'],
+          env: gitEnvironment(environment),
+        });
       return 'tracked-clean';
     } catch {
       return 'untracked';
@@ -338,7 +361,8 @@ function makeSource(logicalPath, scope, origin, options, dependencies) {
   const inspected = inspectFile(logicalPath, fileSystem);
   const gitState = scope === 'project'
     ? gitStateFor(logicalPath, options.project,
-      dependencies.execFileSync ?? childProcess.execFileSync)
+      dependencies.execFileSync ?? childProcess.execFileSync,
+      dependencies.env ?? process.env)
     : 'not-applicable';
   return {
     id: null,
