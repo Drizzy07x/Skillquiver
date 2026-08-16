@@ -523,21 +523,67 @@ test('Claude discovery deduplicates repeated additional sources', (t) => {
   assert.equal(new Set(chainIds).size, chainIds.length);
 });
 
-test('dual-host projects keep shared guidance canonical', () => {
-  const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
+test('skill contract is audit-first and transaction-safe', () => {
+  const read = (filePath) => fs.readFileSync(filePath, 'utf8').replace(/\s+/g, ' ');
+  const skill = read(path.join(skillRoot, 'SKILL.md'));
+  const codex = read(path.join(skillRoot, 'references', 'codex.md'));
+  const claude = read(path.join(skillRoot, 'references', 'claude.md'));
+  const metadata = read(path.join(skillRoot, 'agents', 'openai.yaml'));
+  const routing = read(path.join(root, 'skills', 'solve-efficiently', 'SKILL.md'));
+  const boundaries = read(path.join(root, 'skills', 'handle-host-boundaries', 'SKILL.md'));
 
+  assert.match(skill, /`AUDIT`, `PLAN`, `APPLY`, and `VERIFY`/);
+  assert.match(skill, /Unknown or implicit intent resolves to `AUDIT`/);
+  assert.match(skill, /`AUDIT`, `PLAN`, and standalone `VERIFY` do not write or create backups/);
+  assert.match(skill, /Explicit change intent with named scopes authorizes `APPLY` without another confirmation/);
+  assert.match(skill, /Project-only and global-only requests never expand scope/);
+  assert.match(skill, /Managed and resolved-external targets remain report-only/);
+  assert.match(skill, /stdout is the inventory contract and stderr is diagnostic/);
+  assert.match(skill, /Do not silently bypass an inspector operational error/);
+  assert.match(skill, /Node absence alone may use a native field-by-field fallback with unknown fields disclosed/);
+  assert.match(skill, /`keep`, `move`, `sharpen`, `disclose`, `remove`, `enforce-elsewhere`, (?:or|and) `blocked-decision`/);
+  assert.match(skill, /Every target belongs to one logical transaction/);
+  assert.match(skill, /Codex global, Claude global, shared project pair, and one group per nested scope/);
+  assert.match(skill, /~\/\.skillquiver\/backups\/improve-agent-instructions\/<UTC timestamp>\//);
+  assert.match(skill, /outside every repository and instruction target/);
+  assert.match(skill, /byte-exact preimage for every modified existing file and an absent-preimage record for each created file/);
+  assert.match(skill, /privacy cannot be established, block that transaction/);
+  assert.match(skill, /concurrent hash mismatch cancels the whole group/);
+  assert.match(skill, /roll back only that group/);
+  assert.match(skill, /rollback failure stops later writes/);
+  assert.match(skill, /second dry-run transformation is empty/);
+  assert.match(skill, /Target matrix, Effective chain, Decision ledger, Changes and recovery, Verification matrix, and Pending questions/);
+  assert.match(skill, /`verified`, `unverified`, or `blocked`/);
   assert.match(skill, /Make `AGENTS\.md` the canonical shared project contract/);
   assert.match(skill, /`@AGENTS\.md`/);
   assert.match(skill, /`@\.\.\/AGENTS\.md`/);
   assert.match(skill, /Never copy shared rules into `CLAUDE\.md`/);
   assert.match(skill, /Never assume that Codex expands `@` imports/);
-});
 
-test('general routing delegates persistent instruction work to the new skill', () => {
-  const routing = fs.readFileSync(
-    path.join(root, 'skills', 'solve-efficiently', 'SKILL.md'), 'utf8');
+  assert.match(codex, /selected, shadowed, empty, and truncated/);
+  assert.match(codex, /configuration sources and physical paths/);
+  assert.match(codex, /default 32 KiB project budget/);
+  assert.match(codex, /cwd fallback/);
+  assert.match(codex, /read-only fresh-session probes/);
+  assert.match(codex, /documented behavior from local policy/);
 
+  assert.match(claude, /Managed OS locations/);
+  assert.match(claude, /managed `claudeMd`/);
+  assert.match(claude, /`CLAUDE_CONFIG_DIR`/);
+  assert.match(claude, /Within-directory order/);
+  assert.match(claude, /four-hop imports/);
+  assert.match(claude, /external approval/);
+  assert.match(claude, /code spans and fenced blocks/);
+  assert.match(claude, /user and project recursive rules/);
+  assert.match(claude, /`paths`/);
+  assert.match(claude, /excludes, setting sources, and additional directories/);
+  assert.match(claude, /safe `\/context` and `\/memory` verification boundaries/);
+
+  assert.match(metadata, /allow_implicit_invocation: true/);
+  assert.match(metadata, /default_prompt: "Audit the active AGENTS\.md and CLAUDE\.md chain; write only when this request explicitly authorizes named scopes\."/);
   assert.match(routing, /improve-agent-instructions/);
-  assert.doesNotMatch(routing, /When `CLAUDE\.md` is the target/);
-  assert.doesNotMatch(routing, /Root: 40–120 lines/);
+  assert.match(routing, /Adjacent or implicit routing is audit-only/);
+  assert.match(boundaries, /Do not inspect or modify another host's configuration as a substitute for an unavailable capability/);
+  assert.match(boundaries, /Explicitly authorized AGENTS\.md or CLAUDE\.md file maintenance through improve-agent-instructions is allowed/);
+  assert.match(boundaries, /unavailable runtime loading remains unverified/);
 });

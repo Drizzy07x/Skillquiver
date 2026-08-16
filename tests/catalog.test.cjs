@@ -172,6 +172,8 @@ test('host boundaries keep generic capability and destructive safeguards', () =>
     path.join(sharedSkillsRoot, 'handle-host-boundaries', 'SKILL.md'), 'utf8');
 
   assert.match(routing, /Do not inspect or modify another host's configuration/);
+  assert.match(routing, /Explicitly authorized AGENTS\.md or CLAUDE\.md file\s+maintenance through improve-agent-instructions is allowed/);
+  assert.match(routing, /unavailable runtime loading remains unverified/);
   assert.match(routing, /ask it directly in plain chat/);
   assert.doesNotMatch(routing, /Skillquiver Doctor/);
   assert.doesNotMatch(routing, /Claude Code-only/);
