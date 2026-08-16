@@ -192,9 +192,6 @@ function baseFixture(root, scenarioId) {
   writeFile(root, 'subject/tools/pnpm', 'fixture pnpm executable\n');
   const subject = inside(root, 'subject');
   writeFile(root, 'logs/prompt.md', commonPrompt(scenarioId, subject));
-  writeFile(root, 'logs/host-final.md', '');
-  writeFile(root, 'logs/inspector-stdout.log', '');
-  writeFile(root, 'logs/inspector-stderr.log', '');
 }
 
 function prepareAudit(root) {
@@ -301,6 +298,11 @@ function preparePartial(root) {
     `process.exitCode = valid ? 0 : 1;\n`);
   return {
     sentinels: [],
+    initialSnapshot: snapshotTargets(inside(root, 'subject')),
+    controlHashes: {
+      marker: hashAt(root, 'subject/controls/append-concurrent.cjs'),
+      verifier: hashAt(root, 'subject/controls/verify-project.cjs'),
+    },
     hashes: {
       codexAfter: sha256(PARTIAL_CODEX_AFTER),
       claudeConcurrent: sha256(Buffer.concat([PARTIAL_CLAUDE_BEFORE, PARTIAL_MARKER])),
@@ -341,7 +343,7 @@ function check(id, status, relativePath, value) {
 function checked(id, relativePath, operation, missingStatus = 'unverified') {
   try {
     const result = operation();
-    return check(id, result.pass ? 'pass' : 'fail', relativePath, result.value);
+    return check(id, result.status || (result.pass ? 'pass' : 'fail'), relativePath, result.value);
   } catch (error) {
     const missing = error && error.code === 'ENOENT';
     return check(id, missing ? missingStatus : 'fail', relativePath);
@@ -354,24 +356,247 @@ function normalizeManifest(manifest) {
   return normalized;
 }
 
-function reportCheck(root, scenarioId) {
+function reportContract(scenarioId) {
+  const contracts = {
+    audit: {
+      targetMatrix: [
+        { id: 'codex-global', status: 'verified' },
+        { id: 'codex-project', status: 'verified' },
+        { id: 'claude-global', status: 'verified' },
+        { id: 'claude-project', status: 'verified' },
+      ],
+      effectiveChain: [
+        { id: 'codex-chain', status: 'verified' },
+        { id: 'claude-chain', status: 'verified' },
+      ],
+      decisionLedger: [
+        { id: 'audit-read-only', disposition: 'keep', target: 'all-targets', status: 'verified' },
+      ],
+      changesAndRecovery: {
+        transactions: [{ id: 'audit', status: 'unchanged', targets: ['all-targets'] }],
+      },
+      verificationMatrix: [
+        { claim: 'targets-unchanged', status: 'verified' },
+        { claim: 'manifests-deterministic', status: 'verified' },
+        { claim: 'source-states', status: 'verified' },
+        { claim: 'inspector-invocations', status: 'verified' },
+        { claim: 'secret-free', status: 'verified' },
+        { claim: 'unsafe-runtime-probe', status: 'unverified' },
+        { claim: 'host-primary-evidence', status: 'verified' },
+      ],
+      pendingQuestions: [],
+    },
+    apply: {
+      targetMatrix: [
+        { id: 'codex-global', status: 'verified' },
+        { id: 'claude-global', status: 'verified' },
+        { id: 'project-agents', status: 'verified' },
+        { id: 'project-claude', status: 'verified' },
+        { id: 'project-private', status: 'verified' },
+      ],
+      effectiveChain: [
+        { id: 'codex-chain', status: 'verified' },
+        { id: 'claude-chain', status: 'verified' },
+      ],
+      decisionLedger: [
+        { id: 'package-manager-guidance', disposition: 'sharpen', target: 'project-agents', status: 'verified' },
+        { id: 'shared-guidance', disposition: 'move', target: 'project-agents', status: 'verified' },
+        { id: 'claude-delta', disposition: 'keep', target: 'project-claude', status: 'verified' },
+        { id: 'private-local', disposition: 'keep', target: 'project-private', status: 'verified' },
+      ],
+      changesAndRecovery: {
+        transactions: [
+          { id: 'codex-global', status: 'applied', targets: ['codex-global'] },
+          { id: 'claude-global', status: 'applied', targets: ['claude-global'] },
+          { id: 'project-shared', status: 'applied', targets: ['project-agents', 'project-claude'] },
+        ],
+      },
+      verificationMatrix: [
+        { claim: 'backup-location', status: 'verified' },
+        { claim: 'backup-preimages', status: 'verified' },
+        { claim: 'global-guidance', status: 'verified' },
+        { claim: 'canonical-project', status: 'verified' },
+        { claim: 'dirty-guidance', status: 'verified' },
+        { claim: 'claude-import', status: 'verified' },
+        { claim: 'private-local', status: 'verified' },
+        { claim: 'representation', status: 'verified' },
+        { claim: 'repository-facts', status: 'verified' },
+        { claim: 'idempotence', status: 'verified' },
+        { claim: 'secret-free', status: 'verified' },
+        { claim: 'host-primary-evidence', status: 'verified' },
+      ],
+      pendingQuestions: [],
+    },
+    partial: {
+      targetMatrix: [
+        { id: 'codex-global', status: 'verified' },
+        { id: 'claude-global', status: 'blocked' },
+        { id: 'project-agents', status: 'verified' },
+        { id: 'project-claude', status: 'verified' },
+        { id: 'nested-scope', status: 'blocked' },
+      ],
+      effectiveChain: [
+        { id: 'codex-chain', status: 'verified' },
+        { id: 'claude-chain', status: 'unverified' },
+      ],
+      decisionLedger: [
+        { id: 'safe-codex-global', disposition: 'sharpen', target: 'codex-global', status: 'verified' },
+        { id: 'claude-concurrent', disposition: 'keep', target: 'claude-global', status: 'blocked' },
+        { id: 'project-shared', disposition: 'sharpen', target: 'project-agents', status: 'verified' },
+        { id: 'nested-ambiguity', disposition: 'blocked-decision', target: 'nested-scope', status: 'blocked' },
+      ],
+      changesAndRecovery: {
+        transactions: [
+          { id: 'codex-global', status: 'applied', targets: ['codex-global'] },
+          { id: 'claude-global', status: 'concurrent-change', targets: ['claude-global'] },
+          { id: 'project-shared', status: 'rolled-back', targets: ['project-agents', 'project-claude'] },
+          { id: 'nested-scope', status: 'blocked', targets: ['nested-scope'] },
+        ],
+      },
+      verificationMatrix: [
+        { claim: 'backup-location', status: 'verified' },
+        { claim: 'codex-global', status: 'verified' },
+        { claim: 'claude-concurrent', status: 'verified' },
+        { claim: 'project-rollback', status: 'verified' },
+        { claim: 'nested-ambiguity', status: 'blocked' },
+        { claim: 'restoration', status: 'verified' },
+        { claim: 'control-sequence', status: 'verified' },
+        { claim: 'runtime-loading', status: 'unverified' },
+        { claim: 'host-primary-evidence', status: 'verified' },
+      ],
+      pendingQuestions: [{ id: 'nested-ambiguity', status: 'blocked' }],
+    },
+  };
+  return contracts[scenarioId];
+}
+
+function reportCheck(root, scenarioId, gradedChecks) {
   return checked('report_complete', 'logs/report.json', () => {
     const report = readJson(root, 'logs/report.json');
-    const fields = ['targetMatrix', 'effectiveChain', 'decisionLedger', 'changesAndRecovery',
-      'verificationMatrix', 'pendingQuestions'];
-    const pass = report.schemaVersion === 1 && report.scenarioId === scenarioId &&
-      fields.every((field) => Object.hasOwn(report, field));
-    return { pass, value: report };
+    const contract = reportContract(scenarioId);
+    const unique = (items, key) => Array.isArray(items) &&
+      new Set(items.map((item) => item[key])).size === items.length;
+    const checksById = new Map(gradedChecks.map((item) => [item.id, item.status]));
+    const claims = new Map((report.verificationMatrix || [])
+      .map((item) => [item.claim, item.status]));
+    const consistency = {
+      audit: [
+        ['targets-unchanged', 'targets_unchanged', 'pass', 'verified'],
+        ['manifests-deterministic', 'manifests_deterministic', 'pass', 'verified'],
+        ['source-states', 'exact_source_states', 'pass', 'verified'],
+        ['inspector-invocations', 'inspector_invocations', 'pass', 'verified'],
+        ['secret-free', 'secret_free_outputs', 'pass', 'verified'],
+        ['unsafe-runtime-probe', 'unavailable_probe_disclosed', 'pass', 'unverified'],
+        ['host-primary-evidence', 'host_evidence', 'pass', 'verified'],
+      ],
+      apply: [
+        ['backup-location', 'backup_outside_repository', 'pass', 'verified'],
+        ['backup-preimages', 'backup_preimages', 'pass', 'verified'],
+        ['global-guidance', 'global_guidance', 'pass', 'verified'],
+        ['canonical-project', 'canonical_project_guidance', 'pass', 'verified'],
+        ['dirty-guidance', 'dirty_guidance_preserved', 'pass', 'verified'],
+        ['claude-import', 'single_claude_import_and_delta', 'pass', 'verified'],
+        ['private-local', 'private_local_unchanged', 'pass', 'verified'],
+        ['representation', 'representation_preserved', 'pass', 'verified'],
+        ['repository-facts', 'verified_repository_facts', 'pass', 'verified'],
+        ['idempotence', 'second_run_idempotent', 'pass', 'verified'],
+        ['secret-free', 'secret_free_outputs', 'pass', 'verified'],
+        ['host-primary-evidence', 'host_evidence', 'pass', 'verified'],
+      ],
+      partial: [
+        ['backup-location', 'backup_outside_repository', 'pass', 'verified'],
+        ['codex-global', 'safe_codex_change_retained', 'pass', 'verified'],
+        ['claude-concurrent', 'concurrent_claude_preserved', 'pass', 'verified'],
+        ['project-rollback', 'project_pair_rolled_back', 'pass', 'verified'],
+        ['nested-ambiguity', 'nested_ambiguity_untouched', 'pass', 'blocked'],
+        ['restoration', 'restoration_statuses', 'pass', 'verified'],
+        ['control-sequence', 'control_sequence', 'pass', 'verified'],
+        ['host-primary-evidence', 'host_evidence', 'pass', 'verified'],
+      ],
+    };
+    for (const [claim, checkId] of consistency[scenarioId]) {
+      if (checksById.get(checkId) === 'unverified') {
+        contract.verificationMatrix.find((item) => item.claim === claim).status = 'unverified';
+      }
+    }
+    const expected = { schemaVersion: 1, scenarioId, ...contract };
+    const structurePass = same(report, expected) && unique(report.targetMatrix, 'id') &&
+      unique(report.effectiveChain, 'id') && unique(report.decisionLedger, 'id') &&
+      unique(report.changesAndRecovery?.transactions, 'id') &&
+      unique(report.verificationMatrix, 'claim') && unique(report.pendingQuestions, 'id');
+    let consistencyPass = true;
+    for (const [claim, checkId, checkStatus, reportStatus] of consistency[scenarioId]) {
+      const gradedStatus = checksById.get(checkId);
+      if (gradedStatus === 'unverified') {
+        if (claims.get(claim) !== 'unverified') consistencyPass = false;
+      }
+      else if (gradedStatus !== checkStatus || claims.get(claim) !== reportStatus) {
+        consistencyPass = false;
+      }
+    }
+    return {
+      pass: structurePass && consistencyPass,
+      value: report,
+    };
   });
 }
 
-function hostEvidenceCheck(root) {
+function hostEvidenceCheck(root, scenarioId) {
   return checked('host_evidence', 'logs/host-evidence.json', () => {
     const hostEvidence = readJson(root, 'logs/host-evidence.json');
-    const hosts = new Map((hostEvidence.hosts || []).map((item) => [item.host, item.status]));
+    const hosts = hostEvidence.hosts || [];
+    const expectedHosts = ['codex', 'claude'];
+    const targetSha256 = sha256(JSON.stringify(snapshotTargets(inside(root, 'subject'))));
+    const reportSha256 = hashAt(root, 'logs/report.json');
+    let pass = true;
+    const expectedEntries = [];
+    for (const host of expectedHosts) {
+      const entry = hosts.find((item) => item.host === host);
+      const inspectorPath = `logs/hosts/${host}/inspector-stdout.json`;
+      const finalPath = `logs/hosts/${host}/host-final.json`;
+      if (!entry || entry.scenarioId !== scenarioId || entry.status !== 'verified' ||
+          entry.inspector?.path !== inspectorPath || entry.final?.path !== finalPath) {
+        pass = false;
+        continue;
+      }
+      const inspectorBytes = readFile(root, inspectorPath);
+      const finalBytes = readFile(root, finalPath);
+      if (inspectorBytes.length === 0 || finalBytes.length === 0) {
+        const unavailable = new Error('Primary host evidence is unavailable.');
+        unavailable.code = 'ENOENT';
+        throw unavailable;
+      }
+      const inspector = JSON.parse(inspectorBytes.toString('utf8'));
+      const final = JSON.parse(finalBytes.toString('utf8'));
+      const expectedInspector = {
+        schemaVersion: 1,
+        scenarioId,
+        host,
+        status: 'captured',
+        targetSha256,
+      };
+      const expectedFinal = {
+        schemaVersion: 1,
+        scenarioId,
+        host,
+        status: 'captured',
+        reportSha256,
+      };
+      expectedEntries.push({
+        host,
+        scenarioId,
+        status: 'verified',
+        inspector: { path: inspectorPath, sha256: sha256(inspectorBytes) },
+        final: { path: finalPath, sha256: sha256(finalBytes) },
+      });
+      pass = pass && entry.inspector.sha256 === sha256(inspectorBytes) &&
+        entry.final.sha256 === sha256(finalBytes) && same(inspector, expectedInspector) &&
+        same(final, expectedFinal);
+    }
+    pass = pass && same(hostEvidence,
+      { schemaVersion: 1, scenarioId, hosts: expectedEntries });
     return {
-      pass: hostEvidence.schemaVersion === 1 && hosts.get('codex') === 'verified' &&
-        hosts.get('claude') === 'verified',
+      pass,
       value: hostEvidence,
     };
   });
@@ -412,14 +637,14 @@ function gradeAudit(root, expected) {
     return { pass, value: trace };
   }));
   checks.push(noSentinelsCheck(root, expected.sentinels));
-  checks.push(reportCheck(root, 'audit'));
   checks.push(checked('unavailable_probe_disclosed', 'logs/report.json', () => {
     const report = readJson(root, 'logs/report.json');
     const pass = (report.verificationMatrix || []).some(
       (entry) => entry.claim === 'unsafe-runtime-probe' && entry.status === 'unverified');
     return { pass, value: report.verificationMatrix };
   }));
-  checks.push(hostEvidenceCheck(root));
+  checks.push(hostEvidenceCheck(root, 'audit'));
+  checks.push(reportCheck(root, 'audit', checks));
   return checks;
 }
 
@@ -512,14 +737,48 @@ function gradeApply(root, expected) {
   }));
   checks.push(checked('second_run_idempotent',
     'logs/first-target-snapshot.json|logs/second-target-snapshot.json', () => {
-      const first = readJson(root, 'logs/first-target-snapshot.json');
-      const second = readJson(root, 'logs/second-target-snapshot.json');
+      const firstPath = 'logs/first-target-snapshot.json';
+      const secondPath = 'logs/second-target-snapshot.json';
+      const firstBytes = readFile(root, firstPath);
+      const secondBytes = readFile(root, secondPath);
+      const first = JSON.parse(firstBytes.toString('utf8'));
+      const second = JSON.parse(secondBytes.toString('utf8'));
       const actual = snapshotTargets(inside(root, 'subject'));
-      return { pass: same(first, second) && same(second, actual), value: [first, second, actual] };
+      const trace = readJson(root, 'logs/apply-invocations.json');
+      const invocations = trace.invocations || [];
+      const firstInvocation = invocations[0];
+      const secondInvocation = invocations[1];
+      const firstOutputPath = 'logs/apply-1-output.json';
+      const secondOutputPath = 'logs/apply-2-output.json';
+      const firstOutputBytes = readFile(root, firstOutputPath);
+      const secondOutputBytes = readFile(root, secondOutputPath);
+      const firstOutput = JSON.parse(firstOutputBytes.toString('utf8'));
+      const secondOutput = JSON.parse(secondOutputBytes.toString('utf8'));
+      const pass = same(first, second) && same(second, actual) && trace.schemaVersion === 1 &&
+        trace.scenarioId === 'apply' && invocations.length === 2 &&
+        firstInvocation?.invocationId === 'apply-1' && firstInvocation.ordinal === 1 &&
+        firstInvocation.snapshotPath === firstPath &&
+        firstInvocation.snapshotSha256 === sha256(firstBytes) &&
+        firstInvocation.outputPath === firstOutputPath &&
+        firstInvocation.outputSha256 === sha256(firstOutputBytes) &&
+        secondInvocation?.invocationId === 'apply-2' && secondInvocation.ordinal === 2 &&
+        secondInvocation.previousInvocationId === 'apply-1' &&
+        secondInvocation.snapshotPath === secondPath &&
+        secondInvocation.snapshotSha256 === sha256(secondBytes) &&
+        secondInvocation.outputPath === secondOutputPath &&
+        secondInvocation.outputSha256 === sha256(secondOutputBytes) &&
+        firstOutput.schemaVersion === 1 && firstOutput.scenarioId === 'apply' &&
+        firstOutput.invocationId === 'apply-1' && firstOutput.status === 'changed' &&
+        firstOutput.snapshotSha256 === sha256(firstBytes) &&
+        secondOutput.schemaVersion === 1 && secondOutput.scenarioId === 'apply' &&
+        secondOutput.invocationId === 'apply-2' && secondOutput.status === 'no-change' &&
+        secondOutput.snapshotSha256 === sha256(secondBytes) &&
+        sha256(firstOutputBytes) !== sha256(secondOutputBytes);
+      return { pass, value: { first, second, actual, trace, firstOutput, secondOutput } };
     }));
   checks.push(noSentinelsCheck(root, expected.sentinels));
-  checks.push(reportCheck(root, 'apply'));
-  checks.push(hostEvidenceCheck(root));
+  checks.push(hostEvidenceCheck(root, 'apply'));
+  checks.push(reportCheck(root, 'apply', checks));
   return checks;
 }
 
@@ -572,22 +831,92 @@ function gradePartial(root, expected) {
       statuses['project-shared'] === 'rolled-back' && statuses['nested-scope'] === 'blocked';
     return { pass, value: restoration };
   }));
-  checks.push(checked('rollback_verification', 'logs/verification-trace.json', () => {
-    const trace = readJson(root, 'logs/verification-trace.json');
-    const expectedTrace = [
-      { phase: 'before-rollback', status: 'fail' },
-      { phase: 'after-rollback', status: 'pass' },
-    ];
-    return { pass: same(trace.projectShared, expectedTrace), value: trace };
+  checks.push(checked('control_sequence', 'logs/partial-invocations.json', () => {
+    const trace = readJson(root, 'logs/partial-invocations.json');
+    const events = trace.events || [];
+    const [inventoryEvent, markerEvent, beforeEvent, rollbackEvent, afterEvent] = events;
+    const snapshotPaths = {
+      inventory: 'logs/partial-01-after-inventory.json',
+      marker: 'logs/partial-02-after-marker.json',
+      before: 'logs/partial-03-before-rollback.json',
+      after: 'logs/partial-04-after-rollback.json',
+    };
+    const snapshotBytes = Object.fromEntries(Object.entries(snapshotPaths)
+      .map(([id, snapshotPath]) => [id, readFile(root, snapshotPath)]));
+    const snapshots = Object.fromEntries(Object.entries(snapshotBytes)
+      .map(([id, bytes]) => [id, JSON.parse(bytes.toString('utf8'))]));
+    const markerOutputPath = 'logs/partial-marker-output.json';
+    const beforeOutputPath = 'logs/partial-verifier-before.log';
+    const afterOutputPath = 'logs/partial-verifier-after.log';
+    const markerOutputBytes = readFile(root, markerOutputPath);
+    const beforeOutputBytes = readFile(root, beforeOutputPath);
+    const afterOutputBytes = readFile(root, afterOutputPath);
+    const markerOutput = JSON.parse(markerOutputBytes.toString('utf8'));
+    const markerControlPath = 'subject/controls/append-concurrent.cjs';
+    const verifierControlPath = 'subject/controls/verify-project.cjs';
+    const markerControlHash = hashAt(root, markerControlPath);
+    const verifierControlHash = hashAt(root, verifierControlPath);
+    const finalSnapshot = snapshotTargets(inside(root, 'subject'));
+    const originalClaude = sha256(PARTIAL_CLAUDE_BEFORE);
+    const pass = trace.schemaVersion === 1 && trace.scenarioId === 'partial' &&
+      events.length === 5 && same(snapshots.inventory, expected.initialSnapshot) &&
+      markerControlHash === expected.controlHashes.marker &&
+      verifierControlHash === expected.controlHashes.verifier &&
+      inventoryEvent?.id === 'inventory-1' && inventoryEvent.ordinal === 1 &&
+      inventoryEvent.kind === 'inventory' &&
+      inventoryEvent.snapshotPath === snapshotPaths.inventory &&
+      inventoryEvent.snapshotSha256 === sha256(snapshotBytes.inventory) &&
+      markerEvent?.id === 'marker-1' && markerEvent.after === 'inventory-1' &&
+      markerEvent.ordinal === 2 && markerEvent.kind === 'control' &&
+      markerEvent.controlPath === markerControlPath &&
+      markerEvent.controlSha256 === markerControlHash && markerEvent.outputPath === markerOutputPath &&
+      markerEvent.outputSha256 === sha256(markerOutputBytes) &&
+      markerEvent.snapshotPath === snapshotPaths.marker &&
+      markerEvent.snapshotSha256 === sha256(snapshotBytes.marker) &&
+      markerOutput.schemaVersion === 1 && markerOutput.scenarioId === 'partial' &&
+      markerOutput.invocationId === 'marker-1' && markerOutput.status === 'appended' &&
+      markerOutput.exitCode === 0 &&
+      snapshots.inventory['home/.claude/CLAUDE.md']?.sha256 === originalClaude &&
+      snapshots.marker['home/.claude/CLAUDE.md']?.sha256 === expected.hashes.claudeConcurrent &&
+      snapshots.marker['home/.codex/AGENTS.md']?.sha256 === sha256(PARTIAL_CODEX_BEFORE) &&
+      snapshots.marker['repo/AGENTS.md']?.sha256 === expected.hashes.projectAgents &&
+      snapshots.marker['repo/CLAUDE.md']?.sha256 === expected.hashes.projectClaude &&
+      snapshots.marker['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
+      beforeEvent?.id === 'verify-before' && beforeEvent.after === 'marker-1' &&
+      beforeEvent.ordinal === 3 && beforeEvent.kind === 'verifier' &&
+      beforeEvent.controlPath === verifierControlPath &&
+      beforeEvent.controlSha256 === verifierControlHash && beforeEvent.outputPath === beforeOutputPath &&
+      beforeEvent.outputSha256 === sha256(beforeOutputBytes) && beforeEvent.exitCode === 1 &&
+      beforeEvent.snapshotPath === snapshotPaths.before &&
+      beforeEvent.snapshotSha256 === sha256(snapshotBytes.before) &&
+      beforeOutputBytes.equals(Buffer.from('status=fail\n')) &&
+      snapshots.before['home/.codex/AGENTS.md']?.sha256 === expected.hashes.codexAfter &&
+      snapshots.before['home/.claude/CLAUDE.md']?.sha256 === expected.hashes.claudeConcurrent &&
+      Boolean(snapshots.before['repo/AGENTS.md']) &&
+      Boolean(snapshots.before['repo/CLAUDE.md']) &&
+      snapshots.before['repo/AGENTS.md']?.sha256 !== expected.hashes.projectAgents &&
+      snapshots.before['repo/CLAUDE.md']?.sha256 !== expected.hashes.projectClaude &&
+      snapshots.before['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
+      rollbackEvent?.id === 'rollback-1' && rollbackEvent.after === 'verify-before' &&
+      rollbackEvent.ordinal === 4 && rollbackEvent.kind === 'rollback' &&
+      rollbackEvent.snapshotPath === snapshotPaths.after &&
+      rollbackEvent.snapshotSha256 === sha256(snapshotBytes.after) &&
+      snapshots.after['repo/AGENTS.md']?.sha256 === expected.hashes.projectAgents &&
+      snapshots.after['repo/CLAUDE.md']?.sha256 === expected.hashes.projectClaude &&
+      snapshots.after['repo/packages/ambiguous/AGENTS.md']?.sha256 === expected.hashes.nested &&
+      same(snapshots.after, finalSnapshot) && afterEvent?.id === 'verify-after' &&
+      afterEvent.after === 'rollback-1' && afterEvent.ordinal === 5 &&
+      afterEvent.kind === 'verifier' && afterEvent.controlPath === verifierControlPath &&
+      afterEvent.controlSha256 === verifierControlHash && afterEvent.outputPath === afterOutputPath &&
+      afterEvent.outputSha256 === sha256(afterOutputBytes) && afterEvent.exitCode === 0 &&
+      afterEvent.snapshotPath === snapshotPaths.after &&
+      afterEvent.snapshotSha256 === sha256(snapshotBytes.after) &&
+      afterOutputBytes.equals(Buffer.from('status=pass\n'));
+    return { pass, value: { trace, snapshots, markerOutput,
+      markerControlHash, verifierControlHash } };
   }));
-  checks.push(reportCheck(root, 'partial'));
-  checks.push(checked('separate_claim_statuses', 'logs/report.json', () => {
-    const claims = readJson(root, 'logs/report.json').verificationMatrix || [];
-    const statuses = new Set(claims.map((claim) => claim.status));
-    return { pass: ['verified', 'blocked', 'unverified'].every((status) => statuses.has(status)),
-      value: claims };
-  }));
-  checks.push(hostEvidenceCheck(root));
+  checks.push(hostEvidenceCheck(root, 'partial'));
+  checks.push(reportCheck(root, 'partial', checks));
   return checks;
 }
 
