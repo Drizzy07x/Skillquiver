@@ -30,8 +30,8 @@ local rules, but it must not be presented as documented loading behavior.
 Use read-only fresh-session probes after an authorized edit, for example:
 
 ```text
-codex --ask-for-approval never "Summarize active instruction sources in load order."
-codex --cd <nested-directory> --ask-for-approval never "List active instruction sources."
+codex --sandbox read-only --ask-for-approval never "Summarize active instruction sources in load order."
+codex --cd <nested-directory> --sandbox read-only --ask-for-approval never "List active instruction sources."
 ```
 
 Verify source order, not merely file presence. If a probe is unavailable, mark

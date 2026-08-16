@@ -82,13 +82,18 @@ Run the smallest meaningful check first, then broader checks in proportion to ri
 
 Lead with the outcome; state material changes; give exact checks and results; name remaining limitations. Omit a diary of tool calls. Invoke communicate-clearly only when brevity adaptation is explicitly requested or the communication is consequential and genuinely ambiguous.
 
-## 7. Map durable project context
+## 7. Map the project (on request or first orientation)
 
-Build durable project context only when asked, when orienting in an unfamiliar large tree worth documenting, or when existing context is stale. Record only facts future tasks cannot cheaply infer from the tree.
+Build durable project memory only when asked, when orienting in an unfamiliar large tree worth writing down, or when existing memory is stale — never as a side effect of focused work. Record only facts future tasks cannot cheaply infer from the tree.
 
-Route any creation, audit, consolidation, or repair of persistent `AGENTS.md` or `CLAUDE.md` guidance to improve-agent-instructions. Adjacent or implicit routing is audit-only; that skill resolves any write authorization, host discovery, global and project scope, shared dual-host structure, backups, and load verification.
+Route persistent instruction work to improve-agent-instructions; adjacent or implicit routing is audit-only.
 
-For other durable context, measure entry points, module boundaries, explicit prohibitions, and existing `CONTEXT.md` or ADRs before writing. Create `CONTEXT.md` only for project-specific vocabulary with a resolved meaning worth preserving. Offer an ADR only for a surprising choice that is costly to reverse and represents a real tradeoff. Verify every recorded claim against the current tree.
+1. **Resolve the filename the host loads.** Claude Code reads `CLAUDE.md`. A ChatGPT or Codex surface may expose `AGENTS.md` as its active workspace instruction file; verify that from the running local surface before writing it. Write only the file the running host actually loads. When `CLAUDE.md` is the target and `AGENTS.md` already holds canonical guidance, import it with `@AGENTS.md` instead of duplicating or symlinking it (symlinks need elevated rights on Windows). Keep `AGENTS.md` self-contained unless current OpenAI documentation confirms an import mechanism. Verify the file actually loads.
+2. **Measure before writing.** Read every existing instruction file under either name. Inspect entry points, build/test config, module boundaries, explicit prohibitions, and any `CONTEXT.md`/ADRs. Use semantic navigation for structure when an index exists; otherwise targeted search. For an ambiguous large tree, at most two independent read-only investigations (structure/entry points; conventions/tests) — verify their claims against files before writing.
+3. **Choose locations conservatively.** Always consider the root. Add a child instruction file only for a directory that is a distinct domain whose guidance would burden unrelated work. Child files load only when working inside their directory — never put a fact root tasks need into one. No files for generated output, dependencies, or caches. Preserve existing child files even if they currently score low.
+4. **Write compact memory.** Patch, don't replace. Root: 40–120 lines — what the project does and its stack; non-obvious structure and where common changes go; conventions and prohibited patterns; exact build/test/run commands verified from source; behavioral gotchas. Child: 20–60 lines, never repeating the parent. No generic advice, decorative prose, timestamps, or ungrounded claims.
+5. **Glossary only when useful.** Create `CONTEXT.md` only when a project-specific term has a resolved meaning worth recording: canonical term, concise domain meaning, distinctions from confusable terms, a stabilizing edge case. Exclude paths, commands, frameworks, and coding rules — those belong in the instruction file. Use a root `CONTEXT-MAP.md` only for genuinely distinct conflicting-vocabulary domains. Offer an ADR only for a choice that is costly to reverse, surprising without rationale, and a real tradeoff.
+6. **Verify the hierarchy.** Every referenced path and command exists; parent/child guidance does not conflict or duplicate. Report what was written and which host reads it — a file the host never loads is not project memory.
 
 ## Pause points
 
@@ -99,9 +104,9 @@ DO-CONFIRM: work from judgment, then stop and confirm each item. An unconfirmed 
 - New public interface designed twice, or its single plausible shape stated.
 - Non-trivial routines drafted as intent-level steps first.
 
-**Before writing project context**
-- Persistent agent-instruction work routed to improve-agent-instructions.
-- Tree measured; every durable fact is non-inferable and correctly placed.
+**Before writing project memory**
+- The instruction filename the host actually reads resolved first.
+- Tree measured; distinct domains justify any hierarchy; every fact non-inferable.
 
 **Before claiming done**
 - Every reported check ran in this session; skips named as unverified.

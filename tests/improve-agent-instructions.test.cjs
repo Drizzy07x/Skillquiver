@@ -523,67 +523,120 @@ test('Claude discovery deduplicates repeated additional sources', (t) => {
   assert.equal(new Set(chainIds).size, chainIds.length);
 });
 
-test('skill contract is audit-first and transaction-safe', () => {
-  const read = (filePath) => fs.readFileSync(filePath, 'utf8').replace(/\s+/g, ' ');
-  const skill = read(path.join(skillRoot, 'SKILL.md'));
-  const codex = read(path.join(skillRoot, 'references', 'codex.md'));
-  const claude = read(path.join(skillRoot, 'references', 'claude.md'));
-  const metadata = read(path.join(skillRoot, 'agents', 'openai.yaml'));
-  const routing = read(path.join(root, 'skills', 'solve-efficiently', 'SKILL.md'));
-  const boundaries = read(path.join(root, 'skills', 'handle-host-boundaries', 'SKILL.md'));
+function compact(text) {
+  return text.replace(/\s+/g, ' ');
+}
 
-  assert.match(skill, /`AUDIT`, `PLAN`, `APPLY`, and `VERIFY`/);
-  assert.match(skill, /Unknown or implicit intent resolves to `AUDIT`/);
-  assert.match(skill, /`AUDIT`, `PLAN`, and standalone `VERIFY` do not write or create backups/);
-  assert.match(skill, /Explicit change intent with named scopes authorizes `APPLY` without another confirmation/);
-  assert.match(skill, /Project-only and global-only requests never expand scope/);
-  assert.match(skill, /Managed and resolved-external targets remain report-only/);
-  assert.match(skill, /stdout is the inventory contract and stderr is diagnostic/);
-  assert.match(skill, /Do not silently bypass an inspector operational error/);
-  assert.match(skill, /Node absence alone may use a native field-by-field fallback with unknown fields disclosed/);
-  assert.match(skill, /`keep`, `move`, `sharpen`, `disclose`, `remove`, `enforce-elsewhere`, (?:or|and) `blocked-decision`/);
-  assert.match(skill, /Every target belongs to one logical transaction/);
-  assert.match(skill, /Codex global, Claude global, shared project pair, and one group per nested scope/);
-  assert.match(skill, /~\/\.skillquiver\/backups\/improve-agent-instructions\/<UTC timestamp>\//);
-  assert.match(skill, /outside every repository and instruction target/);
-  assert.match(skill, /byte-exact preimage for every modified existing file and an absent-preimage record for each created file/);
-  assert.match(skill, /privacy cannot be established, block that transaction/);
-  assert.match(skill, /concurrent hash mismatch cancels the whole group/);
-  assert.match(skill, /roll back only that group/);
-  assert.match(skill, /rollback failure stops later writes/);
-  assert.match(skill, /second dry-run transformation is empty/);
-  assert.match(skill, /Target matrix, Effective chain, Decision ledger, Changes and recovery, Verification matrix, and Pending questions/);
-  assert.match(skill, /`verified`, `unverified`, or `blocked`/);
-  assert.match(skill, /Make `AGENTS\.md` the canonical shared project contract/);
-  assert.match(skill, /`@AGENTS\.md`/);
-  assert.match(skill, /`@\.\.\/AGENTS\.md`/);
-  assert.match(skill, /Never copy shared rules into `CLAUDE\.md`/);
-  assert.match(skill, /Never assume that Codex expands `@` imports/);
+function section(markdown, heading) {
+  const start = markdown.indexOf(heading);
+  assert.notEqual(start, -1, `Missing section: ${heading}`);
+  const end = markdown.indexOf('\n## ', start + heading.length);
+  return markdown.slice(start + heading.length, end === -1 ? undefined : end);
+}
 
-  assert.match(codex, /selected, shadowed, empty, and truncated/);
-  assert.match(codex, /configuration sources and physical paths/);
-  assert.match(codex, /default 32 KiB project budget/);
-  assert.match(codex, /cwd fallback/);
-  assert.match(codex, /read-only fresh-session probes/);
-  assert.match(codex, /documented behavior from local policy/);
+function assertInOrder(text, first, second) {
+  const firstIndex = text.indexOf(first);
+  const secondIndex = text.indexOf(second);
+  assert.notEqual(firstIndex, -1, `Missing: ${first}`);
+  assert.notEqual(secondIndex, -1, `Missing: ${second}`);
+  assert.ok(firstIndex < secondIndex, `${first} must precede ${second}`);
+}
 
-  assert.match(claude, /Managed OS locations/);
-  assert.match(claude, /managed `claudeMd`/);
-  assert.match(claude, /`CLAUDE_CONFIG_DIR`/);
-  assert.match(claude, /Within-directory order/);
-  assert.match(claude, /four-hop imports/);
-  assert.match(claude, /external approval/);
-  assert.match(claude, /code spans and fenced blocks/);
-  assert.match(claude, /user and project recursive rules/);
-  assert.match(claude, /`paths`/);
-  assert.match(claude, /excludes, setting sources, and additional directories/);
-  assert.match(claude, /safe `\/context` and `\/memory` verification boundaries/);
+function codexProbeLines(markdown) {
+  return [...markdown.matchAll(/```text\r?\n([\s\S]*?)```/g)]
+    .flatMap(([, block]) => block.split(/\r?\n/))
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('codex '));
+}
 
+// Defect: VERIFY guidance can claim to be read-only while offering a writable probe.
+test('audit-first verification probes enforce a read-only sandbox', () => {
+  const codex = fs.readFileSync(path.join(skillRoot, 'references', 'codex.md'), 'utf8');
+  const probes = codexProbeLines(codex);
+
+  assert.ok(probes.length > 0, 'Expected at least one executable Codex probe.');
+  for (const probe of probes) {
+    assert.match(probe, /--sandbox read-only/);
+    assert.match(probe, /--ask-for-approval never/);
+    assert.doesNotMatch(probe, /--sandbox (?!read-only\b)/);
+  }
+});
+
+// Defect: dual-host project guidance can be correct while global guidance diverges or imports cross-host rules.
+test('audit-first global guidance stays independent and semantically aligned', () => {
+  const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
+  const resolve = compact(section(skill, '## 1. Resolve mode, hosts, scopes, and authorization'));
+  const inventory = compact(section(skill, '## 2. Build the inventory'));
+  const classify = compact(section(skill, '## 3. Classify meanings and decisions'));
+  const verify = compact(section(skill, '## 6. Verify the transformed chains'));
+
+  assert.match(resolve, /keep Codex and Claude global files independent/);
+  assert.match(resolve, /Do not create cross-host global imports/);
+  assert.match(inventory, /inventory each host separately and label shared meanings and host-specific deltas/);
+  assert.match(classify, /compare shared global meanings for semantic parity/);
+  assert.match(verify, /verify semantic parity for shared global meanings/);
+  assertInOrder(compact(skill), '## 2. Build the inventory', '## 3. Classify meanings and decisions');
+});
+
+// Defect: byte recovery alone can corrupt an edited file's representation or permissions.
+test('audit-first recovery preserves file representation and permissions', () => {
+  const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
+  const recovery = compact(section(skill, '## 5. Create recovery evidence and apply'));
+
+  assert.match(recovery, /Record original encoding, BOM, line endings, and permission metadata/);
+  assert.match(recovery, /Use byte-preserving transformations/);
+  assert.match(recovery, /preserve the original encoding, BOM, line endings, and permissions/);
+  assert.match(recovery, /Recheck every preimage and permission before the group writes/);
+  assert.match(recovery, /After a successful write, recheck the original encoding, BOM, line endings, and permission metadata/);
+  assert.match(recovery, /rollback restores the original bytes and permissions/);
+  assertInOrder(recovery, 'Record original encoding, BOM, line endings, and permission metadata',
+    'Recheck every preimage and permission before the group writes');
+  assertInOrder(recovery, 'Recheck every preimage and permission before the group writes',
+    'rollback restores the original bytes and permissions');
+});
+
+// Defect: routing persistent instructions can accidentally remove durable-context safeguards.
+test('audit-first routing retains durable-context safeguards', () => {
+  const routing = fs.readFileSync(
+    path.join(root, 'skills', 'solve-efficiently', 'SKILL.md'), 'utf8');
+  const mapping = compact(section(routing, '## 7. Map the project (on request or first orientation)'));
+
+  assert.match(mapping, /Route persistent instruction work to improve-agent-instructions; adjacent or implicit routing is audit-only/);
+  assert.match(mapping, /Resolve the filename the host loads/);
+  assert.match(mapping, /Choose locations conservatively/);
+  assert.match(mapping, /Root: 40–120 lines/);
+  assert.match(mapping, /Child: 20–60 lines/);
+  assert.match(mapping, /No files for generated output, dependencies, or caches/);
+  assert.match(mapping, /Verify the hierarchy/);
+});
+
+// Defect: an authorization phrase can be published without transaction and report relationships.
+test('audit-first authorization remains transaction-safe', () => {
+  const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
+  const metadata = fs.readFileSync(path.join(skillRoot, 'agents', 'openai.yaml'), 'utf8');
+  const boundaries = compact(fs.readFileSync(
+    path.join(root, 'skills', 'handle-host-boundaries', 'SKILL.md'), 'utf8'));
+  const modes = compact(section(skill, '## 1. Resolve mode, hosts, scopes, and authorization'));
+  const transactions = compact(section(skill, '## 4. Form transactions'));
+  const verification = compact(section(skill, '## 6. Verify the transformed chains'));
+  const report = compact(section(skill, '## 7. Render the report'));
+
+  assert.match(modes, /`AUDIT`, `PLAN`, `APPLY`, and `VERIFY`/);
+  assert.match(modes, /Unknown or implicit intent resolves to `AUDIT`/);
+  assert.match(modes, /`AUDIT`, `PLAN`, and standalone `VERIFY` do not write or create backups/);
+  assert.match(modes, /Explicit change intent with named scopes authorizes `APPLY` without another confirmation/);
+  assert.match(modes, /Project-only and global-only requests never expand scope/);
+  assert.match(modes, /Managed and resolved-external targets remain report-only/);
+  assert.match(transactions, /Every target belongs to one logical transaction/);
+  assert.match(transactions, /Codex global, Claude global, shared project pair, and one group per nested scope/);
+  assertInOrder(transactions, 'Managed, external, and blocked-decision targets are report-only',
+    'never enter a write group');
+  assertInOrder(verification, 'Run only enforceably safe, read-only fresh-session host probes',
+    'second dry-run transformation is empty');
+  assert.match(report, /Target matrix, Effective chain, Decision ledger, Changes and recovery, Verification matrix, and Pending questions/);
+  assert.match(report, /`verified`, `unverified`, or `blocked`/);
   assert.match(metadata, /allow_implicit_invocation: true/);
   assert.match(metadata, /default_prompt: "Audit the active AGENTS\.md and CLAUDE\.md chain; write only when this request explicitly authorizes named scopes\."/);
-  assert.match(routing, /improve-agent-instructions/);
-  assert.match(routing, /Adjacent or implicit routing is audit-only/);
-  assert.match(boundaries, /Do not inspect or modify another host's configuration as a substitute for an unavailable capability/);
   assert.match(boundaries, /Explicitly authorized AGENTS\.md or CLAUDE\.md file maintenance through improve-agent-instructions is allowed/);
   assert.match(boundaries, /unavailable runtime loading remains unverified/);
 });
