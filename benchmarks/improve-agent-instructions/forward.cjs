@@ -615,24 +615,28 @@ function hostEvidenceCheck(root, scenarioId) {
       const entry = hosts.find((item) => item.host === host);
       const inspectorPath = `logs/hosts/${host}/inspector-stdout.json`;
       const finalPath = `logs/hosts/${host}/host-final.json`;
+      const workerFinalPath = `logs/hosts/${host}/worker-final.md`;
       const receiptPath = `evaluator/receipts/hosts/${host}.json`;
       if (!entry) {
         unavailable = true;
         continue;
       }
       pass = pass && exactKeys(entry,
-        ['host', 'scenarioId', 'status', 'inspector', 'final']) &&
+        ['host', 'scenarioId', 'status', 'inspector', 'final', 'workerFinal']) &&
         exactKeys(entry.inspector, ['path', 'sha256']) &&
         exactKeys(entry.final, ['path', 'sha256']) && entry.scenarioId === scenarioId &&
+        exactKeys(entry.workerFinal, ['path', 'sha256']) &&
         entry.status === 'verified' && entry.inspector.path === inspectorPath &&
-        entry.final.path === finalPath;
+        entry.final.path === finalPath && entry.workerFinal.path === workerFinalPath;
       const inspectorBytes = optionalBytes(inspectorPath);
       const finalBytes = optionalBytes(finalPath);
+      const workerFinalBytes = optionalBytes(workerFinalPath);
       const receiptBytes = optionalBytes(receiptPath);
-      if (!inspectorBytes || !finalBytes || !receiptBytes) continue;
+      if (!inspectorBytes || !finalBytes || !workerFinalBytes || !receiptBytes) continue;
       const inspector = JSON.parse(inspectorBytes.toString('utf8'));
       const final = JSON.parse(finalBytes.toString('utf8'));
       const receipt = JSON.parse(receiptBytes.toString('utf8'));
+      const workerFinal = new TextDecoder('utf-8', { fatal: true }).decode(workerFinalBytes);
       const challenge = expectedChallenges.find((item) => item.host === host);
       const expectedInspector = {
         schemaVersion: 1,
@@ -647,6 +651,7 @@ function hostEvidenceCheck(root, scenarioId) {
         host,
         status: 'captured',
         reportSha256,
+        workerFinalSha256: sha256(workerFinalBytes),
       };
       const expectedReceipt = {
         schemaVersion: 1,
@@ -658,7 +663,8 @@ function hostEvidenceCheck(root, scenarioId) {
         requestSha256: challenges.requestSha256,
         primaryArtifacts: [
           { kind: 'inspector', path: inspectorPath, sha256: sha256(inspectorBytes) },
-          { kind: 'final', path: finalPath, sha256: sha256(finalBytes) },
+          { kind: 'raw-final', path: workerFinalPath, sha256: sha256(workerFinalBytes) },
+          { kind: 'final-summary', path: finalPath, sha256: sha256(finalBytes) },
         ],
       };
       const expectedEntry = {
@@ -667,9 +673,11 @@ function hostEvidenceCheck(root, scenarioId) {
         status: 'verified',
         inspector: { path: inspectorPath, sha256: sha256(inspectorBytes) },
         final: { path: finalPath, sha256: sha256(finalBytes) },
+        workerFinal: { path: workerFinalPath, sha256: sha256(workerFinalBytes) },
       };
       expectedEntries.push(expectedEntry);
-      pass = pass && same(entry, expectedEntry) && same(inspector, expectedInspector) &&
+      pass = pass && workerFinal.trim().length > 0 && !workerFinal.includes('\0') &&
+        same(entry, expectedEntry) && same(inspector, expectedInspector) &&
         same(final, expectedFinal) && same(receipt, expectedReceipt);
     }
     if (!unavailable) {

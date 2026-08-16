@@ -45,6 +45,10 @@ function hostEvidence(runRoot, subject, scenarioId) {
   const hosts = ['codex', 'claude'].map((host) => {
     const inspectorPath = path.join(logs, 'hosts', host, 'inspector-stdout.json');
     const finalPath = path.join(logs, 'hosts', host, 'host-final.json');
+    const workerFinalPath = path.join(logs, 'hosts', host, 'worker-final.md');
+    fs.mkdirSync(path.dirname(workerFinalPath), { recursive: true });
+    fs.writeFileSync(workerFinalPath,
+      `scenario=${scenarioId}\nhost=${host}\nstatus=completed\n`, 'utf8');
     writeJson(inspectorPath, {
       schemaVersion: 1,
       scenarioId,
@@ -58,6 +62,7 @@ function hostEvidence(runRoot, subject, scenarioId) {
       host,
       status: 'captured',
       reportSha256,
+      workerFinalSha256: sha256(fs.readFileSync(workerFinalPath)),
     });
     const challenge = challenges.hosts.find((item) => item.host === host);
     const receiptPath = path.join(runRoot, 'evaluator', 'receipts', 'hosts', `${host}.json`);
@@ -76,7 +81,12 @@ function hostEvidence(runRoot, subject, scenarioId) {
           sha256: sha256(fs.readFileSync(inspectorPath)),
         },
         {
-          kind: 'final',
+          kind: 'raw-final',
+          path: `logs/hosts/${host}/worker-final.md`,
+          sha256: sha256(fs.readFileSync(workerFinalPath)),
+        },
+        {
+          kind: 'final-summary',
           path: `logs/hosts/${host}/host-final.json`,
           sha256: sha256(fs.readFileSync(finalPath)),
         },
@@ -93,6 +103,10 @@ function hostEvidence(runRoot, subject, scenarioId) {
       final: {
         path: `logs/hosts/${host}/host-final.json`,
         sha256: sha256(fs.readFileSync(finalPath)),
+      },
+      workerFinal: {
+        path: `logs/hosts/${host}/worker-final.md`,
+        sha256: sha256(fs.readFileSync(workerFinalPath)),
       },
     };
   });
@@ -521,7 +535,21 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
     'unverified');
   assert.equal(missingPrimary.checks.find((check) => check.id === 'report_complete').status,
     'pass');
+  hostEvidence(runRoot, subject, 'audit');
+  const codexWorkerFinal = path.join(logs, 'hosts', 'codex', 'worker-final.md');
+  fs.rmSync(codexWorkerFinal);
+  const missingRawFinal = forward.gradeScenario('audit', runRoot);
+  assert.equal(missingRawFinal.outcome, 'unverified');
+  assert.equal(missingRawFinal.checks.find((check) => check.id === 'host_evidence').status,
+    'unverified');
   writeJson(path.join(logs, 'report.json'), auditReport);
+  hostEvidence(runRoot, subject, 'audit');
+
+  fs.appendFileSync(codexWorkerFinal, 'tampered\n');
+  const tamperedRawFinal = forward.gradeScenario('audit', runRoot);
+  assert.equal(tamperedRawFinal.outcome, 'fail');
+  assert.equal(tamperedRawFinal.checks.find((check) => check.id === 'host_evidence').status,
+    'fail');
   hostEvidence(runRoot, subject, 'audit');
 
   const codexReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'hosts', 'codex.json');
