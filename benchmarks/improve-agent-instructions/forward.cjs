@@ -321,11 +321,34 @@ function prepareFixture(scenarioId, runRoot) {
   const scenario = scenarioId === 'audit' ? prepareAudit(root)
     : scenarioId === 'apply' ? prepareApply(root) : preparePartial(root);
   writeJson(root, 'evaluator/expected.json', { schemaVersion: 1, scenarioId, ...scenario });
+  const challenge = (receiptId, invocationId) => ({
+    receiptId,
+    invocationId,
+    nonce: crypto.randomBytes(32).toString('hex'),
+  });
+  writeJson(root, 'evaluator/capture-challenges.json', {
+    schemaVersion: 1,
+    scenarioId,
+    requestSha256: hashAt(root, 'logs/prompt.md'),
+    hosts: [
+      { host: 'codex', ...challenge(`${scenarioId}-host-codex`, `${scenarioId}-codex-1`) },
+      { host: 'claude', ...challenge(`${scenarioId}-host-claude`, `${scenarioId}-claude-1`) },
+    ],
+    applyRuns: scenarioId === 'apply' ? [
+      challenge('apply-receipt-1', 'apply-run-1'),
+      challenge('apply-receipt-2', 'apply-run-2'),
+    ] : [],
+  });
   return { schemaVersion: 1, scenarioId, status: 'prepared', subjectRoot: inside(root, 'subject') };
 }
 
 function same(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function exactKeys(value, keys) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) &&
+    same(Object.keys(value).sort(), [...keys].sort());
 }
 
 function evidence(status, relativePath, value) {
@@ -543,31 +566,74 @@ function reportCheck(root, scenarioId, gradedChecks) {
 
 function hostEvidenceCheck(root, scenarioId) {
   return checked('host_evidence', 'logs/host-evidence.json', () => {
+    const challenges = readJson(root, 'evaluator/capture-challenges.json');
     const hostEvidence = readJson(root, 'logs/host-evidence.json');
     const hosts = hostEvidence.hosts || [];
     const expectedHosts = ['codex', 'claude'];
     const targetSha256 = sha256(JSON.stringify(snapshotTargets(inside(root, 'subject'))));
     const reportSha256 = hashAt(root, 'logs/report.json');
-    let pass = true;
+    const noncePattern = /^[0-9a-f]{64}$/;
+    const expectedChallenges = challenges.hosts || [];
+    const challengeShapePass = exactKeys(challenges,
+      ['schemaVersion', 'scenarioId', 'requestSha256', 'hosts', 'applyRuns']) &&
+      challenges.schemaVersion === 1 &&
+      challenges.scenarioId === scenarioId &&
+      challenges.requestSha256 === hashAt(root, 'logs/prompt.md') &&
+      expectedChallenges.length === expectedHosts.length &&
+      new Set(expectedChallenges.map((item) => item.host)).size === expectedHosts.length &&
+      expectedChallenges.every((item) => exactKeys(item,
+        ['host', 'receiptId', 'invocationId', 'nonce']) && expectedHosts.includes(item.host) &&
+        item.receiptId === `${scenarioId}-host-${item.host}` &&
+        item.invocationId === `${scenarioId}-${item.host}-1` && noncePattern.test(item.nonce)) &&
+      new Set(expectedChallenges.map((item) => item.nonce)).size === expectedHosts.length &&
+      Array.isArray(challenges.applyRuns) &&
+      (scenarioId === 'apply' ? challenges.applyRuns.length === 2 :
+        challenges.applyRuns.length === 0);
+    if (!challengeShapePass || !exactKeys(hostEvidence,
+      ['schemaVersion', 'scenarioId', 'hosts']) || !Array.isArray(hostEvidence.hosts) ||
+        hosts.some((item) => !expectedHosts.includes(item.host)) ||
+        new Set(hosts.map((item) => item.host)).size !== hosts.length) {
+      return { pass: false, value: hostEvidence };
+    }
+    let pass = hostEvidence.schemaVersion === 1 && hostEvidence.scenarioId === scenarioId;
+    let unavailable = false;
     const expectedEntries = [];
+    const optionalBytes = (relativePath) => {
+      try {
+        const bytes = readFile(root, relativePath);
+        if (bytes.length === 0) unavailable = true;
+        return bytes.length === 0 ? null : bytes;
+      } catch (error) {
+        if (error && error.code === 'ENOENT') {
+          unavailable = true;
+          return null;
+        }
+        throw error;
+      }
+    };
     for (const host of expectedHosts) {
       const entry = hosts.find((item) => item.host === host);
       const inspectorPath = `logs/hosts/${host}/inspector-stdout.json`;
       const finalPath = `logs/hosts/${host}/host-final.json`;
-      if (!entry || entry.scenarioId !== scenarioId || entry.status !== 'verified' ||
-          entry.inspector?.path !== inspectorPath || entry.final?.path !== finalPath) {
-        pass = false;
+      const receiptPath = `evaluator/receipts/hosts/${host}.json`;
+      if (!entry) {
+        unavailable = true;
         continue;
       }
-      const inspectorBytes = readFile(root, inspectorPath);
-      const finalBytes = readFile(root, finalPath);
-      if (inspectorBytes.length === 0 || finalBytes.length === 0) {
-        const unavailable = new Error('Primary host evidence is unavailable.');
-        unavailable.code = 'ENOENT';
-        throw unavailable;
-      }
+      pass = pass && exactKeys(entry,
+        ['host', 'scenarioId', 'status', 'inspector', 'final']) &&
+        exactKeys(entry.inspector, ['path', 'sha256']) &&
+        exactKeys(entry.final, ['path', 'sha256']) && entry.scenarioId === scenarioId &&
+        entry.status === 'verified' && entry.inspector.path === inspectorPath &&
+        entry.final.path === finalPath;
+      const inspectorBytes = optionalBytes(inspectorPath);
+      const finalBytes = optionalBytes(finalPath);
+      const receiptBytes = optionalBytes(receiptPath);
+      if (!inspectorBytes || !finalBytes || !receiptBytes) continue;
       const inspector = JSON.parse(inspectorBytes.toString('utf8'));
       const final = JSON.parse(finalBytes.toString('utf8'));
+      const receipt = JSON.parse(receiptBytes.toString('utf8'));
+      const challenge = expectedChallenges.find((item) => item.host === host);
       const expectedInspector = {
         schemaVersion: 1,
         scenarioId,
@@ -582,21 +648,37 @@ function hostEvidenceCheck(root, scenarioId) {
         status: 'captured',
         reportSha256,
       };
-      expectedEntries.push({
+      const expectedReceipt = {
+        schemaVersion: 1,
+        scenarioId,
+        host,
+        receiptId: challenge.receiptId,
+        invocationId: challenge.invocationId,
+        evaluatorNonce: challenge.nonce,
+        requestSha256: challenges.requestSha256,
+        primaryArtifacts: [
+          { kind: 'inspector', path: inspectorPath, sha256: sha256(inspectorBytes) },
+          { kind: 'final', path: finalPath, sha256: sha256(finalBytes) },
+        ],
+      };
+      const expectedEntry = {
         host,
         scenarioId,
         status: 'verified',
         inspector: { path: inspectorPath, sha256: sha256(inspectorBytes) },
         final: { path: finalPath, sha256: sha256(finalBytes) },
-      });
-      pass = pass && entry.inspector.sha256 === sha256(inspectorBytes) &&
-        entry.final.sha256 === sha256(finalBytes) && same(inspector, expectedInspector) &&
-        same(final, expectedFinal);
+      };
+      expectedEntries.push(expectedEntry);
+      pass = pass && same(entry, expectedEntry) && same(inspector, expectedInspector) &&
+        same(final, expectedFinal) && same(receipt, expectedReceipt);
     }
-    pass = pass && same(hostEvidence,
-      { schemaVersion: 1, scenarioId, hosts: expectedEntries });
+    if (!unavailable) {
+      pass = pass && same(hostEvidence,
+        { schemaVersion: 1, scenarioId, hosts: expectedEntries });
+    }
     return {
       pass,
+      status: pass && unavailable ? 'unverified' : undefined,
       value: hostEvidence,
     };
   });
@@ -737,6 +819,7 @@ function gradeApply(root, expected) {
   }));
   checks.push(checked('second_run_idempotent',
     'logs/first-target-snapshot.json|logs/second-target-snapshot.json', () => {
+      const challenges = readJson(root, 'evaluator/capture-challenges.json');
       const firstPath = 'logs/first-target-snapshot.json';
       const secondPath = 'logs/second-target-snapshot.json';
       const firstBytes = readFile(root, firstPath);
@@ -746,35 +829,143 @@ function gradeApply(root, expected) {
       const actual = snapshotTargets(inside(root, 'subject'));
       const trace = readJson(root, 'logs/apply-invocations.json');
       const invocations = trace.invocations || [];
-      const firstInvocation = invocations[0];
-      const secondInvocation = invocations[1];
       const firstOutputPath = 'logs/apply-1-output.json';
       const secondOutputPath = 'logs/apply-2-output.json';
       const firstOutputBytes = readFile(root, firstOutputPath);
       const secondOutputBytes = readFile(root, secondOutputPath);
       const firstOutput = JSON.parse(firstOutputBytes.toString('utf8'));
       const secondOutput = JSON.parse(secondOutputBytes.toString('utf8'));
-      const pass = same(first, second) && same(second, actual) && trace.schemaVersion === 1 &&
-        trace.scenarioId === 'apply' && invocations.length === 2 &&
-        firstInvocation?.invocationId === 'apply-1' && firstInvocation.ordinal === 1 &&
-        firstInvocation.snapshotPath === firstPath &&
-        firstInvocation.snapshotSha256 === sha256(firstBytes) &&
-        firstInvocation.outputPath === firstOutputPath &&
-        firstInvocation.outputSha256 === sha256(firstOutputBytes) &&
-        secondInvocation?.invocationId === 'apply-2' && secondInvocation.ordinal === 2 &&
-        secondInvocation.previousInvocationId === 'apply-1' &&
-        secondInvocation.snapshotPath === secondPath &&
-        secondInvocation.snapshotSha256 === sha256(secondBytes) &&
-        secondInvocation.outputPath === secondOutputPath &&
-        secondInvocation.outputSha256 === sha256(secondOutputBytes) &&
-        firstOutput.schemaVersion === 1 && firstOutput.scenarioId === 'apply' &&
-        firstOutput.invocationId === 'apply-1' && firstOutput.status === 'changed' &&
-        firstOutput.snapshotSha256 === sha256(firstBytes) &&
-        secondOutput.schemaVersion === 1 && secondOutput.scenarioId === 'apply' &&
-        secondOutput.invocationId === 'apply-2' && secondOutput.status === 'no-change' &&
-        secondOutput.snapshotSha256 === sha256(secondBytes) &&
-        sha256(firstOutputBytes) !== sha256(secondOutputBytes);
-      return { pass, value: { first, second, actual, trace, firstOutput, secondOutput } };
+      const noncePattern = /^[0-9a-f]{64}$/;
+      const runChallenges = challenges.applyRuns || [];
+      const allNonces = [...(challenges.hosts || []), ...runChallenges]
+        .map((item) => item.nonce);
+      const challengePass = exactKeys(challenges,
+        ['schemaVersion', 'scenarioId', 'requestSha256', 'hosts', 'applyRuns']) &&
+        challenges.schemaVersion === 1 &&
+        challenges.scenarioId === 'apply' &&
+        challenges.requestSha256 === hashAt(root, 'logs/prompt.md') &&
+        runChallenges.length === 2 && runChallenges[0].receiptId === 'apply-receipt-1' &&
+        runChallenges[0].invocationId === 'apply-run-1' &&
+        runChallenges[1].receiptId === 'apply-receipt-2' &&
+        runChallenges[1].invocationId === 'apply-run-2' &&
+        runChallenges.every((item) => exactKeys(item,
+          ['receiptId', 'invocationId', 'nonce']) && noncePattern.test(item.nonce)) &&
+        new Set(runChallenges.map((item) => item.receiptId)).size === 2 &&
+        new Set(runChallenges.map((item) => item.invocationId)).size === 2 &&
+        new Set(allNonces).size === allNonces.length;
+      if (!challengePass) {
+        return { pass: false, value: { first, second, actual, trace, firstOutput, secondOutput } };
+      }
+      const receiptPaths = [
+        'evaluator/receipts/apply/run-1.json',
+        'evaluator/receipts/apply/run-2.json',
+      ];
+      const receiptBytes = [null, null];
+      let unavailable = false;
+      for (const [index, receiptPath] of receiptPaths.entries()) {
+        try {
+          const bytes = readFile(root, receiptPath);
+          if (bytes.length === 0) {
+            unavailable = true;
+          } else {
+            receiptBytes[index] = bytes;
+          }
+        } catch (error) {
+          if (error && error.code === 'ENOENT') {
+            unavailable = true;
+            continue;
+          }
+          throw error;
+        }
+      }
+      const receipts = receiptBytes.map((bytes) => bytes ? JSON.parse(bytes.toString('utf8')) : null);
+      const expectedFirstOutput = {
+        schemaVersion: 1,
+        scenarioId: 'apply',
+        invocationId: 'apply-run-1',
+        status: 'changed',
+        snapshotSha256: sha256(firstBytes),
+      };
+      const expectedSecondOutput = {
+        schemaVersion: 1,
+        scenarioId: 'apply',
+        invocationId: 'apply-run-2',
+        status: 'no-change',
+        snapshotSha256: sha256(secondBytes),
+      };
+      const expectedReceipts = [
+        {
+          schemaVersion: 1,
+          scenarioId: 'apply',
+          receiptId: runChallenges[0].receiptId,
+          invocationId: runChallenges[0].invocationId,
+          evaluatorNonce: runChallenges[0].nonce,
+          requestSha256: challenges.requestSha256,
+          ordinal: 1,
+          previousReceiptSha256: null,
+          status: 'captured',
+          snapshot: { path: firstPath, sha256: sha256(firstBytes) },
+          output: { path: firstOutputPath, sha256: sha256(firstOutputBytes) },
+        },
+        {
+          schemaVersion: 1,
+          scenarioId: 'apply',
+          receiptId: runChallenges[1].receiptId,
+          invocationId: runChallenges[1].invocationId,
+          evaluatorNonce: runChallenges[1].nonce,
+          requestSha256: challenges.requestSha256,
+          ordinal: 2,
+          previousReceiptSha256: receiptBytes[0] ? sha256(receiptBytes[0]) :
+            receipts[1]?.previousReceiptSha256,
+          status: 'captured',
+          snapshot: { path: secondPath, sha256: sha256(secondBytes) },
+          output: { path: secondOutputPath, sha256: sha256(secondOutputBytes) },
+        },
+      ];
+      const expectedTrace = {
+        schemaVersion: 1,
+        scenarioId: 'apply',
+        invocations: [
+          {
+            invocationId: 'apply-run-1',
+            ordinal: 1,
+            snapshotPath: firstPath,
+            snapshotSha256: sha256(firstBytes),
+            outputPath: firstOutputPath,
+            outputSha256: sha256(firstOutputBytes),
+            receiptPath: receiptPaths[0],
+            receiptSha256: receiptBytes[0] ? sha256(receiptBytes[0]) :
+              invocations[0]?.receiptSha256,
+          },
+          {
+            invocationId: 'apply-run-2',
+            previousInvocationId: 'apply-run-1',
+            ordinal: 2,
+            snapshotPath: secondPath,
+            snapshotSha256: sha256(secondBytes),
+            outputPath: secondOutputPath,
+            outputSha256: sha256(secondOutputBytes),
+            receiptPath: receiptPaths[1],
+            receiptSha256: receiptBytes[1] ? sha256(receiptBytes[1]) :
+              invocations[1]?.receiptSha256,
+          },
+        ],
+      };
+      let pass = same(first, second) && same(second, actual) &&
+        same(firstOutput, expectedFirstOutput) && same(secondOutput, expectedSecondOutput) &&
+        sha256(firstOutputBytes) !== sha256(secondOutputBytes) && same(trace, expectedTrace);
+      for (const [index, receipt] of receipts.entries()) {
+        if (receipt) pass = pass && same(receipt, expectedReceipts[index]);
+      }
+      if (receipts[0] && receipts[1]) {
+        pass = pass && receipts[0].receiptId !== receipts[1].receiptId &&
+          receipts[0].evaluatorNonce !== receipts[1].evaluatorNonce;
+      }
+      if (!receiptBytes[0] && receipts[1]) {
+        pass = pass && /^[0-9a-f]{64}$/.test(receipts[1].previousReceiptSha256);
+      }
+      return { pass, status: pass && unavailable ? 'unverified' : undefined,
+        value: { first, second, actual, trace, firstOutput, secondOutput } };
     }));
   checks.push(noSentinelsCheck(root, expected.sentinels));
   checks.push(hostEvidenceCheck(root, 'apply'));
