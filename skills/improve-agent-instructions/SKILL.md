@@ -101,6 +101,14 @@ target statuses. No member may be written until every member's preimage or
 absent record and metadata are complete and the current hashes and permissions
 of all members have been rechecked. Any mismatch cancels the whole transaction.
 
+Emit a recovery-complete checkpoint before any member write. Bind it to the
+unique recovery leaf, the complete manifest, restoration file, every preimage
+or absent marker, original target hash, and permission evidence. Follow it with
+a target-by-target prewrite checkpoint containing the current hash and
+permission evidence. A permission property that the platform cannot
+meaningfully verify is explicitly `unverified`; that disclosure never replaces
+the required byte, path, membership, and other verifiable metadata gates.
+
 Recheck every preimage and permission before the group writes. A concurrent
 hash mismatch cancels the whole group. Use byte-preserving transformations:
 preserve the original encoding, BOM, line endings, and permissions while
@@ -135,7 +143,26 @@ before work and write worker evidence only beneath its declared evidence
 directory, which is neither a target nor a recovery location. A required
 machine report uses schema version `1`, with semantic IDs, required fields, and
 allowed evidence shapes disclosed before the run; the public contract must not
-disclose expected statuses. Preserve the six-section human report. Validate
-machine claims against independent filesystem and control evidence, and accept
-sanctioned path and SHA-256 evidence allowed by the disclosed shape. Absent
-evidence remains `unverified`; malformed present evidence is invalid.
+disclose expected statuses. Bind every descriptor, inventory capture, raw
+final, machine report, command trace, checkpoint, and receipt to its schema
+version, scenario, host, and public run ID. Preserve the six-section human
+report and require that all six human sections agree with the machine report.
+Require each host evidence tree to contain exactly the disclosed files and
+checkpoint directory; reject extra files, links, hard-link aliases, and
+cross-host artifact replay. Evidence paths may name only an exact published
+target or a captured artifact for that host, never an arbitrary path prefix.
+Each inventory must cover the disclosed scenario sources and place every
+active or conditional source in its declared Codex or Claude chain; a
+field-complete skeletal manifest is not evidence of an inventory run.
+Validate machine claims against independent filesystem and control evidence,
+and accept sanctioned path and SHA-256 evidence allowed by the disclosed
+shape. Grade every present host evidence entry independently; missing,
+malformed, or incomplete evidence for a present host cannot become
+`unverified`. Only a wholly absent host entry is `unverified`.
+Absent evidence remains `unverified`; malformed present evidence is invalid.
+
+Treat worker tools and repository configuration as untrusted. Preparation may
+record repository facts with Git only through a minimal isolated environment,
+controller-private configuration and empty hooks. Grading uses those immutable
+facts, never invokes Git, never executes a worker-mutable shim, and may execute
+only a controller-private shim whose bytes still match the prepared hash.

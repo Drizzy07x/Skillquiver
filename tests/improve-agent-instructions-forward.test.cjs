@@ -29,7 +29,11 @@ const SECOND_RECOVERY_LEAF = '20300102T030405679Z';
 const PNPM_VERSION = '10.0.0\n';
 const CHECKPOINT_FILES = {
   audit: ['audit-complete.json'],
-  apply: ['apply-pass-1.json', 'apply-pass-2.json'],
+  apply: [
+    'apply-01-recovery-complete.json',
+    'apply-02-pass-1.json',
+    'apply-03-pass-2.json',
+  ],
   partial: [
     'partial-01-inventory-plan.json',
     'partial-02-recovery-complete.json',
@@ -41,6 +45,10 @@ const CHECKPOINT_FILES = {
     'partial-08-verifier-success.json',
   ],
 };
+const HUMAN_REPORT_SECTIONS = [
+  'Target matrix', 'Effective chain', 'Decision ledger', 'Changes and recovery',
+  'Verification matrix', 'Pending questions',
+];
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -70,48 +78,145 @@ function assertCommonRequest(runRoot, subject, scenarioId, cwd) {
   assert.ok(prompt.includes(`Skill bundle (read-only): ${path.dirname(path.dirname(inventory))}`));
   assert.ok(prompt.includes(`Worker evidence directory: ${path.join(subject, 'evidence')}`));
   assert.ok(prompt.includes('The evidence directory is neither a target nor a backup directory.'));
-  for (const argument of [
-    `--host both`, `--cwd ${cwd}`, `--project ${project}`, `--home ${home}`,
-    `--codex-home ${path.join(home, '.codex')}`,
-    `--claude-home ${path.join(home, '.claude')}`,
-    `--claude-managed-dir ${path.join(subject, 'managed', 'claude')}`,
-  ]) assert.ok(prompt.includes(argument), `Missing inventory argument: ${argument}`);
-  assert.ok(prompt.includes(`node ${inventory}`));
+  assert.ok(prompt.includes(JSON.stringify(['node', inventory, '--host', 'both', '--cwd', cwd,
+    '--project', project, '--home', home, '--codex-home', path.join(home, '.codex'),
+    '--claude-home', path.join(home, '.claude'), '--claude-managed-dir',
+    path.join(subject, 'managed', 'claude')])));
   assert.doesNotMatch(prompt, /capture-challenges|evaluator nonce|expected hashes/i);
 
   const contract = readJson(path.join(subject, 'controls', 'evidence-contract.json'));
   assert.equal(contract.schemaVersion, 1);
+  assert.match(contract.runId, /^[0-9a-f-]{36}$/);
   assert.equal(contract.evidenceRoot, 'subject/evidence');
+  assert.equal(contract.captureDescriptor.path, 'capture.json');
+  assert.deepEqual(contract.workerArtifacts.artifactSet.allowedDirectories, ['checkpoints']);
+  assert.equal(contract.workerArtifacts.artifactSet.additionalFiles, false);
+  assert.deepEqual(contract.captureDescriptor.requiredFields,
+    ['schemaVersion', 'scenarioId', 'host', 'runId', 'rawFinalPath', 'inventoryPaths']);
+  assert.deepEqual(contract.workerArtifacts.rawFinal.requiredSections,
+    ['Target matrix', 'Effective chain', 'Decision ledger', 'Changes and recovery',
+      'Verification matrix', 'Pending questions']);
+  assert.deepEqual(contract.workerArtifacts.inventory.requiredManifestFields,
+    ['schemaVersion', 'run', 'roots', 'sources', 'chains', 'warnings']);
+  assert.deepEqual(contract.workerArtifacts.inventory.invocations.map((entry) => entry.argv[0]),
+    ['node', 'node']);
+  assert.deepEqual(contract.workerArtifacts.commandTrace.invocation.requiredFields,
+    ['schemaVersion', 'scenarioId', 'host', 'runId', 'id', 'ordinal', 'predecessorId',
+      'kind', 'argv', 'cwd', 'exitCode', 'outputPath', 'outputSha256']);
+  assert.deepEqual(contract.workerArtifacts.machineReport.allowedValues.status,
+    ['verified', 'unverified', 'blocked']);
+  assert.equal(contract.workerArtifacts.checkpointSchemas.fieldTypes.runId, 'string');
+  assert.equal(contract.workerArtifacts.checkpointSchemas.fieldTypes.planComplete, 'boolean');
+  assert.equal(contract.workerArtifacts.checkpointSchemas.fieldTypes.stdout, 'string');
+  assert.deepEqual(contract.workerArtifacts.checkpointSchemas.recoveryMemberVariants.existing
+    .requiredFields,
+    ['targetPath', 'existed', 'preimagePath', 'preimageSha256', 'originalSha256',
+      'permissions']);
+  assert.deepEqual(contract.workerArtifacts.checkpointSchemas.recoveryMemberVariants.absent
+    .requiredFields,
+    ['targetPath', 'existed', 'preimagePath', 'preimageSha256', 'originalSha256',
+      'permissions']);
+  assert.deepEqual(contract.workerArtifacts.commandTrace.factSets.apply.map((item) => item.id),
+    ['package-manager', 'pnpm-version']);
+  assert.deepEqual(contract.workerArtifacts.inventory.allowedValues.sourceScope,
+    ['global', 'project', 'managed']);
+  assert.ok(contract.workerArtifacts.inventory.scenarioSources.length >= 4);
+  assert.ok(contract.workerArtifacts.machineReport.allowedTargetEvidencePaths
+    .includes('repo/AGENTS.md'));
+  assert.deepEqual(contract.recovery.manifest.permissionFields, ['mode', 'owner']);
+  assert.deepEqual(contract.recovery.restoration.requiredFields,
+    ['schemaVersion', 'scenarioId', 'host', 'runId', 'transactions', 'targets']);
+  assert.deepEqual(contract.recovery.restoration.transactionEntryFields, ['id', 'status']);
+  assert.deepEqual(contract.recovery.restoration.targetEntryFields,
+    ['path', 'transaction', 'status']);
   assert.deepEqual(contract.workerArtifacts.checkpoints[scenarioId], CHECKPOINT_FILES[scenarioId]);
   assert.equal(JSON.stringify(contract).includes('expectedStatus'), false);
   assert.equal(JSON.stringify(contract).includes('nonce'), false);
   assert.equal(JSON.stringify(contract).includes('PRIVATE-'), false);
 }
 
+function sourceRecord(subject, id, relativePath, host, loadState) {
+  const logicalPath = path.join(subject, ...relativePath.split('/'));
+  const bytes = fs.readFileSync(logicalPath);
+  const global = relativePath.startsWith('home/');
+  const origin = host === 'codex' ? (global ? 'codex-home' : 'project-tree') :
+    global ? 'claude-home' : relativePath.includes('/.claude/rules/') ? 'rule' : 'project-tree';
+  const inactiveReasons = {
+    shadowed: 'higher-precedence-source',
+    conditional: 'path-conditional',
+    truncated: 'project-byte-budget-exhausted',
+  };
+  return {
+    id,
+    host,
+    scope: global ? 'global' : 'project',
+    origin,
+    logicalPath,
+    resolvedPath: fs.realpathSync.native(logicalPath),
+    ownership: global ? 'user' : 'project',
+    exists: true,
+    loadState,
+    loadPosition: loadState === 'active' ? 0 : null,
+    byteCount: bytes.length,
+    byteContribution: ['active', 'conditional'].includes(loadState) ? bytes.length : 0,
+    sha256: sha256(bytes),
+    encoding: 'utf8',
+    lineEndings: bytes.includes(Buffer.from('\r\n')) ? 'crlf' : 'lf',
+    gitState: relativePath.startsWith('repo/') ? 'tracked-clean' : 'not-applicable',
+    import: null,
+    conditions: [],
+    inactiveReason: loadState === 'active' ? null : inactiveReasons[loadState] || loadState,
+  };
+}
+
 function inventoryManifest(subject, generatedAt) {
+  const sources = [
+    sourceRecord(subject, 'source-0001', 'home/.claude/CLAUDE.md', 'claude', 'active'),
+    sourceRecord(subject, 'source-0002', 'home/.codex/AGENTS.md', 'codex', 'active'),
+    sourceRecord(subject, 'source-0003', 'repo/AGENTS.md', 'codex', 'active'),
+    sourceRecord(subject, 'source-0004', 'repo/CLAUDE.md', 'claude', 'active'),
+  ];
   return {
     schemaVersion: 1,
     run: { generatedAt, host: 'both' },
     roots: {
-      home: { logicalPath: path.join(subject, 'home') },
-      project: { logicalPath: path.join(subject, 'repo') },
-      cwd: { logicalPath: path.join(subject, 'repo') },
-      codexHome: { logicalPath: path.join(subject, 'home', '.codex') },
-      claudeHome: { logicalPath: path.join(subject, 'home', '.claude') },
-      claudeManaged: { logicalPath: path.join(subject, 'managed', 'claude') },
+      home: { logicalPath: path.join(subject, 'home'), resolvedPath: path.join(subject, 'home'),
+        exists: true },
+      project: { logicalPath: path.join(subject, 'repo'), resolvedPath: path.join(subject, 'repo'),
+        exists: true },
+      cwd: { logicalPath: path.join(subject, 'repo'), resolvedPath: path.join(subject, 'repo'),
+        exists: true },
+      codexHome: { logicalPath: path.join(subject, 'home', '.codex'),
+        resolvedPath: path.join(subject, 'home', '.codex'), exists: true },
+      claudeHome: { logicalPath: path.join(subject, 'home', '.claude'),
+        resolvedPath: path.join(subject, 'home', '.claude'), exists: true },
+      claudeManaged: { logicalPath: path.join(subject, 'managed', 'claude'),
+        resolvedPath: path.join(subject, 'managed', 'claude'), exists: true },
     },
-    sources: [],
-    chains: { codex: { sourceIds: [] }, claude: { sourceIds: [] } },
+    sources,
+    chains: {
+      codex: { sourceIds: ['source-0002', 'source-0003'] },
+      claude: {
+        sourceIds: ['source-0001', 'source-0004'],
+        conditionalSourceIds: [],
+        maxImportDepth: 4,
+        excludes: [],
+        settingSources: { state: 'explicit', sources: ['user', 'project', 'local'] },
+        coverage: 'complete',
+      },
+    },
     warnings: [],
   };
 }
 
-function createCheckpoints(artifactRoot, scenarioId, payloads) {
+function createCheckpoints(artifactRoot, scenarioId, host, runId, payloads) {
   let predecessorSha256 = null;
   return CHECKPOINT_FILES[scenarioId].map((fileName, index) => {
     const checkpoint = {
       schemaVersion: 1,
       scenarioId,
+      host,
+      runId,
       id: fileName.slice(0, -'.json'.length),
       ordinal: index + 1,
       predecessorSha256,
@@ -127,34 +232,100 @@ function createCheckpoints(artifactRoot, scenarioId, payloads) {
 function createWorkerArtifacts(runRoot, subject, scenarioId, host, options) {
   const artifactRoot = path.join(subject, 'evidence', host);
   fs.mkdirSync(artifactRoot, { recursive: true });
+  const contract = readJson(path.join(subject, 'controls', 'evidence-contract.json'));
+  const runId = contract.runId;
   const firstInventory = path.join(artifactRoot, 'inventory-1.stdout.json');
   const secondInventory = path.join(artifactRoot, 'inventory-2.stdout.json');
-  writeJson(firstInventory, options.firstInventory ||
-    inventoryManifest(subject, '2030-01-01T00:00:00.000Z'));
-  writeJson(secondInventory, options.secondInventory ||
-    inventoryManifest(subject, '2030-01-02T00:00:00.000Z'));
+  const inventoryValues = [options.firstInventory ||
+    inventoryManifest(subject, '2030-01-01T00:00:00.000Z'), options.secondInventory ||
+    inventoryManifest(subject, '2030-01-02T00:00:00.000Z')];
+  for (const [index, filePath] of [firstInventory, secondInventory].entries()) {
+    const stdout = `${JSON.stringify(inventoryValues[index], null, 2)}\n`;
+    const invocation = contract.workerArtifacts.inventory.invocations[index];
+    writeJson(filePath, {
+      schemaVersion: 1,
+      scenarioId,
+      host,
+      runId,
+      invocationId: invocation.id,
+      argv: invocation.argv,
+      cwd: invocation.cwd,
+      exitCode: 0,
+      stdout,
+      stdoutSha256: sha256(stdout),
+    });
+  }
+  const report = completeReport(artifactRoot, scenarioId, subject, host, runId);
   const rawFinal = path.join(artifactRoot, 'worker-final.md');
-  fs.writeFileSync(rawFinal, options.rawFinal ||
-    Buffer.from(`scenario=${scenarioId}\nhost=${host}\n`));
-  completeReport(artifactRoot, scenarioId, subject);
-  const checkpoints = createCheckpoints(artifactRoot, scenarioId, options.checkpoints);
+  fs.writeFileSync(rawFinal, options.rawFinal || Buffer.from(renderRawFinal(report)));
+  const checkpoints = createCheckpoints(artifactRoot, scenarioId, host, runId,
+    options.checkpoints);
+  const inventoryFiles = [firstInventory, secondInventory];
+  let predecessorId = null;
+  const invocations = [
+    ...inventoryFiles.map((filePath, index) => ({
+      schemaVersion: 1,
+      scenarioId,
+      host,
+      runId,
+      id: `inventory-${index + 1}`,
+      ordinal: index + 1,
+      predecessorId: index === 0 ? null : 'inventory-1',
+      kind: 'inventory',
+      argv: contract.workerArtifacts.inventory.invocations[index].argv,
+      cwd: contract.workerArtifacts.inventory.invocations[index].cwd,
+      exitCode: 0,
+      outputPath: contract.workerArtifacts.inventory.paths[index],
+      outputSha256: sha256(fs.readFileSync(filePath)),
+    })),
+    ...checkpoints.map((checkpoint, index) => ({
+      schemaVersion: 1,
+      scenarioId,
+      host,
+      runId,
+      id: checkpoint.id,
+      ordinal: index + 3,
+      predecessorId: index === 0 ? 'inventory-2' : checkpoints[index - 1].id,
+      kind: 'checkpoint',
+      argv: [],
+      cwd: contract.workerArtifacts.inventory.invocations[0].cwd,
+      exitCode: 0,
+      outputPath: `checkpoints/${checkpoint.fileName}`,
+      outputSha256: checkpoint.sha256,
+    })),
+  ];
+  predecessorId = invocations.at(-1)?.id || predecessorId;
+  const facts = options.facts?.map((fact) => ({
+    schemaVersion: 1,
+    scenarioId,
+    host,
+    runId,
+    id: fact.id,
+    kind: fact.id === 'package-manager' ? 'file-json' : 'controller-command',
+    path: fact.path || fact.source,
+    value: fact.value,
+    exitCode: fact.exitCode ?? 0,
+  }));
   writeJson(path.join(artifactRoot, 'command-trace.json'), {
     schemaVersion: 1,
     scenarioId,
-    invocations: options.invocations,
+    host,
+    runId,
+    invocations,
     checkpoints: checkpoints.map(({ id, ordinal, fileName, sha256: digest }) => ({
       id,
       ordinal,
       path: `checkpoints/${fileName}`,
       sha256: digest,
     })),
-    ...(options.facts ? { facts: options.facts } : {}),
+    ...(facts ? { facts } : {}),
   });
   const relative = (filePath) => path.relative(runRoot, filePath).split(path.sep).join('/');
   const descriptor = {
     schemaVersion: 1,
     scenarioId,
     host,
+    runId,
     rawFinalPath: relative(rawFinal),
     inventoryPaths: [relative(firstInventory), relative(secondInventory)],
   };
@@ -163,8 +334,17 @@ function createWorkerArtifacts(runRoot, subject, scenarioId, host, options) {
   return { artifactRoot, descriptor, descriptorPath, firstInventory, secondInventory };
 }
 
+function renderRawFinal(report) {
+  const values = [report.targetMatrix, report.effectiveChain, report.decisionLedger,
+    report.changesAndRecovery, report.verificationMatrix, report.pendingQuestions];
+  const sections = HUMAN_REPORT_SECTIONS.map((name, index) =>
+    `## ${name}\n\n\`\`\`json\n${JSON.stringify(values[index], null, 2)}\n\`\`\``).join('\n\n');
+  return `schemaVersion: 1\nscenarioId: ${report.scenarioId}\nhost: ${report.host}\n` +
+    `runId: ${report.runId}\n\n${sections}\n`;
+}
+
 function captureWorker(runRoot, scenarioId, created, useCli = false) {
-  if (!useCli) return forward.captureEvidence(scenarioId, runRoot, created.descriptor);
+  if (!useCli) return forward.captureEvidence(scenarioId, runRoot, created.descriptorPath);
   const output = [];
   const status = forward.runCli(['capture', scenarioId, runRoot, created.descriptorPath], {
     stdout: { write: (text) => output.push(text) },
@@ -174,7 +354,7 @@ function captureWorker(runRoot, scenarioId, created, useCli = false) {
   return JSON.parse(output.join(''));
 }
 
-function completeReport(artifactRoot, scenarioId, subject) {
+function completeReport(artifactRoot, scenarioId, subject, host, runId) {
   const reports = {
     audit: {
       targetMatrix: [
@@ -289,7 +469,7 @@ function completeReport(artifactRoot, scenarioId, subject) {
     path: 'repo/AGENTS.md',
     sha256: sha256(fs.readFileSync(path.join(subject, 'repo', 'AGENTS.md'))),
   };
-  const report = { schemaVersion: 1, scenarioId, ...reports[scenarioId] };
+  const report = { schemaVersion: 1, scenarioId, host, runId, ...reports[scenarioId] };
   writeJson(path.join(artifactRoot, 'machine-report.json'), report);
   return report;
 }
@@ -348,6 +528,17 @@ function representation(bytes) {
   };
 }
 
+function permissionEvidence(filePath) {
+  const stat = fs.statSync(filePath);
+  const meaningful = process.platform !== 'win32';
+  return {
+    mode: { status: meaningful ? 'verified' : 'unverified',
+      value: meaningful ? stat.mode & 0o777 : null },
+    owner: { status: meaningful ? 'verified' : 'unverified',
+      value: meaningful ? `${stat.uid}:${stat.gid}` : null },
+  };
+}
+
 function createRecovery(subject, scenarioId, targets, restoration) {
   const backup = path.join(subject, 'home', '.skillquiver', 'backups',
     'improve-agent-instructions', RECOVERY_LEAF);
@@ -365,20 +556,68 @@ function createRecovery(subject, scenarioId, targets, restoration) {
       absent: false,
       sha256: sha256(bytes),
       ...representation(bytes),
-      permissions: { mode: fs.statSync(absoluteTarget).mode & 0o777, source: 'stat' },
+      permissions: permissionEvidence(absoluteTarget),
     };
   });
   writeJson(path.join(backup, 'manifest.json'), {
     schemaVersion: 1,
     scenarioId,
+    host: 'both',
+    runId: readJson(path.join(subject, 'controls', 'evidence-contract.json')).runId,
     entries,
   });
   writeJson(path.join(backup, 'restoration.json'), {
     schemaVersion: 1,
     scenarioId,
+    host: 'both',
+    runId: readJson(path.join(subject, 'controls', 'evidence-contract.json')).runId,
     ...restoration,
   });
   return backup;
+}
+
+function recoveryCheckpointPayload(subject, targets) {
+  const runRoot = path.dirname(subject);
+  const backup = path.join(subject, 'home', '.skillquiver', 'backups',
+    'improve-agent-instructions', RECOVERY_LEAF);
+  const manifestPath = path.join(backup, 'manifest.json');
+  const restorationPath = path.join(backup, 'restoration.json');
+  const manifest = readJson(manifestPath);
+  return {
+    leaf: RECOVERY_LEAF,
+    manifestPath: path.relative(runRoot, manifestPath).split(path.sep).join('/'),
+    manifestSha256: sha256(fs.readFileSync(manifestPath)),
+    restorationPath: path.relative(runRoot, restorationPath).split(path.sep).join('/'),
+    restorationSha256: sha256(fs.readFileSync(restorationPath)),
+    members: targets.map(({ targetPath }) => {
+      const entry = manifest.entries.find((item) => item.targetPath === targetPath);
+      const preimagePath = path.join(backup, entry.preimagePath);
+      return {
+        targetPath,
+        existed: true,
+        preimagePath: path.relative(runRoot, preimagePath).split(path.sep).join('/'),
+        preimageSha256: sha256(fs.readFileSync(preimagePath)),
+        originalSha256: entry.sha256,
+        permissions: entry.permissions,
+      };
+    }),
+  };
+}
+
+function prewriteTargets(subject, targets) {
+  return targets.map(({ targetPath }) => {
+    const filePath = path.join(subject, ...targetPath.split('/'));
+    const original = readJson(path.join(subject, 'home', '.skillquiver', 'backups',
+      'improve-agent-instructions', RECOVERY_LEAF, 'manifest.json')).entries
+      .find((item) => item.targetPath === targetPath);
+    return {
+      targetPath,
+      existed: true,
+      originalSha256: original.sha256,
+      currentSha256: sha256(fs.readFileSync(filePath)),
+      permissions: permissionEvidence(filePath),
+    };
+  });
 }
 
 function temporaryRun(t, scenarioId) {
@@ -409,27 +648,31 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
   assert.equal(gitStatus.stdout, '');
 
   const sources = [
-    { id: 'source-0001', logicalPath: path.join(subject, 'home', '.claude', 'CLAUDE.md'),
-      host: 'claude', loadState: 'active' },
-    { id: 'source-0002', logicalPath: path.join(subject, 'home', '.codex', 'AGENTS.md'),
-      host: 'codex', loadState: 'shadowed' },
-    { id: 'source-0003', logicalPath: path.join(subject, 'home', '.codex', 'AGENTS.override.md'),
-      host: 'codex', loadState: 'active' },
-    { id: 'source-0004', logicalPath: path.join(subject, 'repo', '.claude', 'rules', 'source.md'),
-      host: 'claude', loadState: 'conditional' },
-    { id: 'source-0005', logicalPath: path.join(subject, 'repo', 'CLAUDE.md'),
-      host: 'claude', loadState: 'active' },
-    { id: 'source-0006', logicalPath: path.join(subject, 'repo', 'TEAM.md'),
-      host: 'codex', loadState: 'shadowed' },
-    { id: 'source-0007', logicalPath: path.join(subject, 'repo', 'packages', 'TEAM.md'),
-      host: 'codex', loadState: 'active' },
-    { id: 'source-0008', logicalPath: path.join(subject, 'repo', 'packages', 'api', 'AGENTS.md'),
-      host: 'codex', loadState: 'truncated' },
+    sourceRecord(subject, 'source-0001', 'home/.claude/CLAUDE.md', 'claude', 'active'),
+    sourceRecord(subject, 'source-0002', 'home/.codex/AGENTS.md', 'codex', 'shadowed'),
+    sourceRecord(subject, 'source-0003', 'home/.codex/AGENTS.override.md', 'codex', 'active'),
+    sourceRecord(subject, 'source-0004', 'repo/.claude/rules/source.md', 'claude',
+      'conditional'),
+    sourceRecord(subject, 'source-0005', 'repo/CLAUDE.md', 'claude', 'active'),
+    sourceRecord(subject, 'source-0006', 'repo/TEAM.md', 'codex', 'shadowed'),
+    sourceRecord(subject, 'source-0007', 'repo/packages/TEAM.md', 'codex', 'active'),
+    sourceRecord(subject, 'source-0008', 'repo/packages/api/AGENTS.md', 'codex', 'truncated'),
   ];
+  sources[3].conditions = ['src/**/*.js'];
+  sources[3].inactiveReason = 'path-conditional';
+  sources[7].byteContribution = 16;
+  sources[7].inactiveReason = 'project-byte-budget';
   const firstInventory = inventoryManifest(subject, '2030-01-01T00:00:00.000Z');
   const secondInventory = inventoryManifest(subject, '2030-01-02T00:00:00.000Z');
   firstInventory.sources = sources;
   secondInventory.sources = structuredClone(sources);
+  for (const manifest of [firstInventory, secondInventory]) {
+    manifest.roots.cwd.logicalPath = path.join(subject, 'repo', 'packages', 'api');
+    manifest.roots.cwd.resolvedPath = path.join(subject, 'repo', 'packages', 'api');
+    manifest.chains.codex.sourceIds = ['source-0003', 'source-0007', 'source-0008'];
+    manifest.chains.claude.sourceIds = ['source-0001', 'source-0005'];
+    manifest.chains.claude.conditionalSourceIds = ['source-0004'];
+  }
   const auditOptions = {
     firstInventory,
     secondInventory,
@@ -444,8 +687,65 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
     firstInventory: { schemaVersion: 0 },
   });
   assert.throws(() => captureWorker(runRoot, 'audit', malformed), /schema version 1/i);
+  const extraArtifact = path.join(malformed.artifactRoot, 'private-copy.txt');
+  fs.writeFileSync(extraArtifact, 'AUDIT-INSTRUCTION-SENTINEL\n');
+  assert.throws(() => captureWorker(runRoot, 'audit', malformed), /artifact set/i);
+  fs.rmSync(extraArtifact);
+
+  const invalidInventory = structuredClone(firstInventory);
+  invalidInventory.sources[0].scope = 'invented-scope';
+  const semanticNonsense = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', {
+    ...auditOptions,
+    firstInventory: invalidInventory,
+  });
+  assert.throws(() => captureWorker(runRoot, 'audit', semanticNonsense),
+    /inventory.*schema|source/i);
+
+  const unsanctionedEvidence = createWorkerArtifacts(
+    runRoot, subject, 'audit', 'codex', auditOptions);
+  const unsanctionedReportPath = path.join(unsanctionedEvidence.artifactRoot,
+    'machine-report.json');
+  const unsanctionedReport = readJson(unsanctionedReportPath);
+  unsanctionedReport.targetMatrix[0].evidence = {
+    path: 'repo/CLAUDE.local.md',
+    sha256: sha256(fs.readFileSync(path.join(subject, 'repo', 'CLAUDE.local.md'))),
+  };
+  writeJson(unsanctionedReportPath, unsanctionedReport);
+  fs.writeFileSync(path.join(unsanctionedEvidence.artifactRoot, 'worker-final.md'),
+    renderRawFinal(unsanctionedReport));
+  assert.throws(() => captureWorker(runRoot, 'audit', unsanctionedEvidence), /sanctioned/i);
+
+  const aliased = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', auditOptions);
+  fs.rmSync(aliased.secondInventory);
+  fs.linkSync(aliased.firstInventory, aliased.secondInventory);
+  assert.throws(() => captureWorker(runRoot, 'audit', aliased), /distinct|alias/i);
+  fs.rmSync(aliased.artifactRoot, { recursive: true });
+  const emptyAuditSnapshot = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', {
+    ...auditOptions,
+    checkpoints: [{ targetSnapshot: {} }],
+  });
+  assert.throws(() => captureWorker(runRoot, 'audit', emptyAuditSnapshot),
+    /audit checkpoint/i);
   const codexCapture = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', auditOptions);
+  assert.throws(() => forward.captureEvidence('audit', runRoot, codexCapture.descriptor),
+    /descriptor file/i);
   captureWorker(runRoot, 'audit', codexCapture);
+  const absentClaude = forward.gradeScenario('audit', runRoot);
+  assert.equal(absentClaude.outcome, 'unverified');
+  assert.equal(absentClaude.checks.find((check) => check.id === 'host_evidence').status,
+    'unverified');
+  const replayRoot = path.join(subject, 'evidence', 'claude');
+  fs.cpSync(codexCapture.artifactRoot, replayRoot, { recursive: true });
+  const replayDescriptorPath = path.join(replayRoot, 'capture.json');
+  const replayDescriptor = readJson(replayDescriptorPath);
+  replayDescriptor.host = 'claude';
+  replayDescriptor.rawFinalPath = replayDescriptor.rawFinalPath.replace('/codex/', '/claude/');
+  replayDescriptor.inventoryPaths = replayDescriptor.inventoryPaths.map((entry) =>
+    entry.replace('/codex/', '/claude/'));
+  writeJson(replayDescriptorPath, replayDescriptor);
+  assert.throws(() => forward.captureEvidence('audit', runRoot, replayDescriptorPath),
+    /identity|host/i);
+  fs.rmSync(replayRoot, { recursive: true });
   const claudeCapture = createWorkerArtifacts(runRoot, subject, 'audit', 'claude', auditOptions);
   captureWorker(runRoot, 'audit', claudeCapture, true);
   assert.throws(() => captureWorker(runRoot, 'audit', codexCapture), /already captured/i);
@@ -459,6 +759,16 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
   }), 0);
   assert.equal(JSON.parse(output.join('')).outcome, 'pass');
 
+  const lateExtraArtifact = path.join(subject, 'evidence', 'codex', 'late-private-copy.txt');
+  fs.writeFileSync(lateExtraArtifact, 'AUDIT-INSTRUCTION-SENTINEL\n');
+  const unexpectedSourceArtifact = forward.gradeScenario('audit', runRoot);
+  assert.equal(unexpectedSourceArtifact.outcome, 'fail');
+  assert.equal(unexpectedSourceArtifact.checks.find(
+    (check) => check.id === 'host_evidence').status, 'fail');
+  assert.equal(unexpectedSourceArtifact.checks.find(
+    (check) => check.id === 'secret_free_outputs').status, 'fail');
+  fs.rmSync(lateExtraArtifact);
+
   const hostIndexPath = path.join(logs, 'host-evidence.json');
   const originalHostIndex = fs.readFileSync(hostIndexPath);
   const incompleteHostEvidence = readJson(path.join(logs, 'host-evidence.json'));
@@ -466,36 +776,36 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
     (item) => item.host === 'codex');
   writeJson(hostIndexPath, incompleteHostEvidence);
   const missingHostEntry = forward.gradeScenario('audit', runRoot);
-  assert.equal(missingHostEntry.outcome, 'unverified');
+  assert.equal(missingHostEntry.outcome, 'fail');
   assert.equal(missingHostEntry.checks.find((check) => check.id === 'host_evidence').status,
-    'unverified');
+    'fail');
   fs.writeFileSync(hostIndexPath, originalHostIndex);
 
   const codexReport = path.join(logs, 'hosts', 'codex', 'machine-report.json');
   const codexReportBytes = fs.readFileSync(codexReport);
   fs.rmSync(codexReport);
   const missingPrimary = forward.gradeScenario('audit', runRoot);
-  assert.equal(missingPrimary.outcome, 'unverified');
+  assert.equal(missingPrimary.outcome, 'fail');
   assert.equal(missingPrimary.checks.find((check) => check.id === 'host_evidence').status,
-    'unverified');
-  assert.equal(missingPrimary.checks.find((check) => check.id === 'report_complete').status,
-    'pass');
+    'fail');
   fs.writeFileSync(codexReport, codexReportBytes);
 
   const codexWorkerFinal = path.join(logs, 'hosts', 'codex', 'worker-final.md');
   const codexWorkerFinalBytes = fs.readFileSync(codexWorkerFinal);
   fs.rmSync(codexWorkerFinal);
   const missingRawFinal = forward.gradeScenario('audit', runRoot);
-  assert.equal(missingRawFinal.outcome, 'unverified');
+  assert.equal(missingRawFinal.outcome, 'fail');
   assert.equal(missingRawFinal.checks.find((check) => check.id === 'host_evidence').status,
-    'unverified');
+    'fail');
   fs.writeFileSync(codexWorkerFinal, codexWorkerFinalBytes);
 
-  fs.appendFileSync(codexWorkerFinal, 'tampered\n');
+  fs.appendFileSync(codexWorkerFinal, 'AUDIT-INSTRUCTION-SENTINEL\n');
   const tamperedRawFinal = forward.gradeScenario('audit', runRoot);
   assert.equal(tamperedRawFinal.outcome, 'fail');
   assert.equal(tamperedRawFinal.checks.find((check) => check.id === 'host_evidence').status,
     'fail');
+  assert.equal(tamperedRawFinal.checks.find(
+    (check) => check.id === 'secret_free_outputs').status, 'fail');
   fs.writeFileSync(codexWorkerFinal, codexWorkerFinalBytes);
 
   const codexReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'hosts', 'codex.json');
@@ -508,14 +818,16 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
   assert.equal(fabricated.checks.find((check) => check.id === 'host_evidence').status, 'fail');
   fs.writeFileSync(codexReceiptPath, codexReceiptBytes);
 
+  const contradictoryReportPath = path.join(logs, 'hosts', 'codex', 'machine-report.json');
+  const contradictoryReportBytes = fs.readFileSync(contradictoryReportPath);
   const contradictoryReport = structuredClone(auditReport);
   contradictoryReport.verificationMatrix[0].status = 'unverified';
-  writeJson(path.join(logs, 'report.json'), contradictoryReport);
+  writeJson(contradictoryReportPath, contradictoryReport);
   const contradictory = forward.gradeScenario('audit', runRoot);
   assert.equal(contradictory.outcome, 'fail');
   assert.equal(contradictory.checks.find((check) => check.id === 'report_complete').status,
     'fail');
-  writeJson(path.join(logs, 'report.json'), auditReport);
+  fs.writeFileSync(contradictoryReportPath, contradictoryReportBytes);
 
   fs.appendFileSync(path.join(subject, 'repo', 'AGENTS.md'), 'changed\n');
   const corrupted = forward.gradeScenario('audit', runRoot);
@@ -526,6 +838,16 @@ test('audit fixture passes complete evidence and rejects a changed target', (t) 
 test('apply fixture passes durable idempotent evidence and rejects a bad backup', (t) => {
   const { runRoot, subject, logs } = temporaryRun(t, 'apply');
   assertCommonRequest(runRoot, subject, 'apply', path.join(subject, 'repo'));
+  const repositoryRecord = readJson(path.join(runRoot, 'evaluator', 'expected.json'))
+    .controller.repository;
+  assert.deepEqual(repositoryRecord.observations.map((item) => item.id),
+    ['tracked-path', 'dirty-status', 'committed-bytes']);
+  assert.equal(repositoryRecord.observations[0].status, 0);
+  assert.equal(repositoryRecord.observations[0].stdout, 'AGENTS.md\n');
+  assert.equal(repositoryRecord.observations[1].status, 0);
+  assert.equal(repositoryRecord.observations[1].stdout, ' M AGENTS.md\n');
+  assert.ok(repositoryRecord.observations.every((item) => item.argv.includes(
+    `core.hooksPath=${path.join(runRoot, 'evaluator', 'empty-hooks')}`)));
   const prompt = fs.readFileSync(path.join(logs, 'prompt.md'), 'utf8');
   for (const meaning of [
     'verify package.json', 'execute the harmless pnpm shim', 'replace stale npm guidance with pnpm',
@@ -562,6 +884,9 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
     targets: targets.map(({ targetPath, transaction }) =>
       ({ path: targetPath, transaction, status: 'applied' })),
   });
+  const recoverySnapshot = snapshotForEvidence(subject);
+  const applyRecovery = recoveryCheckpointPayload(subject, targets);
+  const applyPrewrite = prewriteTargets(subject, targets);
   fs.writeFileSync(path.join(subject, 'home', '.codex', 'AGENTS.md'),
     '# Codex global\n\nUse pnpm from the verified executable path.\n');
   fs.writeFileSync(path.join(subject, 'home', '.claude', 'CLAUDE.md'),
@@ -571,6 +896,8 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
   const finalSnapshot = snapshotForEvidence(subject);
   const applyOptions = {
     checkpoints: [
+      { recovery: applyRecovery, prewriteTargets: applyPrewrite,
+        targetSnapshot: recoverySnapshot },
       { transformationStatus: 'changed', targetSnapshot: finalSnapshot },
       { transformationStatus: 'no-change', targetSnapshot: finalSnapshot },
     ],
@@ -585,6 +912,20 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
       { id: 'pnpm-version', value: '10.0.0', path: 'subject/tools/pnpm.cjs', exitCode: 0 },
     ],
   };
+  const duplicateFacts = createWorkerArtifacts(runRoot, subject, 'apply', 'codex', {
+    ...applyOptions,
+    facts: [...applyOptions.facts, { ...applyOptions.facts[0] }],
+  });
+  assert.throws(() => captureWorker(runRoot, 'apply', duplicateFacts), /fact/i);
+  const skeletalInventory = inventoryManifest(subject, '2030-01-03T00:00:00.000Z');
+  skeletalInventory.sources = [skeletalInventory.sources[0]];
+  skeletalInventory.chains.codex.sourceIds = [];
+  skeletalInventory.chains.claude.sourceIds = [];
+  const skeletal = createWorkerArtifacts(runRoot, subject, 'apply', 'codex', {
+    ...applyOptions,
+    firstInventory: skeletalInventory,
+  });
+  assert.throws(() => captureWorker(runRoot, 'apply', skeletal), /scenario source|chain/i);
   const codexCapture = createWorkerArtifacts(runRoot, subject, 'apply', 'codex', applyOptions);
   captureWorker(runRoot, 'apply', codexCapture);
   captureWorker(runRoot, 'apply',
@@ -592,6 +933,28 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
   const applyReport = readJson(path.join(logs, 'report.json'));
 
   assert.equal(forward.gradeScenario('apply', runRoot).outcome, 'pass');
+
+  const publicShim = path.join(subject, 'tools', 'pnpm.cjs');
+  const publicShimBytes = fs.readFileSync(publicShim);
+  const executionMarker = path.join(subject, 'controls', 'public-shim-executed');
+  fs.writeFileSync(publicShim, `'use strict';\nrequire('node:fs').writeFileSync(` +
+    `${JSON.stringify(executionMarker)}, 'executed');\nprocess.stdout.write('10.0.0\\n');\n`);
+  const mutatedShim = forward.gradeScenario('apply', runRoot);
+  assert.equal(mutatedShim.outcome, 'fail');
+  assert.equal(mutatedShim.checks.find(
+    (check) => check.id === 'verified_repository_facts').status, 'fail');
+  assert.equal(fs.existsSync(executionMarker), false,
+    'the grader must never execute the worker-mutable public shim');
+  fs.writeFileSync(publicShim, publicShimBytes);
+
+  const gitConfigPath = path.join(subject, 'repo', '.git', 'config');
+  const gitConfigBytes = fs.readFileSync(gitConfigPath);
+  const gitExecutionMarker = path.join(subject, 'controls', 'git-config-executed');
+  fs.appendFileSync(gitConfigPath, `\n[core]\n\tfsmonitor = node ${gitExecutionMarker}\n`);
+  assert.equal(forward.gradeScenario('apply', runRoot).outcome, 'pass');
+  assert.equal(fs.existsSync(gitExecutionMarker), false,
+    'the grader must not consult worker-mutable Git configuration');
+  fs.writeFileSync(gitConfigPath, gitConfigBytes);
 
   const unavailableReport = structuredClone(applyReport);
   unavailableReport.verificationMatrix.find((item) => item.claim === 'idempotence').status =
@@ -605,9 +968,9 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
   const secondReceiptBytes = fs.readFileSync(secondReceiptPath);
   fs.rmSync(secondReceiptPath);
   const missingSecondReceipt = forward.gradeScenario('apply', runRoot);
-  assert.equal(missingSecondReceipt.outcome, 'unverified');
+  assert.equal(missingSecondReceipt.outcome, 'fail');
   assert.equal(missingSecondReceipt.checks.find(
-    (check) => check.id === 'second_run_idempotent').status, 'unverified');
+    (check) => check.id === 'second_run_idempotent').status, 'fail');
   writeJson(path.join(logs, 'report.json'), applyReport);
   fs.writeFileSync(secondReceiptPath, secondReceiptBytes);
 
@@ -641,6 +1004,19 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
   const multipleLeaves = forward.gradeScenario('apply', runRoot);
   assert.equal(multipleLeaves.outcome, 'fail');
   fs.rmSync(secondLeaf, { recursive: true });
+
+  const recoveryManifestPath = path.join(backup, 'manifest.json');
+  const recoveryManifestBytes = fs.readFileSync(recoveryManifestPath);
+  const permissionMismatch = readJson(recoveryManifestPath);
+  permissionMismatch.entries[0].permissions.mode = process.platform === 'win32' ?
+    { status: 'verified', value: 0o777 } :
+    { status: 'verified', value: permissionMismatch.entries[0].permissions.mode.value ^ 0o111 };
+  writeJson(recoveryManifestPath, permissionMismatch);
+  const mismatchedPermission = forward.gradeScenario('apply', runRoot);
+  assert.equal(mismatchedPermission.outcome, 'fail');
+  assert.equal(mismatchedPermission.checks.find(
+    (check) => check.id === 'backup_preimages').status, 'fail');
+  fs.writeFileSync(recoveryManifestPath, recoveryManifestBytes);
 
   fs.writeFileSync(path.join(backup, 'preimages', 'repo-AGENTS.md'),
     'not the original bytes\n');
@@ -694,6 +1070,7 @@ test('partial fixture passes selective recovery evidence and rejects incomplete 
     ],
   });
   const recoveryCheckpoint = snapshotForEvidence(subject);
+  const partialRecovery = recoveryCheckpointPayload(subject, targets);
   const markerRun = childProcess.spawnSync(process.execPath,
     [path.join(subject, 'controls', 'append-concurrent.cjs')], {
       encoding: 'utf8', shell: false,
@@ -701,6 +1078,7 @@ test('partial fixture passes selective recovery evidence and rejects incomplete 
   assert.equal(markerRun.status, 0, markerRun.stderr);
   const markerCheckpoint = snapshotForEvidence(subject);
   const prewriteCheckpoint = snapshotForEvidence(subject);
+  const recheckedTargets = prewriteTargets(subject, targets);
   fs.writeFileSync(path.join(subject, 'home', '.codex', 'AGENTS.md'), PARTIAL_CODEX_AFTER);
   fs.writeFileSync(path.join(subject, 'repo', 'AGENTS.md'), '# Invalid shared project\n');
   fs.writeFileSync(path.join(subject, 'repo', 'CLAUDE.md'), '# Invalid Claude project\n');
@@ -724,11 +1102,11 @@ test('partial fixture passes selective recovery evidence and rejects incomplete 
   const partialOptions = {
     checkpoints: [
       { targetSnapshot: inventoryCheckpoint, planComplete: true },
-      { targetSnapshot: recoveryCheckpoint, recoveryLeaf: RECOVERY_LEAF },
+      { targetSnapshot: recoveryCheckpoint, recovery: partialRecovery },
       { targetSnapshot: markerCheckpoint, controlPath: 'subject/controls/append-concurrent.cjs',
         controlSha256: sha256(fs.readFileSync(path.join(subject, 'controls',
           'append-concurrent.cjs'))), exitCode: markerRun.status },
-      { targetSnapshot: prewriteCheckpoint, hashesRechecked: true },
+      { targetSnapshot: prewriteCheckpoint, prewriteTargets: recheckedTargets },
       { targetSnapshot: writeCheckpoint, independentWritesComplete: true },
       { targetSnapshot: writeCheckpoint, controlPath: 'subject/controls/verify-project.cjs',
         controlSha256: sha256(fs.readFileSync(verifierPath)), exitCode: beforeRollbackRun.status,
@@ -767,6 +1145,18 @@ test('partial fixture passes selective recovery evidence and rejects incomplete 
   assert.equal(reordered.outcome, 'fail');
   assert.equal(reordered.checks.find((check) => check.id === 'control_sequence').status, 'fail');
   fs.writeFileSync(markerEvidence, markerEvidenceBytes);
+
+  const recoveryEvidence = path.join(logs, 'hosts', 'codex', 'checkpoints',
+    'partial-02-recovery-complete.json');
+  const recoveryEvidenceBytes = fs.readFileSync(recoveryEvidence);
+  const incompleteRecovery = readJson(recoveryEvidence);
+  incompleteRecovery.recovery.members.pop();
+  writeJson(recoveryEvidence, incompleteRecovery);
+  const incomplete = forward.gradeScenario('partial', runRoot);
+  assert.equal(incomplete.outcome, 'fail');
+  assert.equal(incomplete.checks.find((check) => check.id === 'control_sequence').status,
+    'fail');
+  fs.writeFileSync(recoveryEvidence, recoveryEvidenceBytes);
 
   fs.appendFileSync(path.join(subject, 'repo', 'CLAUDE.md'), 'rollback incomplete\n');
   const corrupted = forward.gradeScenario('partial', runRoot);

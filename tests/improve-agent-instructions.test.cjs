@@ -642,7 +642,16 @@ test('audit-first authorization remains transaction-safe', () => {
   assert.match(report, /must not disclose expected statuses/);
   assert.match(report, /independent filesystem and control evidence/);
   assert.match(report, /sanctioned path and SHA-256 evidence/);
+  assert.match(report, /schema version, scenario, host, and public run ID/);
+  assert.match(report, /six human sections agree with the machine report/);
+  assert.match(report, /exactly the disclosed files and\s+checkpoint directory/);
+  assert.match(report, /hard-link aliases, and\s+cross-host artifact replay/);
+  assert.match(report, /only an exact published target or a captured artifact/);
+  assert.match(report, /field-complete skeletal manifest is not evidence of an inventory run/);
+  assert.match(report, /present host evidence.*independently.*cannot become `unverified`/);
   assert.match(report, /Absent evidence remains `unverified`; malformed present evidence is invalid/);
+  assert.match(report, /Grading uses those immutable\s+facts, never invokes Git/);
+  assert.match(report, /only a controller-private shim whose bytes still match the prepared hash/);
   assert.match(metadata, /allow_implicit_invocation: true/);
   assert.match(metadata, /default_prompt: "Audit the active AGENTS\.md and CLAUDE\.md chain; write only when this request explicitly authorizes named scopes\."/);
   assert.match(boundaries, /Explicitly authorized AGENTS\.md or CLAUDE\.md file maintenance through improve-agent-instructions is allowed/);
@@ -675,6 +684,8 @@ test('audit-first inventory and recovery contracts remain complete', () => {
   assert.match(recovery, /`restoration\.json` records transaction and target statuses/);
   assert.match(recovery, /No member may be written until every member's preimage or absent record and metadata are complete/);
   assert.match(recovery, /current hashes and permissions of all members have been rechecked/);
+  assert.match(recovery, /recovery-complete checkpoint.*manifest, restoration file, every preimage or absent marker, original target hash, and permission evidence/);
+  assert.match(recovery, /permission property.*explicitly `unverified`/);
   assert.match(recovery, /Use owner-private permissions where supported/);
   assert.match(recovery, /privacy cannot be established, block that transaction/);
   assertInOrder(recovery, 'Before the first write, create a recovery root',
