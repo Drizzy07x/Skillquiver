@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
+const controller = require('./controller.cjs');
 
 const SCENARIOS = new Set(['audit', 'apply', 'partial']);
 const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
@@ -953,7 +954,7 @@ function preparePartial(root) {
   };
 }
 
-function prepareFixture(scenarioId, runRoot) {
+function prepareLegacyFixture(scenarioId, runRoot) {
   if (!SCENARIOS.has(scenarioId)) throw new Error('Unknown forward-evaluation scenario.');
   const root = resolvePhysicalRoot(runRoot, true);
   if (fs.readdirSync(root).length !== 0) throw new Error('Disposable run root must be empty.');
@@ -1559,6 +1560,9 @@ function validateReportEvidence(root, subject, artifactRoot, report, artifactBuf
 }
 
 function captureEvidence(scenarioId, runRoot, captureInput) {
+  if (scenarioId === 'audit') {
+    throw new Error('AUDIT capture is non-authoritative and disabled.');
+  }
   if (!SCENARIOS.has(scenarioId)) throw new Error('Unknown forward-evaluation scenario.');
   if (typeof captureInput !== 'string') {
     throw new Error('Capture requires a descriptor file beneath the host evidence directory.');
@@ -1726,7 +1730,9 @@ function captureEvidence(scenarioId, runRoot, captureInput) {
       previousReceiptSha256 = hashAt(root, runReceiptPath);
     }
   }
-  return { schemaVersion: 1, scenarioId, host, runId, status: 'captured' };
+  return { schemaVersion: 1, scenarioId, host, runId, status: 'captured',
+    authoritative: false, provenance: 'synthetic-legacy-v1', realHostClaim: false,
+    realHostOutcome: 'unverified' };
 }
 
 function reportContract(scenarioId) {
@@ -2605,7 +2611,7 @@ function gradePartial(root, expected) {
   return checks;
 }
 
-function gradeScenario(scenarioId, runRoot) {
+function gradeLegacyScenario(scenarioId, runRoot) {
   if (!SCENARIOS.has(scenarioId)) throw new Error('Unknown forward-evaluation scenario.');
   const root = resolvePhysicalRoot(runRoot, false);
   const subject = inside(root, 'subject');
@@ -2625,37 +2631,91 @@ function gradeScenario(scenarioId, runRoot) {
     : scenarioId === 'apply' ? gradeApply(root, expected) : gradePartial(root, expected);
   const outcome = checks.some((item) => item.status === 'fail') ? 'fail'
     : checks.some((item) => item.status === 'unverified') ? 'unverified' : 'pass';
-  return { schemaVersion: 1, scenarioId, outcome, checks };
+  return { schemaVersion: 1, scenarioId, outcome, checks,
+    authoritative: false, provenance: 'synthetic-legacy-v1', realHostClaim: false,
+    realHostOutcome: 'unverified' };
 }
 
-function runCli(argv, io = process) {
+function prepareFixture(scenarioId, runRoot, runtime) {
+  if (scenarioId === 'audit') return controller.prepareController(scenarioId, runRoot, runtime);
+  return { ...prepareLegacyFixture(scenarioId, runRoot), authoritative: false,
+    provenance: 'synthetic-legacy-v1', realHostClaim: false };
+}
+
+function executeHost(scenarioId, runRoot, options, runtime) {
+  return controller.executeHost(scenarioId, runRoot, options, runtime);
+}
+
+function recoverHost(scenarioId, runRoot, host, runtime) {
+  void runtime;
+  if (scenarioId !== 'audit' || !['codex', 'claude'].includes(host)) {
+    throw new Error('Recovery is unavailable for this Task 1 scenario.');
+  }
+  return { schemaVersion: 2, scenarioId, host, outcome: 'unverified',
+    status: 'not-required', authoritative: true, realHostClaim: false };
+}
+
+function gradeScenario(scenarioId, runRoot, runtime) {
+  return scenarioId === 'audit' ? controller.gradeControllerRun(scenarioId, runRoot, runtime) :
+    gradeLegacyScenario(scenarioId, runRoot);
+}
+
+function runCli(argv, io = process, runtime) {
   const output = io.stdout || process.stdout;
   const errors = io.stderr || process.stderr;
-  const command = Array.isArray(argv) ? argv[0] : null;
-  const validLength = command === 'capture' ? argv.length === 4 : argv.length === 3;
-  if (!Array.isArray(argv) || !validLength || !['prepare', 'capture', 'grade'].includes(command) ||
-      !SCENARIOS.has(argv[1])) {
-    errors.write('Usage: forward.cjs <prepare|grade> <audit|apply|partial> <run-root>\n' +
-      '   or: forward.cjs capture <audit|apply|partial> <run-root> <capture.json>\n');
+  if (!Array.isArray(argv)) {
+    errors.write('Usage: forward.cjs <prepare|execute|recover|capture|grade> ...\n');
+    return 2;
+  }
+  const [command, scenarioId, runRoot, ...rest] = argv;
+  const scalarOptions = (names) => {
+    if (rest.length !== names.length * 2) return null;
+    const parsed = {};
+    for (let index = 0; index < rest.length; index += 2) {
+      const name = rest[index];
+      const expected = names.find((entry) => `--${entry}` === name);
+      if (!expected || parsed[expected] !== undefined || rest[index + 1] === undefined) return null;
+      parsed[expected] = rest[index + 1];
+    }
+    return names.every((name) => parsed[name] !== undefined) ? parsed : null;
+  };
+  let options = null;
+  const valid = SCENARIOS.has(scenarioId) && typeof runRoot === 'string' &&
+    ((['prepare', 'grade'].includes(command) && rest.length === 0) ||
+      (command === 'execute' && (options = scalarOptions(['host', 'launcher']))) ||
+      (command === 'recover' && (options = scalarOptions(['host']))) ||
+      (command === 'capture' && scenarioId !== 'audit' && rest.length === 1));
+  if (!valid) {
+    errors.write('Usage: forward.cjs <prepare|execute|recover|capture|grade> <audit|apply|partial> <campaign-root>\n');
     return 2;
   }
   try {
-    if (argv[0] === 'prepare') {
-      const prepared = prepareFixture(argv[1], argv[2]);
-      output.write(`${JSON.stringify({ schemaVersion: 1, scenarioId: prepared.scenarioId,
-        runId: prepared.runId, status: prepared.status, path: prepared.subjectRoot }, null, 2)}\n`);
-    } else if (argv[0] === 'capture') {
-      output.write(`${JSON.stringify(captureEvidence(argv[1], argv[2], argv[3]), null, 2)}\n`);
+    let result;
+    if (command === 'prepare') {
+      const prepared = prepareFixture(scenarioId, runRoot, runtime);
+      result = { schemaVersion: 1, scenarioId: prepared.scenarioId,
+        runId: prepared.runId, status: prepared.status,
+        ...(scenarioId === 'audit' ? {} : { path: prepared.subjectRoot }) };
+    } else if (command === 'execute') {
+      result = executeHost(scenarioId, runRoot,
+        { host: options.host, launcherPath: options.launcher }, runtime);
+    } else if (command === 'recover') {
+      result = recoverHost(scenarioId, runRoot, options.host, runtime);
+    } else if (command === 'capture') {
+      result = captureEvidence(scenarioId, runRoot, rest[0]);
     } else {
-      output.write(`${JSON.stringify(gradeScenario(argv[1], argv[2]), null, 2)}\n`);
+      result = gradeScenario(scenarioId, runRoot, runtime);
     }
-    return 0;
+    output.write(`${JSON.stringify(result, null, 2)}\n`);
+    if (['prepare', 'capture'].includes(command)) return 0;
+    return result?.outcome === 'pass' ? 0 : 1;
   } catch {
     errors.write('Forward evaluation failed.\n');
     return 1;
   }
 }
 
-module.exports = { captureEvidence, prepareFixture, snapshotTargets, gradeScenario, runCli };
+module.exports = { captureEvidence, executeHost, prepareFixture, recoverHost, snapshotTargets,
+  gradeScenario, runCli };
 
 if (require.main === module) process.exitCode = runCli(process.argv.slice(2), process);

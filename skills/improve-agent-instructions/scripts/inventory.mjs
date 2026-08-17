@@ -18,6 +18,7 @@ const SCALAR_FLAGS = new Map([
   ['--claude-home', 'claudeHome'],
   ['--claude-managed-dir', 'claudeManagedDir'],
   ['--claude-setting-sources', 'claudeSettingSources'],
+  ['--git-executable', 'gitExecutable'],
 ]);
 
 class UsageError extends Error {}
@@ -42,25 +43,46 @@ function isInside(parent, child) {
 }
 
 function gitEnvironment(environment) {
-  return { ...environment, GIT_OPTIONAL_LOCKS: '0' };
+  const blocked = /^(?:GIT_CONFIG_(?:COUNT|KEY_\d+|VALUE_\d+)|GIT_EXTERNAL_DIFF|GIT_DIFF_OPTS)$/i;
+  const sanitized = Object.fromEntries(Object.entries(environment)
+    .filter(([name]) => !blocked.test(name)));
+  const nullDevice = process.platform === 'win32' ? 'NUL' : '/dev/null';
+  return {
+    ...sanitized,
+    GIT_CONFIG_GLOBAL: nullDevice,
+    GIT_CONFIG_SYSTEM: nullDevice,
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_OPTIONAL_LOCKS: '0',
+    GIT_TERMINAL_PROMPT: '0',
+  };
 }
 
-function gitProcess(args, dependencies = {}, environment = process.env) {
+function gitProcess(args, dependencies = {}, environment = process.env, encoding = 'utf8') {
+  const executable = dependencies.gitExecutable ?? 'git';
+  const hooksPath = dependencies.gitHooksPath ??
+    path.join(os.tmpdir(), 'skillquiver-inventory-no-hooks');
+  const safeArgs = [
+    '-c', `core.hooksPath=${hooksPath}`,
+    '-c', 'core.fsmonitor=false',
+    '-c', 'core.untrackedCache=false',
+    '-c', 'diff.external=',
+    ...args,
+  ];
   const options = {
-    encoding: 'utf8',
+    encoding,
     stdio: ['ignore', 'pipe', 'ignore'],
     env: gitEnvironment(environment),
     shell: false,
     windowsHide: true,
   };
   if (dependencies.spawnSync) {
-    return dependencies.spawnSync('git', args, options);
+    return dependencies.spawnSync(executable, safeArgs, options);
   }
   if (dependencies.execFileSync) {
     try {
       return {
         status: 0,
-        stdout: dependencies.execFileSync('git', args, options) ?? '',
+        stdout: dependencies.execFileSync(executable, safeArgs, options) ?? '',
         stderr: '',
       };
     } catch (error) {
@@ -72,7 +94,7 @@ function gitProcess(args, dependencies = {}, environment = process.env) {
       };
     }
   }
-  return childProcess.spawnSync('git', args, options);
+  return childProcess.spawnSync(executable, safeArgs, options);
 }
 
 function findGitRoot(cwd, dependencies, environment) {
@@ -133,6 +155,22 @@ export function parseArgs(argv, runtime = {}) {
     throw new UsageError('Invalid --host value.');
   }
 
+  let gitExecutable = null;
+  if (values.gitExecutable !== undefined) {
+    if (!path.isAbsolute(values.gitExecutable)) {
+      throw new UsageError('--git-executable must be an absolute regular file.');
+    }
+    try {
+      const candidate = fileSystem.realpathSync.native
+        ? fileSystem.realpathSync.native(values.gitExecutable)
+        : fileSystem.realpathSync(values.gitExecutable);
+      if (!fileSystem.statSync(candidate).isFile()) throw new Error('not a file');
+      gitExecutable = candidate;
+    } catch {
+      throw new UsageError('--git-executable must be an absolute regular file.');
+    }
+  }
+
   const cwd = resolveFrom(ambientCwd, values.cwd ?? ambientCwd);
   let cwdStat;
   try {
@@ -144,7 +182,7 @@ export function parseArgs(argv, runtime = {}) {
 
   const project = values.project
     ? resolveFrom(ambientCwd, values.project)
-    : findGitRoot(cwd, runtime, environment);
+    : findGitRoot(cwd, { ...runtime, gitExecutable }, environment);
   if (!isInside(project, cwd)) {
     throw new UsageError('The working directory is outside the project root.');
   }
@@ -189,6 +227,7 @@ export function parseArgs(argv, runtime = {}) {
     claudeSettingSourcesExplicit: Boolean(values.claudeSettingSources),
     claudeAdditionalDirectoriesEnabled: environmentFlag(
       environment.CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD),
+    gitExecutable,
   };
 }
 
@@ -403,19 +442,29 @@ function createGitInspector(options, dependencies, warnings, reportProblems) {
     if (unavailable) return 'unknown';
     if (!gitRoot || !isInside(gitRoot, resolvedPath)) return 'outside-repository';
     const relative = path.relative(gitRoot, resolvedPath);
-    const status = gitProcess(
-      ['-C', gitRoot, 'status', '--porcelain=v1', '--ignored',
-        '--untracked-files=all', '--', relative], dependencies, environment);
-    if (status.error?.code === 'ENOENT') return 'unknown';
-    if (status.status !== 0) return 'unknown';
-    const marker = String(status.stdout ?? '').slice(0, 2);
-    if (marker === '??') return 'untracked';
-    if (marker === '!!') return 'ignored';
-    if (marker.trim()) return 'modified';
     const tracked = gitProcess(
-      ['-C', gitRoot, 'ls-files', '--error-unmatch', '--', relative],
+      ['-C', gitRoot, 'ls-files', '--stage', '--error-unmatch', '--', relative],
       dependencies, environment);
-    return tracked.status === 0 ? 'tracked-clean' : 'untracked';
+    if (tracked.error?.code === 'ENOENT') return 'unknown';
+    if (tracked.status === 0) {
+      const match = String(tracked.stdout ?? '').match(
+        /^\d+\s+([0-9a-f]+)\s+0\t/);
+      if (!match) return 'modified';
+      let workingBytes;
+      try {
+        workingBytes = (dependencies.fs ?? fs).readFileSync(logicalPath);
+      } catch {
+        return 'modified';
+      }
+      const committed = gitProcess(['-C', gitRoot, 'cat-file', 'blob', match[1]],
+        dependencies, environment, null);
+      if (committed.status !== 0) return 'unknown';
+      return Buffer.from(committed.stdout ?? '').equals(Buffer.from(workingBytes))
+        ? 'tracked-clean' : 'modified';
+    }
+    const ignored = gitProcess(['-C', gitRoot, 'check-ignore', '--quiet', '--', relative],
+      dependencies, environment);
+    return ignored.status === 0 ? 'ignored' : 'untracked';
   };
 }
 
@@ -1054,8 +1103,11 @@ export function buildInventory(options, dependencies = {}) {
   const sources = [];
   const chainSources = [];
   const inspectClaude = options.host === 'both' || options.host === 'claude';
-  const gitState = createGitInspector(
-    options, { ...dependencies, fs: fileSystem }, warnings, inspectClaude);
+  const gitState = createGitInspector(options, {
+    ...dependencies,
+    fs: fileSystem,
+    gitExecutable: options.gitExecutable ?? dependencies.gitExecutable,
+  }, warnings, inspectClaude);
   const inspectionDependencies = { ...dependencies, fs: fileSystem, gitState };
   const config = options.host === 'both' || options.host === 'codex'
     ? parseCodexConfig(options.codexHome, fileSystem, warnings)

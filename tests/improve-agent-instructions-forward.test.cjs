@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 
+const controller = require('../benchmarks/improve-agent-instructions/controller.cjs');
 const forward = require('../benchmarks/improve-agent-instructions/forward.cjs');
 const root = path.resolve(__dirname, '..');
 
@@ -49,6 +50,73 @@ const HUMAN_REPORT_SECTIONS = [
   'Target matrix', 'Effective chain', 'Decision ledger', 'Changes and recovery',
   'Verification matrix', 'Pending questions',
 ];
+const AUDIT_SOURCE_EXPECTATIONS = [
+  ['home/.claude/CLAUDE.md', 'claude', 'global', 'claude-home', 'active', 35, 35],
+  ['home/.claude/shared.md', 'claude', 'global', 'import', 'active', 22, 22],
+  ['home/.codex/AGENTS.md', 'codex', 'global', 'codex-home', 'shadowed', 33, 0],
+  ['home/.codex/AGENTS.override.md', 'codex', 'global', 'codex-home', 'active', 84, 84],
+  ['managed/claude/CLAUDE.md', 'claude', 'managed', 'managed-policy', 'missing', null, 0],
+  ['repo/.claude/CLAUDE.md', 'claude', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/.claude/rules/source.md', 'claude', 'project', 'rule', 'conditional', 53, 53],
+  ['repo/AGENTS.md', 'codex', 'project', 'project-tree', 'active', 80, 80],
+  ['repo/AGENTS.override.md', 'codex', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/CLAUDE.local.md', 'claude', 'project', 'project-local', 'active', 23, 23],
+  ['repo/CLAUDE.md', 'claude', 'project', 'project-tree', 'active', 19, 19],
+  ['repo/TEAM.md', 'codex', 'project', 'project-tree', 'shadowed', 23, 0],
+  ['repo/packages/.claude/CLAUDE.md', 'claude', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/packages/AGENTS.md', 'codex', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/packages/AGENTS.override.md', 'codex', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/packages/CLAUDE.local.md', 'claude', 'project', 'project-local', 'missing', null, 0],
+  ['repo/packages/CLAUDE.md', 'claude', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/packages/TEAM.md', 'codex', 'project', 'project-tree', 'active', 32, 32],
+  ['repo/packages/api/.claude/CLAUDE.md', 'claude', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/packages/api/AGENTS.md', 'codex', 'project', 'project-tree', 'truncated', 64, 16],
+  ['repo/packages/api/AGENTS.override.md', 'codex', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/packages/api/CLAUDE.local.md', 'claude', 'project', 'project-local', 'missing', null, 0],
+  ['repo/packages/api/CLAUDE.md', 'claude', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/packages/api/TEAM.md', 'codex', 'project', 'project-tree', 'missing', null, 0],
+  ['repo/project-shared.md', 'claude', 'project', 'import', 'active', 25, 25],
+];
+const AUDIT_QUALITATIVE_EXPECTATIONS = [
+  {
+    id: 'finding-package-manager-conflict',
+    kind: 'conflict',
+    severity: 'high',
+    sourceIds: ['source-0003', 'source-0004'],
+    contentEvidence: [
+      contentEvidence('source-0003', 'Use npm for repository commands.\n',
+        'Use npm for repository commands.'),
+      contentEvidence('source-0004',
+        'Use pnpm for repository commands.\nAUDIT-INSTRUCTION-SENTINEL\nAUDIT-PRIVATE-SENTINEL\n',
+        'Use pnpm for repository commands.'),
+    ],
+    issueCode: 'conflicting-package-manager',
+    recommendation: 'Choose one package manager across the active and shadowed instructions.',
+    disposition: 'recommend-change',
+    status: 'verified',
+  },
+  {
+    id: 'finding-truncated-safety-guidance',
+    kind: 'defect',
+    severity: 'high',
+    sourceIds: ['source-0020'],
+    contentEvidence: [contentEvidence('source-0020',
+      'Keep commands read-only.\nAlways request approval before writes.\n',
+      'approval before writes')],
+    issueCode: 'truncated-safety-guidance',
+    recommendation: 'Move the approval requirement into the contributed instruction prefix.',
+    disposition: 'recommend-change',
+    status: 'verified',
+  },
+];
+
+function contentEvidence(sourceId, body, needle) {
+  const bytes = Buffer.from(body);
+  const token = Buffer.from(needle);
+  const startByte = bytes.indexOf(token);
+  return { sourceId, startByte, endByte: startByte + token.length,
+    sha256: sha256(token) };
+}
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -61,6 +129,70 @@ function readJson(filePath) {
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function stopTestProcess(pid) {
+  if (!Number.isInteger(pid)) return;
+  try { process.kill(pid); } catch {}
+  const deadline = Date.now() + 2000;
+  while (Date.now() < deadline) {
+    try {
+      process.kill(pid, 0);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    } catch {
+      return;
+    }
+  }
+}
+
+function renderedSchemaValid(schema, value) {
+  const sameValue = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+  const typeValid = (type) => type === 'null' ? value === null
+    : type === 'array' ? Array.isArray(value)
+      : type === 'object' ? value !== null && typeof value === 'object' && !Array.isArray(value)
+        : type === 'integer' ? Number.isInteger(value) : typeof value === type;
+  if (schema.type !== undefined) {
+    const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+    if (!types.some(typeValid)) return false;
+  }
+  if (schema.const !== undefined && !sameValue(value, schema.const)) return false;
+  if (schema.enum && !schema.enum.some((entry) => sameValue(value, entry))) return false;
+  if (typeof value === 'string') {
+    const length = Array.from(value).length;
+    if (schema.minLength !== undefined && length < schema.minLength) return false;
+    if (schema.maxLength !== undefined && length > schema.maxLength) return false;
+    if (schema.pattern && !new RegExp(schema.pattern).test(value)) return false;
+  }
+  if (Number.isInteger(value) && schema.minimum !== undefined && value < schema.minimum) {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    if (schema.minItems !== undefined && value.length < schema.minItems) return false;
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) return false;
+    if (schema.uniqueItems && new Set(value.map((entry) => JSON.stringify(entry))).size !==
+        value.length) return false;
+    if (schema.items && !value.every((entry) => renderedSchemaValid(schema.items, entry))) {
+      return false;
+    }
+  }
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (schema.required && !schema.required.every((key) =>
+      Object.prototype.hasOwnProperty.call(value, key))) return false;
+    if (schema.additionalProperties === false && Object.keys(value).some((key) =>
+      !Object.prototype.hasOwnProperty.call(schema.properties || {}, key))) return false;
+    for (const [key, child] of Object.entries(value)) {
+      if (schema.properties?.[key] && !renderedSchemaValid(schema.properties[key], child)) {
+        return false;
+      }
+    }
+  }
+  if (schema.anyOf && !schema.anyOf.some((entry) => renderedSchemaValid(entry, value))) {
+    return false;
+  }
+  if (schema.oneOf && schema.oneOf.filter((entry) => renderedSchemaValid(entry, value))
+    .length !== 1) return false;
+  if (schema.not && renderedSchemaValid(schema.not, value)) return false;
+  return true;
 }
 
 function assertCommonRequest(runRoot, subject, scenarioId, cwd) {
@@ -631,211 +763,1323 @@ function temporaryRun(t, scenarioId) {
   };
 }
 
-test('audit fixture passes complete evidence and rejects a changed target', (t) => {
-  assert.deepEqual(Object.keys(forward).sort(),
-    ['captureEvidence', 'gradeScenario', 'prepareFixture', 'runCli', 'snapshotTargets']);
-  const { runRoot, subject, logs } = temporaryRun(t, 'audit');
-  assertCommonRequest(runRoot, subject, 'audit', path.join(subject, 'repo', 'packages', 'api'));
-  assert.equal(fs.existsSync(path.join(runRoot, 'evaluator', 'capture-challenges.json')), true,
-    'prepare must issue evaluator-private capture challenges');
-  assert.equal(fs.existsSync(path.join(runRoot, 'evaluator', 'receipts')), false,
-    'prepare must not prepopulate passing receipts');
-  assert.equal(Object.keys(forward.snapshotTargets(subject))
-    .some((relativePath) => relativePath.startsWith('repo/.git/')), false);
-  const gitStatus = childProcess.spawnSync('git', ['-C', path.join(subject, 'repo'),
-    'status', '--porcelain'], { encoding: 'utf8', shell: false });
-  assert.equal(gitStatus.status, 0, gitStatus.stderr);
-  assert.equal(gitStatus.stdout, '');
+function trustedGitExecutable() {
+  const locator = process.platform === 'win32'
+    ? childProcess.spawnSync('where.exe', ['git'], { encoding: 'utf8', shell: false })
+    : childProcess.spawnSync('which', ['git'], { encoding: 'utf8', shell: false });
+  assert.equal(locator.status, 0, locator.stderr);
+  return fs.realpathSync.native(locator.stdout.split(/\r?\n/)
+    .find((entry) => entry.trim()).trim());
+}
 
-  const sources = [
-    sourceRecord(subject, 'source-0001', 'home/.claude/CLAUDE.md', 'claude', 'active'),
-    sourceRecord(subject, 'source-0002', 'home/.codex/AGENTS.md', 'codex', 'shadowed'),
-    sourceRecord(subject, 'source-0003', 'home/.codex/AGENTS.override.md', 'codex', 'active'),
-    sourceRecord(subject, 'source-0004', 'repo/.claude/rules/source.md', 'claude',
-      'conditional'),
-    sourceRecord(subject, 'source-0005', 'repo/CLAUDE.md', 'claude', 'active'),
-    sourceRecord(subject, 'source-0006', 'repo/TEAM.md', 'codex', 'shadowed'),
-    sourceRecord(subject, 'source-0007', 'repo/packages/TEAM.md', 'codex', 'active'),
-    sourceRecord(subject, 'source-0008', 'repo/packages/api/AGENTS.md', 'codex', 'truncated'),
-  ];
-  sources[3].conditions = ['src/**/*.js'];
-  sources[3].inactiveReason = 'path-conditional';
-  sources[7].byteContribution = 16;
-  sources[7].inactiveReason = 'project-byte-budget';
-  const firstInventory = inventoryManifest(subject, '2030-01-01T00:00:00.000Z');
-  const secondInventory = inventoryManifest(subject, '2030-01-02T00:00:00.000Z');
-  firstInventory.sources = sources;
-  secondInventory.sources = structuredClone(sources);
-  for (const manifest of [firstInventory, secondInventory]) {
-    manifest.roots.cwd.logicalPath = path.join(subject, 'repo', 'packages', 'api');
-    manifest.roots.cwd.resolvedPath = path.join(subject, 'repo', 'packages', 'api');
-    manifest.chains.codex.sourceIds = ['source-0003', 'source-0007', 'source-0008'];
-    manifest.chains.claude.sourceIds = ['source-0001', 'source-0005'];
-    manifest.chains.claude.conditionalSourceIds = ['source-0004'];
+
+function writeTrustedAdapterFixture(t, host, mode = 'good') {
+  const launcherRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-launcher-'));
+  t.after(() => fs.rmSync(launcherRoot, { recursive: true, force: true }));
+  const adapterPath = path.join(launcherRoot, 'adapter.cjs');
+  const childPath = path.join(launcherRoot, 'child.cjs');
+  const trackerPath = path.join(launcherRoot, 'process-tracker.cjs');
+  const launcherPath = path.join(launcherRoot, `launcher-${host}.json`);
+  fs.writeFileSync(trackerPath, `'use strict';
+const childProcess = require('node:child_process');
+const fs = require('node:fs');
+for (const name of ['spawn', 'spawnSync']) {
+  const original = childProcess[name];
+  childProcess[name] = function trackedSpawn(...args) {
+    const result = original.apply(this, args);
+    if (Number.isInteger(result.pid)) fs.writeSync(3, String(result.pid) + '\\n');
+    return result;
+  };
+}
+`);
+  fs.writeFileSync(childPath, `'use strict';
+const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const canonicalize = (value) => Array.isArray(value) ? value.map(canonicalize)
+  : value && typeof value === 'object'
+    ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]))
+    : value;
+const digest = (value) => crypto.createHash('sha256')
+  .update(Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(canonicalize(value))))
+  .digest('hex');
+const request = JSON.parse(fs.readFileSync(0, 'utf8'));
+const phase = process.argv[2];
+const runDescendant = () => {
+  const survivor = request.testMode === 'surviving-descendant' && phase === 'preflight'
+    || request.testMode === 'behavior-surviving-descendant' && phase === 'plan';
+  const omitted = request.testMode === 'omitted-detached-descendant' && phase === 'plan';
+  const descendant = survivor ? childProcess.spawn(process.execPath,
+    ['-e', 'setTimeout(() => {}, 30000)'], {
+      detached: true, stdio: 'ignore', windowsHide: true,
+    }) : childProcess.spawnSync(process.execPath, ['-e', 'process.exit(0)'], {
+      stdio: 'ignore', windowsHide: true,
+    });
+  if (survivor) descendant.unref();
+  const omittedDescendant = omitted ? childProcess.spawn(process.execPath,
+    ['-e', 'setTimeout(() => {}, 30000)'], {
+      detached: true, stdio: 'ignore', windowsHide: true,
+    }) : null;
+  if (omittedDescendant) omittedDescendant.unref();
+  const pid = descendant.pid;
+  let stopped = true;
+  try { process.kill(pid, 0); stopped = false; } catch {}
+  return { started: Number.isInteger(pid), pid, exitCode: survivor ? null : 0,
+    stopped: survivor ? false : stopped,
+    ...(omitted ? { omittedPid: omittedDescendant.pid } : {}) };
+};
+if (phase === 'preflight') {
+  const probes = request.probes.map((probe) => {
+    try {
+      const observed = probe.operation === 'read' ? fs.readFileSync(probe.path)
+        : (fs.appendFileSync(probe.path, 'forbidden'), Buffer.alloc(0));
+      return { id: probe.id, operation: probe.operation, outcome: 'allowed',
+        errorCode: null, observedSha256: digest(observed) };
+    } catch (error) {
+      return { id: probe.id, operation: probe.operation, outcome: 'denied',
+        errorCode: error.code || 'UNKNOWN', observedSha256: null };
+    }
+  });
+  const descendant = runDescendant();
+  process.stdout.write(JSON.stringify({ pid: process.pid, phase, probes,
+    descendant }));
+  return;
+}
+const inventoryBytes = fs.readFileSync(path.join(request.hostView, 'inventory.json'));
+const inventory = JSON.parse(inventoryBytes);
+const inputIndex = JSON.parse(fs.readFileSync(path.join(request.hostView, 'inputs', 'index.json')));
+const inputs = inputIndex.map((entry) => ({ id: entry.id,
+  sha256: entry.path === null ? null
+    : digest(fs.readFileSync(path.join(request.hostView, entry.path))) }));
+const schemas = fs.readdirSync(path.join(request.hostView, 'schemas')).sort()
+  .map((name) => ({ name, sha256: digest(fs.readFileSync(
+    path.join(request.hostView, 'schemas', name))) }));
+const taskSha256 = digest(fs.readFileSync(path.join(request.hostView, 'instruction-task.md')));
+const proof = (id, value, raw = []) => crypto.createHash('sha256')
+  .update(request.controllerNonce).update(phase).update(id)
+  .update(Buffer.from(JSON.stringify(canonicalize(value))))
+  .update(Buffer.concat(raw)).digest('hex');
+const inputBytes = inputIndex.filter((entry) => entry.path !== null)
+  .map((entry) => fs.readFileSync(path.join(request.hostView, entry.path)));
+const finding = (id, value, raw) => ({ id, status: 'verified',
+  observedSha256: proof(id, value, raw) });
+const findings = [
+  finding('inventory-bytes', digest(inventoryBytes), [inventoryBytes]),
+  finding('inventory-roots', inventory.roots),
+  finding('inventory-sources', inventory.sources),
+  finding('inventory-chains', inventory.chains),
+  finding('inventory-warnings', inventory.warnings),
+  finding('instruction-inputs', inputs, inputBytes),
+  finding('public-schemas', schemas),
+  finding(phase + '-conclusion', {
+    phase, taskSha256, inventorySha256: digest(inventoryBytes), inputs, schemas,
+  }),
+];
+const inputById = new Map(inputIndex.map((entry) => [entry.id, entry]));
+const sourceBytes = (sourceIds) => sourceIds.map((id) => inputById.get(id))
+  .filter((entry) => entry && entry.path !== null)
+  .map((entry) => fs.readFileSync(path.join(request.hostView, entry.path)));
+const qualitative = (value) => ({ ...value,
+  observedSha256: proof(value.id, value, sourceBytes(value.sourceIds)) });
+const bodyById = new Map(inputIndex.filter((entry) => entry.path !== null)
+  .map((entry) => [entry.id, fs.readFileSync(path.join(request.hostView, entry.path))]));
+const textFor = (source) => bodyById.has(source.id) ? bodyById.get(source.id).toString('utf8') : '';
+const evidenceFor = (source, needle) => {
+  const body = bodyById.get(source.id);
+  const token = Buffer.from(needle);
+  const startByte = body ? body.indexOf(token) : -1;
+  return startByte < 0 ? null : { sourceId: source.id, startByte,
+    endByte: startByte + token.length, sha256: digest(body.subarray(startByte,
+      startByte + token.length)) };
+};
+const npmSource = inventory.sources.find((source) =>
+  textFor(source).includes('Use npm for repository commands.'));
+const pnpmSource = inventory.sources.find((source) =>
+  textFor(source).includes('Use pnpm for repository commands.'));
+const truncatedSafety = inventory.sources.find((source) =>
+  source.byteContribution < source.byteCount && textFor(source).includes('approval before writes'));
+let qualitativeFindings = [];
+if (npmSource && pnpmSource) qualitativeFindings.push(qualitative({
+  id: 'finding-package-manager-conflict', kind: 'conflict', severity: 'high',
+  sourceIds: [npmSource.id, pnpmSource.id], contentEvidence: [
+    evidenceFor(npmSource, 'Use npm for repository commands.'),
+    evidenceFor(pnpmSource, 'Use pnpm for repository commands.'),
+  ], issueCode: 'conflicting-package-manager',
+  recommendation: 'Choose one package manager across the active and shadowed instructions.',
+  disposition: 'recommend-change', status: 'verified',
+}));
+if (truncatedSafety) qualitativeFindings.push(qualitative({
+  id: 'finding-truncated-safety-guidance', kind: 'defect', severity: 'high',
+  sourceIds: [truncatedSafety.id], contentEvidence: [
+    evidenceFor(truncatedSafety, 'approval before writes'),
+  ], issueCode: 'truncated-safety-guidance',
+  recommendation: 'Move the approval requirement into the contributed instruction prefix.',
+  disposition: 'recommend-change', status: 'verified',
+}));
+if (request.testMode === 'checksum-only') qualitativeFindings = [];
+if (request.testMode === 'canned-qualitative' && qualitativeFindings[0]) {
+  const { observedSha256, ...entry } = qualitativeFindings[0];
+  void observedSha256;
+  qualitativeFindings[0] = qualitative({ ...entry,
+    contentEvidence: entry.contentEvidence.map((item, index) => index === 0
+      ? { ...item, sha256: '0'.repeat(64) } : item) });
+}
+if (request.testMode === 'unreferenced-qualitative' && qualitativeFindings[0]) {
+  const { observedSha256, ...entry } = qualitativeFindings[0];
+  void observedSha256;
+  qualitativeFindings[0] = qualitative({ ...entry, sourceIds: ['source-9999'] });
+}
+if (request.testMode === 'extra-qualitative') qualitativeFindings.push(qualitative({
+  id: 'finding-generic-improvement', kind: 'improvement', severity: 'low',
+  sourceIds: ['source-0008'], contentEvidence: [{ sourceId: 'source-0008',
+    startByte: 0, endByte: 1, sha256: '0'.repeat(64) }], issueCode: 'generic-improvement',
+  recommendation: 'Review the active project guidance.', disposition: 'review',
+  status: 'verified',
+}));
+if (request.testMode === 'secret-qualitative' && qualitativeFindings[0]) {
+  const { observedSha256, ...entry } = qualitativeFindings[0];
+  void observedSha256;
+  qualitativeFindings[0] = qualitative({ ...entry,
+    recommendation: 'CONTROLLER-PRIVATE-CANARY' });
+}
+const descendant = runDescendant();
+process.stdout.write(JSON.stringify({ pid: process.pid, phase, findings, qualitativeFindings,
+  summary: qualitativeFindings.length === 2
+    ? 'Found conflicting package-manager guidance and truncated safety instructions.'
+    : 'Audit findings were incomplete.',
+  taskSha256, descendant }));
+`);
+  fs.writeFileSync(adapterPath, `'use strict';
+const childProcess = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const mode = process.argv[2];
+const phase = process.argv[3];
+const request = JSON.parse(fs.readFileSync(0, 'utf8'));
+if (phase !== 'preflight') fs.appendFileSync(path.join(__dirname, 'behavior.log'), phase + '\\n');
+const trackerPath = path.join(__dirname, 'process-tracker.cjs');
+const readAllowances = [request.hostProgram, request.hostView, trackerPath];
+if (mode === 'readable-controller') readAllowances.push(request.probes
+  .find((probe) => probe.id === 'controller-private').path);
+if (mode === 'readable-recovery') readAllowances.push(request.probes
+  .find((probe) => probe.id === 'recovery-private').path);
+if (mode === 'readable-evidence') readAllowances.push(request.probes
+  .find((probe) => probe.id === 'evidence-private').path);
+if (mode === 'readable-sibling') readAllowances.push(request.probes
+  .find((probe) => probe.id === 'sibling-private').path);
+const permissionArgs = ['--permission', '--allow-child-process',
+  ...readAllowances.map((entry) => '--allow-fs-read=' + entry)];
+if (mode === 'writable-view') permissionArgs.push('--allow-fs-write=' + request.hostView);
+const noChild = mode === 'unavailable-null-child' && phase === 'preflight';
+const child = noChild ? { status: null, stdout: '' } : childProcess.spawnSync(process.execPath,
+  [...permissionArgs, '--require', trackerPath, request.hostProgram, phase], {
+  cwd: request.hostView,
+  input: JSON.stringify({ ...request, testMode: mode }),
+  encoding: 'utf8',
+  env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot },
+  stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
+  shell: false,
+  windowsHide: true,
+});
+if (mode === 'malformed' && phase === 'plan' || mode === 'malformed-preflight' && phase === 'preflight') {
+  process.stdout.write('{');
+  process.exit(0);
+}
+if (mode === 'nonzero-preflight' && phase === 'preflight') process.exit(23);
+if (mode === 'timeout-preflight' && phase === 'preflight') {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
+}
+if (mode === 'oversize-preflight' && phase === 'preflight') {
+  process.stdout.write('x'.repeat(8192));
+  process.exit(0);
+}
+if (mode === 'mutate' && phase === 'plan') {
+  const subject = path.resolve(request.hostView, '..', '..', 'subject');
+  fs.appendFileSync(path.join(subject, 'repo', 'AGENTS.md'), 'adapter mutation\\n');
+}
+const observation = child.status === 0 ? JSON.parse(child.stdout) : {
+  pid: null, probes: [], findings: [], qualitativeFindings: [], summary: '',
+  descendant: { started: false, pid: null, exitCode: null, stopped: false },
+};
+if (noChild) observation.descendant.stopped = true;
+if (observation.descendant && observation.descendant.stopped === false &&
+    Number.isInteger(observation.descendant.pid)) {
+  fs.writeFileSync(path.join(__dirname, 'survivor.pid'), String(observation.descendant.pid));
+}
+const omittedPid = observation.descendant?.omittedPid;
+if (Number.isInteger(omittedPid)) {
+  fs.writeFileSync(path.join(__dirname, 'survivor.pid'), String(omittedPid));
+}
+const { omittedPid: ignoredOmittedPid, ...reportedObservationDescendant } =
+  observation.descendant || {};
+void ignoredOmittedPid;
+const trackedPids = noChild ? [] : String(child.output?.[3] || '').split(/\\r?\\n/)
+  .filter(Boolean).map(Number).filter(Number.isInteger);
+const observedPids = [...new Set([process.pid, child.pid, ...trackedPids]
+  .filter(Number.isInteger))];
+let escapedTree = false;
+for (const pid of trackedPids) {
+  try {
+    process.kill(pid, 0);
+    escapedTree = true;
+    try { process.kill(pid); } catch {}
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      try {
+        process.kill(pid, 0);
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+      } catch { break; }
+    }
+  } catch {}
+}
+const probePid = trackedPids[0] ?? null;
+const reportedDescendant = probePid === null
+  ? reportedObservationDescendant
+  : { started: true, pid: probePid, exitCode: 0, stopped: true };
+const base = {
+  schemaVersion: 1,
+  kind: phase,
+  scenarioId: request.scenarioId,
+  runId: request.runId,
+  host: mode === 'wrong-host' && phase === 'plan'
+    ? (request.host === 'codex' ? 'claude' : 'codex')
+    : request.host,
+  invocationId: request.invocationId,
+  controllerNonce: request.controllerNonce,
+  provenance: 'synthetic-v1',
+  realHostClaim: false,
+  policySha256: request.policySha256,
+  process: {
+    adapterPid: process.pid,
+    childPid: child.status === 0 ? child.pid : null,
+    childExitCode: child.status,
+    descendant: reportedDescendant,
+    observedPids,
+    treeStopped: escapedTree === false && reportedDescendant.stopped === true,
+  },
+};
+let result;
+if (phase === 'preflight') {
+  if (mode === 'lying-probe') {
+    observation.probes.find((probe) => probe.id === 'controller-private').errorCode = 'FAKE';
   }
-  const auditOptions = {
-    firstInventory,
-    secondInventory,
-    checkpoints: [{ targetSnapshot: snapshotForEvidence(subject) }],
-    invocations: [
-      { id: 'inventory-1', ordinal: 1, kind: 'inventory', exitCode: 0 },
-      { id: 'inventory-2', ordinal: 2, after: 'inventory-1', kind: 'inventory', exitCode: 0 },
-    ],
+  const actualUnsafe = ['readable-controller', 'readable-recovery', 'readable-evidence',
+    'readable-sibling', 'writable-view', 'surviving-descendant'].includes(mode);
+  result = {
+    ...base,
+    availability: mode === 'unavailable-null-child' ? 'missing'
+      : mode === 'unauthenticated' ? 'unauthenticated'
+      : mode === 'unsafe' || actualUnsafe ? 'unsafe' : 'available-safe',
+    authentication: ['unauthenticated', 'unavailable-null-child'].includes(mode)
+      ? 'unavailable' : 'available',
+    isolation: {
+      policy: 'synthetic-read-only-v1',
+      probes: observation.probes,
+      descendant: reportedDescendant,
+      writableRoots: [],
+      networkPolicy: 'none',
+      toolPolicy: 'none',
+    },
   };
-  const malformed = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', {
-    ...auditOptions,
-    firstInventory: { schemaVersion: 0 },
-  });
-  assert.throws(() => captureWorker(runRoot, 'audit', malformed), /schema version 1/i);
-  const extraArtifact = path.join(malformed.artifactRoot, 'private-copy.txt');
-  fs.writeFileSync(extraArtifact, 'AUDIT-INSTRUCTION-SENTINEL\n');
-  assert.throws(() => captureWorker(runRoot, 'audit', malformed), /artifact set/i);
-  fs.rmSync(extraArtifact);
-
-  const invalidInventory = structuredClone(firstInventory);
-  invalidInventory.sources[0].scope = 'invented-scope';
-  const semanticNonsense = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', {
-    ...auditOptions,
-    firstInventory: invalidInventory,
-  });
-  assert.throws(() => captureWorker(runRoot, 'audit', semanticNonsense),
-    /inventory.*schema|source/i);
-
-  const unsanctionedEvidence = createWorkerArtifacts(
-    runRoot, subject, 'audit', 'codex', auditOptions);
-  const unsanctionedReportPath = path.join(unsanctionedEvidence.artifactRoot,
-    'machine-report.json');
-  const unsanctionedReport = readJson(unsanctionedReportPath);
-  unsanctionedReport.targetMatrix[0].evidence = {
-    path: 'repo/CLAUDE.local.md',
-    sha256: sha256(fs.readFileSync(path.join(subject, 'repo', 'CLAUDE.local.md'))),
+} else {
+  if (['leak-failure', 'private-canary-leak'].includes(mode) && observation.findings[0]) {
+    observation.findings[0].observedSha256 = '1'.repeat(64);
+    if (mode === 'private-canary-leak') {
+      observation.findings[0].id = 'CONTROLLER-PRIVATE-CANARY';
+    }
+  }
+  result = {
+    ...base,
+    authorization: 'audit-read-only',
+    operations: [],
+    blockedTargets: [],
+    findings: mode === 'blind' ? [{ id: 'generic-observation', status: 'verified',
+      observedSha256: '0'.repeat(64) }] : observation.findings,
+    reportDraft: { summary: mode === 'leak-failure' ? JSON.stringify([
+      'AUDIT%2DINSTRUCTION-SENTINEL',
+      'AUDIT\\u002DINSTRUCTION-SENTINEL',
+      Buffer.from('AUDIT-INSTRUCTION-SENTINEL').toString('hex'),
+      Buffer.from('AUDIT-INSTRUCTION-SENTINEL').toString('base64'),
+      Buffer.from('AUDIT-INSTRUCTION-SENTINEL').toString('base64url'),
+      Buffer.from('AUDIT-INSTRUCTION-SENTINEL', 'utf16le').toString('base64'),
+      encodeURIComponent(Buffer.from('AUDIT-INSTRUCTION-SENTINEL').toString('base64')),
+    ]) : observation.summary, qualitativeFindings: observation.qualitativeFindings },
   };
-  writeJson(unsanctionedReportPath, unsanctionedReport);
-  fs.writeFileSync(path.join(unsanctionedEvidence.artifactRoot, 'worker-final.md'),
-    renderRawFinal(unsanctionedReport));
-  assert.throws(() => captureWorker(runRoot, 'audit', unsanctionedEvidence), /sanctioned/i);
-
-  const aliased = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', auditOptions);
-  fs.rmSync(aliased.secondInventory);
-  fs.linkSync(aliased.firstInventory, aliased.secondInventory);
-  assert.throws(() => captureWorker(runRoot, 'audit', aliased), /distinct|alias/i);
-  fs.rmSync(aliased.artifactRoot, { recursive: true });
-  const emptyAuditSnapshot = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', {
-    ...auditOptions,
-    checkpoints: [{ targetSnapshot: {} }],
+  if (mode === 'forged-inventory' && phase === 'plan') result.inventory = 'forged';
+}
+if (mode === 'identity-change' && phase === 'preflight') fs.appendFileSync(__filename, '\\n');
+process.stdout.write(JSON.stringify(result));
+`);
+  writeJson(launcherPath, {
+    schemaVersion: 1,
+    host,
+    adapterKind: 'trusted-host-adapter-v1',
+    adapterProgram: process.execPath,
+    execution: { kind: 'interpreter', entrypoint: adapterPath },
+    hostProgram: childPath,
+    identityFiles: [process.execPath, adapterPath, childPath, trackerPath],
+    environmentNames: [],
+    isolationProfile: 'read-only-host-view-v1',
+    profiles: {
+      preflight: { args: [adapterPath, mode], promptTransport: 'stdin',
+        resultTransport: 'adapter-json' },
+      plan: { args: [adapterPath, mode], promptTransport: 'stdin',
+        resultTransport: 'adapter-json' },
+      verify: { args: [adapterPath, mode], promptTransport: 'stdin',
+        resultTransport: 'adapter-json' },
+    },
+    timeoutMs: mode === 'timeout-preflight' ? 50 : 30000,
+    maxStdoutBytes: mode === 'oversize-preflight' ? 4096 : 1048576,
+    maxStderrBytes: 1048576,
   });
-  assert.throws(() => captureWorker(runRoot, 'audit', emptyAuditSnapshot),
-    /audit checkpoint/i);
-  const codexCapture = createWorkerArtifacts(runRoot, subject, 'audit', 'codex', auditOptions);
-  assert.throws(() => forward.captureEvidence('audit', runRoot, codexCapture.descriptor),
-    /descriptor file/i);
-  captureWorker(runRoot, 'audit', codexCapture);
-  const absentClaude = forward.gradeScenario('audit', runRoot);
-  assert.equal(absentClaude.outcome, 'unverified');
-  assert.equal(absentClaude.checks.find((check) => check.id === 'host_evidence').status,
-    'unverified');
-  const replayRoot = path.join(subject, 'evidence', 'claude');
-  fs.cpSync(codexCapture.artifactRoot, replayRoot, { recursive: true });
-  const replayDescriptorPath = path.join(replayRoot, 'capture.json');
-  const replayDescriptor = readJson(replayDescriptorPath);
-  replayDescriptor.host = 'claude';
-  replayDescriptor.rawFinalPath = replayDescriptor.rawFinalPath.replace('/codex/', '/claude/');
-  replayDescriptor.inventoryPaths = replayDescriptor.inventoryPaths.map((entry) =>
-    entry.replace('/codex/', '/claude/'));
-  writeJson(replayDescriptorPath, replayDescriptor);
-  assert.throws(() => forward.captureEvidence('audit', runRoot, replayDescriptorPath),
-    /identity|host/i);
-  fs.rmSync(replayRoot, { recursive: true });
-  const claudeCapture = createWorkerArtifacts(runRoot, subject, 'audit', 'claude', auditOptions);
-  captureWorker(runRoot, 'audit', claudeCapture, true);
-  assert.throws(() => captureWorker(runRoot, 'audit', codexCapture), /already captured/i);
-  const auditReport = readJson(path.join(logs, 'report.json'));
+  return launcherPath;
+}
 
-  assert.equal(forward.gradeScenario('audit', runRoot).outcome, 'pass');
-  const output = [];
-  assert.equal(forward.runCli(['grade', 'audit', runRoot], {
-    stdout: { write: (text) => output.push(text) },
-    stderr: { write: () => assert.fail('grade should not write stderr') },
-  }), 0);
-  assert.equal(JSON.parse(output.join('')).outcome, 'pass');
+function collectRelativeFiles(directory) {
+  const files = [];
+  const visit = (current) => {
+    if (!fs.existsSync(current)) return;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const entryPath = path.join(current, entry.name);
+      if (entry.isDirectory()) visit(entryPath);
+      else if (entry.isFile()) files.push(path.relative(directory, entryPath)
+        .split(path.sep).join('/'));
+    }
+  };
+  visit(directory);
+  return files.sort();
+}
 
-  const lateExtraArtifact = path.join(subject, 'evidence', 'codex', 'late-private-copy.txt');
-  fs.writeFileSync(lateExtraArtifact, 'AUDIT-INSTRUCTION-SENTINEL\n');
-  const unexpectedSourceArtifact = forward.gradeScenario('audit', runRoot);
-  assert.equal(unexpectedSourceArtifact.outcome, 'fail');
-  assert.equal(unexpectedSourceArtifact.checks.find(
-    (check) => check.id === 'host_evidence').status, 'fail');
-  assert.equal(unexpectedSourceArtifact.checks.find(
-    (check) => check.id === 'secret_free_outputs').status, 'fail');
-  fs.rmSync(lateExtraArtifact);
+// Defects: a worker-authored identity/evidence chain, unsafe preflight, or mutated
+// AUDIT target could be accepted as authoritative forward evidence.
+test('audit fixture uses trusted dispatch and controller-owned evidence', (t) => {
+  assert.deepEqual(Object.keys(controller).sort(), [
+    'CONTRACT_DEFINITIONS',
+    'appendEvent',
+    'executeHost',
+    'gradeControllerRun',
+    'prepareController',
+    'readLauncher',
+    'renderPublicSchemas',
+    'runInventory',
+    'sealEvidence',
+    'validateContract',
+  ]);
+  assert.deepEqual(Object.keys(forward).sort(), [
+    'captureEvidence',
+    'executeHost',
+    'gradeScenario',
+    'prepareFixture',
+    'recoverHost',
+    'runCli',
+    'snapshotTargets',
+  ]);
 
-  const hostIndexPath = path.join(logs, 'host-evidence.json');
-  const originalHostIndex = fs.readFileSync(hostIndexPath);
-  const incompleteHostEvidence = readJson(path.join(logs, 'host-evidence.json'));
-  incompleteHostEvidence.hosts = incompleteHostEvidence.hosts.filter(
-    (item) => item.host === 'codex');
-  writeJson(hostIndexPath, incompleteHostEvidence);
-  const missingHostEntry = forward.gradeScenario('audit', runRoot);
-  assert.equal(missingHostEntry.outcome, 'fail');
-  assert.equal(missingHostEntry.checks.find((check) => check.id === 'host_evidence').status,
-    'fail');
-  fs.writeFileSync(hostIndexPath, originalHostIndex);
+  const runRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-controller-audit-'));
+  t.after(() => fs.rmSync(runRoot, { recursive: true, force: true }));
+  const runtimeCalls = { spawn: 0, rename: 0, liveness: 0 };
+  const runtime = {
+    gitExecutable: trustedGitExecutable(),
+    spawnSync(...args) {
+      runtimeCalls.spawn += 1;
+      assert.notEqual(String(args[0]).toLowerCase(), 'where.exe');
+      assert.notEqual(String(args[0]).toLowerCase(), 'which');
+      return childProcess.spawnSync(...args);
+    },
+    renameSync(...args) {
+      runtimeCalls.rename += 1;
+      return fs.renameSync(...args);
+    },
+    processAlive(pid) {
+      runtimeCalls.liveness += 1;
+      try {
+        process.kill(pid, 0);
+        return true;
+      } catch (error) {
+        return error?.code !== 'ESRCH';
+      }
+    },
+  };
+  const prepared = forward.prepareFixture('audit', runRoot, runtime);
+  assert.equal(prepared.status, 'prepared');
+  assert.equal(prepared.authoritative, true);
+  const launcherArgumentAttack = writeTrustedAdapterFixture(t, 'codex');
+  const launcherArgumentDescriptor = readJson(launcherArgumentAttack);
+  for (const profile of Object.values(launcherArgumentDescriptor.profiles)) {
+    profile.args[0] = path.basename(profile.args[0]);
+  }
+  writeJson(launcherArgumentAttack, launcherArgumentDescriptor);
+  assert.equal(controller.readLauncher(launcherArgumentAttack, runRoot, 'codex').status,
+    'unverified', 'relative interpreter scripts must be rejected before launch');
+  for (const profile of Object.values(launcherArgumentDescriptor.profiles)) {
+    profile.args = ['--eval', 'process.stdout.write("unpinned")'];
+  }
+  writeJson(launcherArgumentAttack, launcherArgumentDescriptor);
+  assert.equal(controller.readLauncher(launcherArgumentAttack, runRoot, 'codex').status,
+    'unverified', 'inline executable interpreter payloads must be rejected');
+  const flaggedLauncher = writeTrustedAdapterFixture(t, 'codex');
+  const flaggedDescriptor = readJson(flaggedLauncher);
+  for (const profile of Object.values(flaggedDescriptor.profiles)) {
+    profile.args.unshift('--no-warnings');
+  }
+  writeJson(flaggedLauncher, flaggedDescriptor);
+  assert.equal(controller.readLauncher(flaggedLauncher, runRoot, 'codex').status, 'ready',
+    'native profile flags must remain compatible with a pinned absolute entrypoint');
+  const renamedInterpreterLauncher = writeTrustedAdapterFixture(t, 'codex');
+  const renamedInterpreterDescriptor = readJson(renamedInterpreterLauncher);
+  const renamedInterpreter = path.join(path.dirname(renamedInterpreterLauncher),
+    process.platform === 'win32' ? 'nodejs-copy.exe' : 'nodejs-copy');
+  fs.copyFileSync(process.execPath, renamedInterpreter);
+  renamedInterpreterDescriptor.adapterProgram = renamedInterpreter;
+  renamedInterpreterDescriptor.identityFiles = renamedInterpreterDescriptor.identityFiles
+    .map((entry) => entry === process.execPath ? renamedInterpreter : entry);
+  for (const profile of Object.values(renamedInterpreterDescriptor.profiles)) {
+    profile.args[0] = path.basename(profile.args[0]);
+  }
+  writeJson(renamedInterpreterLauncher, renamedInterpreterDescriptor);
+  assert.equal(controller.readLauncher(renamedInterpreterLauncher, runRoot, 'codex').status,
+    'unverified', 'renamed interpreters must not bypass pinned entrypoint validation');
+  const nativeInterpreterLauncher = writeTrustedAdapterFixture(t, 'codex');
+  const nativeInterpreterDescriptor = readJson(nativeInterpreterLauncher);
+  const nativeInterpreter = path.join(path.dirname(nativeInterpreterLauncher),
+    process.platform === 'win32' ? 'native-adapter.exe' : 'native-adapter');
+  fs.copyFileSync(process.execPath, nativeInterpreter);
+  nativeInterpreterDescriptor.adapterProgram = nativeInterpreter;
+  nativeInterpreterDescriptor.execution = { kind: 'native', entrypoint: null };
+  nativeInterpreterDescriptor.identityFiles = nativeInterpreterDescriptor.identityFiles
+    .map((entry) => entry === process.execPath ? nativeInterpreter : entry);
+  for (const profile of Object.values(nativeInterpreterDescriptor.profiles)) {
+    profile.args[0] = path.basename(profile.args[0]);
+  }
+  writeJson(nativeInterpreterLauncher, nativeInterpreterDescriptor);
+  const preloadLauncher = writeTrustedAdapterFixture(t, 'codex');
+  const preloadDescriptor = readJson(preloadLauncher);
+  const unpinnedPreload = path.join(path.dirname(preloadLauncher), 'unpinned-preload.cjs');
+  fs.writeFileSync(unpinnedPreload, 'module.exports = {};\n');
+  for (const profile of Object.values(preloadDescriptor.profiles)) {
+    profile.args.unshift(`-r${unpinnedPreload}`);
+  }
+  writeJson(preloadLauncher, preloadDescriptor);
+  assert.equal(controller.readLauncher(preloadLauncher, runRoot, 'codex').status,
+    'unverified', 'compact executable preload flags must be rejected');
+  const unsafeStartupStatuses = [[
+    'renamed native interpreter',
+    controller.readLauncher(nativeInterpreterLauncher, runRoot, 'codex').status,
+  ]];
+  for (const environmentName of [
+    'NODE_OPTIONS', 'NODE_PATH', 'PYTHONPATH', 'PYTHONSTARTUP', 'PYTHONHOME',
+    'RUBYOPT', 'RUBYLIB', 'BASH_ENV', 'ENV', 'ZDOTDIR', 'LUA_INIT', 'LUA_INIT_5_4',
+    'LUA_PATH', 'LUA_CPATH', 'PSMODULEPATH',
+  ]) {
+    const environmentLauncher = writeTrustedAdapterFixture(t, 'codex');
+    const environmentDescriptor = readJson(environmentLauncher);
+    environmentDescriptor.environmentNames = [environmentName];
+    writeJson(environmentLauncher, environmentDescriptor);
+    unsafeStartupStatuses.push([environmentName,
+      controller.readLauncher(environmentLauncher, runRoot, 'codex').status]);
+  }
+  assert.deepEqual(unsafeStartupStatuses.map(([name, status]) => [name, status]),
+    unsafeStartupStatuses.map(([name]) => [name, 'unverified']),
+    'native interpreter scripts and executable startup environments must be rejected');
+  const schemasForParity = controller.renderPublicSchemas();
+  const parityFixtures = {
+    protocolEvent: {
+      schemaVersion: 2, runId: prepared.runId, host: 'codex', invocationId: null,
+      sequence: 1, phase: 'prepared', previousEventSha256: null,
+      startedAt: '2030-01-01T00:00:00.000Z', completedAt: '2030-01-01T00:00:00.000Z',
+      beforeSnapshotSha256: null, afterSnapshotSha256: null,
+      inputBlobRefs: [], outputBlobRefs: [], disposition: 'pass',
+    },
+    hostEnvelope: {
+      schemaVersion: 1, kind: 'plan', scenarioId: 'audit', runId: prepared.runId,
+      host: 'codex', invocationId: crypto.randomUUID(), controllerNonce: 'c'.repeat(64),
+      provenance: 'synthetic-v1', realHostClaim: false, policySha256: 'b'.repeat(64),
+      process: { adapterPid: 1, childPid: 2, childExitCode: 0,
+        descendant: { started: true, pid: 3, exitCode: 0, stopped: true },
+        observedPids: [1, 2, 3],
+        treeStopped: true },
+      authorization: 'audit-read-only', operations: [], blockedTargets: [],
+      findings: [{ id: 'inventory-roots', status: 'verified',
+        observedSha256: 'a'.repeat(64) }],
+      reportDraft: {
+        summary: 'Found conflicting package-manager guidance and truncated safety instructions.',
+        qualitativeFindings: AUDIT_QUALITATIVE_EXPECTATIONS.map((entry) => ({ ...entry,
+          observedSha256: 'd'.repeat(64) })),
+      },
+    },
+    evidence: {
+      schemaVersion: 2, scenarioId: 'audit', runId: prepared.runId, host: 'codex',
+      controllerOwned: true, outcome: 'pass', auditSummary: 'Bounded audit summary.',
+      targetMatrix: [{ id: 'source-0001', host: 'claude', scope: 'global',
+        origin: 'claude-home', loadState: 'active', byteCount: 1, byteContribution: 1,
+        sha256: 'a'.repeat(64), status: 'verified' }],
+      effectiveChain: [], decisionLedger: [],
+      changesAndRecovery: { transactions: [], recoveryCreated: false },
+      verificationMatrix: [], pendingQuestions: [],
+    },
+  };
+  const paritySchemas = {
+    protocolEvent: schemasForParity['protocol-v2.schema.json'],
+    hostEnvelope: schemasForParity['host-envelope-v2.schema.json'],
+    evidence: schemasForParity['evidence-v2.schema.json'],
+  };
+  const assertContractParity = (name, value, expected, seam) => {
+    const hand = controller.validateContract(name, value).valid;
+    const rendered = renderedSchemaValid(paritySchemas[name], value);
+    assert.equal(hand, rendered, `${name} parity: ${seam}`);
+    assert.equal(hand, expected, `${name} expectation: ${seam}`);
+  };
+  for (const [name, fixture] of Object.entries(parityFixtures)) {
+    assertContractParity(name, fixture, true, 'valid');
+    const missing = structuredClone(fixture);
+    delete missing[controller.CONTRACT_DEFINITIONS[name].required[0]];
+    assertContractParity(name, missing, false, 'required');
+    assertContractParity(name, { ...structuredClone(fixture), host: 7 }, false, 'type');
+    assertContractParity(name, { ...structuredClone(fixture), schemaVersion: 99 }, false,
+      'const');
+    assertContractParity(name, { ...structuredClone(fixture), host: 'invented' }, false,
+      'enum');
+    assertContractParity(name, { ...structuredClone(fixture), runId: '' }, false,
+      'minLength');
+    assertContractParity(name, { ...structuredClone(fixture), extra: true }, false,
+      'additionalProperties');
+  }
+  assertContractParity('protocolEvent', { ...structuredClone(parityFixtures.protocolEvent),
+    previousEventSha256: 'bad' }, false, 'pattern');
+  assertContractParity('hostEnvelope', { ...structuredClone(parityFixtures.hostEnvelope),
+    availability: 'available-safe' }, false, 'variant');
+  assertContractParity('hostEnvelope', { ...structuredClone(parityFixtures.hostEnvelope),
+    reportDraft: { ...parityFixtures.hostEnvelope.reportDraft,
+      qualitativeFindings: [] } }, false, 'minItems');
+  assertContractParity('hostEnvelope', { ...structuredClone(parityFixtures.hostEnvelope),
+    reportDraft: { ...parityFixtures.hostEnvelope.reportDraft,
+      qualitativeFindings: Array.from({ length: 9 }, (_, index) => ({
+        ...AUDIT_QUALITATIVE_EXPECTATIONS[index % 2], id: `finding-extra-${index}`,
+        observedSha256: 'd'.repeat(64),
+      })) } }, false, 'maxItems');
+  assertContractParity('hostEnvelope', { ...structuredClone(parityFixtures.hostEnvelope),
+    reportDraft: { ...parityFixtures.hostEnvelope.reportDraft,
+      summary: '🧪'.repeat(512) } }, true, 'astral maxLength boundary');
+  assertContractParity('hostEnvelope', { ...structuredClone(parityFixtures.hostEnvelope),
+    reportDraft: { ...parityFixtures.hostEnvelope.reportDraft,
+      summary: '🧪'.repeat(513) } }, false, 'astral maxLength overflow');
+  const badFindingPattern = structuredClone(parityFixtures.hostEnvelope);
+  badFindingPattern.reportDraft.qualitativeFindings[0].id = 'INVALID';
+  assertContractParity('hostEnvelope', badFindingPattern, false, 'nested pattern');
+  const badEvidencePattern = structuredClone(parityFixtures.evidence);
+  badEvidencePattern.targetMatrix[0].sha256 = 'bad';
+  assertContractParity('evidence', badEvidencePattern, false, 'nested pattern');
+  const extraEvidenceProperty = structuredClone(parityFixtures.evidence);
+  extraEvidenceProperty.changesAndRecovery.extra = true;
+  assertContractParity('evidence', extraEvidenceProperty, false,
+    'nested additionalProperties');
+  const codexSubject = path.join(runRoot, 'hosts', 'codex', 'subject');
+  const claudeSubject = path.join(runRoot, 'hosts', 'claude', 'subject');
+  assert.deepEqual(forward.snapshotTargets(codexSubject), forward.snapshotTargets(claudeSubject));
+  assert.notEqual(fs.statSync(path.join(codexSubject, 'repo', 'AGENTS.md'), { bigint: true }).ino,
+    fs.statSync(path.join(claudeSubject, 'repo', 'AGENTS.md'), { bigint: true }).ino,
+    'host subjects must not share file identities');
 
-  const codexReport = path.join(logs, 'hosts', 'codex', 'machine-report.json');
-  const codexReportBytes = fs.readFileSync(codexReport);
-  fs.rmSync(codexReport);
-  const missingPrimary = forward.gradeScenario('audit', runRoot);
-  assert.equal(missingPrimary.outcome, 'fail');
-  assert.equal(missingPrimary.checks.find((check) => check.id === 'host_evidence').status,
-    'fail');
-  fs.writeFileSync(codexReport, codexReportBytes);
+  const codexLauncher = writeTrustedAdapterFixture(t, 'codex');
+  const claudeLauncher = writeTrustedAdapterFixture(t, 'claude');
+  const codex = forward.executeHost('audit', runRoot,
+    { host: 'codex', launcherPath: codexLauncher }, runtime);
+  const claude = forward.executeHost('audit', runRoot,
+    { host: 'claude', launcherPath: claudeLauncher }, runtime);
+  assert.ok(runtimeCalls.spawn >= 8, 'the explicit runtime seam must own process launches');
+  assert.ok(runtimeCalls.rename >= 4, 'the explicit runtime seam must own atomic publication');
+  assert.ok(runtimeCalls.liveness >= 18,
+    'the explicit runtime seam must verify every adapter, child, and descendant');
+  for (const result of [codex, claude]) {
+    assert.equal(result.outcome, 'pass');
+    assert.equal(result.authoritative, true);
+    assert.equal(result.realHostClaim, false);
+    assert.equal(result.inventories.length, 3);
+    assert.equal(new Set(result.invocations.map((entry) => entry.invocationId)).size, 3);
+    assert.notEqual(result.invocations[1].invocationId, result.invocations[2].invocationId);
+    assert.equal(new Set(result.invocations.map((entry) => entry.policySha256)).size, 1);
+    assert.notDeepEqual(result.invocations[1].findings, result.invocations[2].findings,
+      'nonce- and phase-bound semantic proofs must differ');
+    assert.ok(result.invocations.every((entry) => entry.processTreeStopped === true &&
+      /^[0-9a-f]{64}$/.test(entry.identitySha256) && entry.rawStdout === undefined &&
+      entry.envelope === undefined));
+    for (const invocation of result.invocations) {
+      assert.ok(Number.isInteger(invocation.process.adapterPid));
+      assert.ok(Number.isInteger(invocation.process.childPid));
+      assert.ok(Number.isInteger(invocation.process.descendant.pid));
+      assert.equal(invocation.process.descendant.stopped, true);
+    }
+    for (const invocation of result.invocations.filter((entry) =>
+      ['plan', 'verify'].includes(entry.profile))) {
+      assert.equal(invocation.summary,
+        'Found conflicting package-manager guidance and truncated safety instructions.');
+      assert.deepEqual(invocation.qualitativeFindings.map(({ observedSha256, ...entry }) => {
+        assert.match(observedSha256, /^[0-9a-f]{64}$/);
+        return entry;
+      }), AUDIT_QUALITATIVE_EXPECTATIONS);
+    }
+    assert.notDeepEqual(result.invocations[1].qualitativeFindings,
+      result.invocations[2].qualitativeFindings,
+      'qualitative findings must retain phase- and nonce-bound content receipts');
+    const preflight = result.invocations.find((entry) => entry.profile === 'preflight');
+    assert.deepEqual(preflight.probes.map(({ id, operation, outcome }) =>
+      ({ id, operation, outcome })), [
+      { id: 'host-view', operation: 'read', outcome: 'allowed' },
+      { id: 'controller-private', operation: 'read', outcome: 'denied' },
+      { id: 'recovery-private', operation: 'read', outcome: 'denied' },
+      { id: 'evidence-private', operation: 'read', outcome: 'denied' },
+      { id: 'sibling-private', operation: 'read', outcome: 'denied' },
+      { id: 'host-view-write', operation: 'write', outcome: 'denied' },
+    ]);
+    assert.equal(preflight.descendant.started, true);
+    assert.equal(preflight.descendant.stopped, true);
+    assert.ok(result.events.every((entry, index) =>
+      entry.sequence === index + 1 &&
+      entry.previousEventSha256 === (index === 0 ? null : sha256(
+        Buffer.from(JSON.stringify(Object.fromEntries(Object.entries(
+          result.events[index - 1]).sort(([left], [right]) => left.localeCompare(right))))))) &&
+      entry.canonical === undefined && controller.validateContract('protocolEvent', entry).valid));
+    for (let ordinal = 1; ordinal <= 3; ordinal += 1) {
+      const evidence = path.join(runRoot, 'hosts', result.host, 'evidence');
+      const stdout = fs.readFileSync(path.join(evidence,
+        `inventory-${ordinal}-stdout.json`));
+      const receipt = readJson(path.join(evidence, `inventory-${ordinal}-receipt.json`));
+      assert.equal(receipt.stdoutSha256, sha256(stdout));
+      assert.equal(receipt.controllerOwned, true);
+      assert.equal(receipt.argv[0], process.execPath);
+      assert.ok(path.isAbsolute(receipt.gitExecutable));
+      assert.ok(receipt.argv.includes('--claude-setting-sources'));
+      assert.ok(receipt.argv.includes('user,project,local'));
+      const manifest = JSON.parse(stdout);
+      assert.equal(manifest.chains.claude.coverage, 'complete');
+      assert.deepEqual(manifest.warnings, []);
+      assert.equal(manifest.sources.length, 25);
+    }
+    assert.deepEqual(result.targetSnapshots[0], result.targetSnapshots.at(-1));
+    const report = readJson(path.join(runRoot, 'hosts', result.host, 'evidence', 'report.json'));
+    const manifest = readJson(path.join(runRoot, 'hosts', result.host, 'evidence',
+      'inventory-1-stdout.json'));
+    const hostSubject = path.join(runRoot, 'hosts', result.host, 'subject');
+    assert.deepEqual(manifest.sources.map((source) => [
+      path.relative(hostSubject, source.logicalPath).split(path.sep).join('/'),
+      source.host, source.scope, source.origin, source.loadState, source.byteCount,
+      source.byteContribution,
+    ]), AUDIT_SOURCE_EXPECTATIONS);
+    assert.deepEqual(manifest.chains, {
+      codex: { sourceIds: ['source-0004', 'source-0008', 'source-0018', 'source-0020'] },
+      claude: {
+        sourceIds: ['source-0001', 'source-0002', 'source-0011', 'source-0025',
+          'source-0010'],
+        conditionalSourceIds: ['source-0007'], maxImportDepth: 1, excludes: [],
+        settingSources: { state: 'explicit', sources: ['user', 'project', 'local'] },
+        coverage: 'complete',
+      },
+    });
+    assert.deepEqual(report.targetMatrix.map(({ id, loadState, byteCount,
+      byteContribution, sha256: digest, status }) => ({ id, loadState, byteCount,
+      byteContribution, sha256: digest, status })), manifest.sources.map((source) => ({
+      id: source.id,
+      loadState: source.loadState,
+      byteCount: source.byteCount,
+      byteContribution: source.byteContribution,
+      sha256: source.sha256,
+      status: ['source-0003', 'source-0004', 'source-0020'].includes(source.id)
+        ? 'unverified' : 'verified',
+    })));
+    assert.equal(report.auditSummary,
+      'Found conflicting package-manager guidance and truncated safety instructions.');
+    assert.deepEqual(report.decisionLedger.map(({ phase, observedSha256, ...entry }) => {
+      assert.ok(['plan', 'verify'].includes(phase));
+      assert.match(observedSha256, /^[0-9a-f]{64}$/);
+      return entry;
+    }), [...AUDIT_QUALITATIVE_EXPECTATIONS, ...AUDIT_QUALITATIVE_EXPECTATIONS]);
+    assert.ok(report.verificationMatrix.some((entry) =>
+      entry.claim === 'semantic-plan-observations' && entry.status === 'verified'));
+    assert.ok(report.verificationMatrix.some((entry) =>
+      entry.claim === 'semantic-verify-observations' && entry.status === 'verified'));
+    const hostView = path.join(runRoot, 'hosts', result.host, 'controller', 'host-view');
+    for (const relative of ['request.json', 'inventory.json', 'instruction-task.md',
+      'inputs/index.json', 'schemas/host-envelope-v2.schema.json',
+      'schemas/evidence-v2.schema.json']) {
+      assert.equal(fs.statSync(path.join(hostView, ...relative.split('/'))).isFile(), true);
+    }
+    assert.equal(fs.existsSync(path.join(hostView, 'expected.json')), false,
+      'private semantic expectations must not be exposed to the host');
+    assert.deepEqual(readJson(path.join(hostView, 'inputs', 'index.json')).map(
+      (entry) => entry.id), manifest.sources.map((source) => source.id));
+    for (const invocation of result.invocations) {
+      for (const digest of [invocation.stdoutSha256, invocation.stderrSha256]) {
+        const blob = path.join(runRoot, 'hosts', result.host, 'controller', 'blobs',
+          `${digest}.blob`);
+        assert.equal(sha256(fs.readFileSync(blob)), digest,
+          'raw adapter bodies must remain in private digest blobs');
+      }
+    }
+    const publicResult = fs.readFileSync(path.join(runRoot, 'hosts', result.host,
+      'result.json'), 'utf8');
+    assert.doesNotMatch(publicResult, /reportDraft|controllerNonce|rawStdout|rawStderr/);
+  }
 
-  const codexWorkerFinal = path.join(logs, 'hosts', 'codex', 'worker-final.md');
-  const codexWorkerFinalBytes = fs.readFileSync(codexWorkerFinal);
-  fs.rmSync(codexWorkerFinal);
-  const missingRawFinal = forward.gradeScenario('audit', runRoot);
-  assert.equal(missingRawFinal.outcome, 'fail');
-  assert.equal(missingRawFinal.checks.find((check) => check.id === 'host_evidence').status,
-    'fail');
-  fs.writeFileSync(codexWorkerFinal, codexWorkerFinalBytes);
+  const aggregate = forward.gradeScenario('audit', runRoot);
+  assert.equal(aggregate.outcome, 'pass');
+  assert.equal(aggregate.authoritative, true);
+  assert.deepEqual(aggregate.hosts.map((entry) => entry.host), ['claude', 'codex']);
+  const codexPublicResultPath = path.join(runRoot, 'hosts', 'codex', 'result.json');
+  const codexPrivateResultPath = path.join(runRoot, 'hosts', 'codex', 'controller',
+    'result.json');
+  const codexResultReceiptPath = path.join(runRoot, 'hosts', 'codex', 'controller',
+    'result-receipt.json');
+  const originalCodexPublicResult = fs.readFileSync(codexPublicResultPath);
+  const originalCodexPrivateResult = fs.readFileSync(codexPrivateResultPath);
+  const originalCodexResultReceipt = fs.readFileSync(codexResultReceiptPath);
+  const validCodexResult = JSON.parse(originalCodexPublicResult);
+  const restoreCodexResult = () => {
+    fs.writeFileSync(codexPublicResultPath, originalCodexPublicResult);
+    fs.writeFileSync(codexPrivateResultPath, originalCodexPrivateResult);
+    fs.writeFileSync(codexResultReceiptPath, originalCodexResultReceipt);
+  };
+  const rejectNonPassMutation = (label, mutate) => {
+    try {
+      mutate();
+      const rejected = forward.gradeScenario('audit', runRoot, runtime);
+      assert.equal(rejected.outcome, 'fail', label);
+      assert.equal(rejected.hosts.find((entry) => entry.host === 'codex').outcome, 'fail', label);
+      assert.doesNotMatch(JSON.stringify(rejected), /CONTROLLER-PRIVATE-CANARY/, label);
+    } finally {
+      restoreCodexResult();
+    }
+    assert.equal(forward.gradeScenario('audit', runRoot, runtime).outcome, 'pass',
+      `${label} restore`);
+  };
+  rejectNonPassMutation('empty public result must fail closed', () =>
+    writeJson(codexPublicResultPath, {}));
+  rejectNonPassMutation('unknown outcome must fail closed', () =>
+    writeJson(codexPublicResultPath, { ...validCodexResult, outcome: 'invented' }));
+  rejectNonPassMutation('wrong result host must fail closed', () =>
+    writeJson(codexPublicResultPath, { ...validCodexResult, host: 'claude' }));
+  rejectNonPassMutation('wrong result run must fail closed', () =>
+    writeJson(codexPublicResultPath, { ...validCodexResult, runId: crypto.randomUUID() }));
+  for (const outcome of ['fail', 'unverified']) {
+    rejectNonPassMutation(`altered ${outcome} result must fail closed`, () =>
+      writeJson(codexPublicResultPath, { ...validCodexResult, outcome,
+        protocolOutcome: outcome, taskOutcome: 'not-completed',
+        reason: 'adapter-behavior-failed' }));
+  }
+  rejectNonPassMutation('secret-bearing result must fail closed', () =>
+    writeJson(codexPublicResultPath, { ...validCodexResult, outcome: 'fail',
+      protocolOutcome: 'fail', taskOutcome: 'not-completed',
+      reason: 'CONTROLLER-PRIVATE-CANARY' }));
+  rejectNonPassMutation('bad result receipt must fail closed', () =>
+    writeJson(codexResultReceiptPath, { schemaVersion: 2 }));
+  rejectNonPassMutation('missing result receipt must fail closed', () =>
+    fs.rmSync(codexResultReceiptPath));
+  rejectNonPassMutation('missing private result must fail closed', () =>
+    fs.rmSync(codexPrivateResultPath));
+  const publicFiles = collectRelativeFiles(runRoot).filter((entry) =>
+    entry.startsWith('protocol/') || /^hosts\/(?:codex|claude)\/(?:evidence|result\.json)/.test(entry) ||
+    entry.startsWith('results/'));
+  assert.deepEqual(publicFiles, [
+    'hosts/claude/evidence/events.json',
+    'hosts/claude/evidence/inventory-1-receipt.json',
+    'hosts/claude/evidence/inventory-1-stdout.json',
+    'hosts/claude/evidence/inventory-2-receipt.json',
+    'hosts/claude/evidence/inventory-2-stdout.json',
+    'hosts/claude/evidence/inventory-3-receipt.json',
+    'hosts/claude/evidence/inventory-3-stdout.json',
+    'hosts/claude/evidence/report.json',
+    'hosts/claude/evidence/report.md',
+    'hosts/claude/result.json',
+    'hosts/codex/evidence/events.json',
+    'hosts/codex/evidence/inventory-1-receipt.json',
+    'hosts/codex/evidence/inventory-1-stdout.json',
+    'hosts/codex/evidence/inventory-2-receipt.json',
+    'hosts/codex/evidence/inventory-2-stdout.json',
+    'hosts/codex/evidence/inventory-3-receipt.json',
+    'hosts/codex/evidence/inventory-3-stdout.json',
+    'hosts/codex/evidence/report.json',
+    'hosts/codex/evidence/report.md',
+    'hosts/codex/result.json',
+    'protocol/evidence-v2.schema.json',
+    'protocol/host-envelope-v2.schema.json',
+    'protocol/protocol-v2.schema.json',
+    'results/aggregate.json',
+  ]);
+  for (const host of ['codex', 'claude']) {
+    const markdown = fs.readFileSync(path.join(runRoot, 'hosts', host, 'evidence',
+      'report.md'), 'utf8');
+    assert.deepEqual([...markdown.matchAll(/^## (.+)$/gm)].map((match) => match[1]),
+      HUMAN_REPORT_SECTIONS);
+    const publicBytes = collectRelativeFiles(path.join(runRoot, 'hosts', host, 'evidence'))
+      .map((entry) => fs.readFileSync(path.join(runRoot, 'hosts', host, 'evidence', entry)))
+      .map((bytes) => bytes.toString('utf8')).join('\\n');
+    assert.doesNotMatch(publicBytes,
+      /AUDIT-INSTRUCTION-SENTINEL|AUDIT%2DINSTRUCTION|4155444954|QVVESVQ/);
+  }
 
-  fs.appendFileSync(codexWorkerFinal, 'AUDIT-INSTRUCTION-SENTINEL\n');
-  const tamperedRawFinal = forward.gradeScenario('audit', runRoot);
-  assert.equal(tamperedRawFinal.outcome, 'fail');
-  assert.equal(tamperedRawFinal.checks.find((check) => check.id === 'host_evidence').status,
-    'fail');
-  assert.equal(tamperedRawFinal.checks.find(
-    (check) => check.id === 'secret_free_outputs').status, 'fail');
-  fs.writeFileSync(codexWorkerFinal, codexWorkerFinalBytes);
+  const validPlanEnvelope = {
+    schemaVersion: 1,
+    kind: 'plan',
+    scenarioId: 'audit',
+    runId: prepared.runId,
+    host: 'codex',
+    invocationId: crypto.randomUUID(),
+    controllerNonce: 'c'.repeat(64),
+    provenance: 'synthetic-v1',
+    realHostClaim: false,
+    policySha256: 'b'.repeat(64),
+    process: { adapterPid: 1, childPid: 2, childExitCode: 0,
+      descendant: { started: true, pid: 3, exitCode: 0, stopped: true },
+      observedPids: [1, 2, 3],
+      treeStopped: true },
+    authorization: 'audit-read-only',
+    operations: [],
+    blockedTargets: [],
+    findings: [{ id: 'plan-observation', status: 'verified' }],
+    reportDraft: {
+      summary: 'Found conflicting package-manager guidance and truncated safety instructions.',
+      qualitativeFindings: AUDIT_QUALITATIVE_EXPECTATIONS.map((entry) => ({ ...entry,
+        observedSha256: 'd'.repeat(64) })),
+    },
+  };
+  validPlanEnvelope.findings = [{ id: 'inventory-roots', status: 'verified',
+    observedSha256: 'a'.repeat(64) }];
+  assert.equal(controller.validateContract('hostEnvelope', validPlanEnvelope).valid, true);
+  const planRequired = [...controller.CONTRACT_DEFINITIONS.hostEnvelope.required,
+    ...controller.CONTRACT_DEFINITIONS.hostEnvelope.variants.plan.required];
+  for (const required of planRequired) {
+    assert.equal(controller.validateContract('hostEnvelope', Object.fromEntries(
+      Object.entries(validPlanEnvelope).filter(([key]) => key !== required))).valid, false,
+    `missing required field must fail: ${required}`);
+  }
+  for (const mutation of [
+    { ...validPlanEnvelope, host: 'invented' },
+    { ...validPlanEnvelope, operations: 'none' },
+    { ...validPlanEnvelope, availability: 'available-safe' },
+    { ...validPlanEnvelope, findings: [{ ...validPlanEnvelope.findings[0],
+      observedSha256: 'not-a-digest' }] },
+    { ...validPlanEnvelope, findings: [{ ...validPlanEnvelope.findings[0], extra: true }] },
+    { ...validPlanEnvelope, process: { ...validPlanEnvelope.process, extra: true } },
+    { ...validPlanEnvelope, reportDraft: { ...validPlanEnvelope.reportDraft, extra: true } },
+    { ...validPlanEnvelope, kind: 'preflight' },
+    { ...validPlanEnvelope, provenance: 'invented-v1' },
+    Object.fromEntries(Object.entries(validPlanEnvelope)
+      .filter(([key]) => key !== 'invocationId')),
+  ]) assert.equal(controller.validateContract('hostEnvelope', mutation).valid, false);
+  const schemas = controller.renderPublicSchemas();
+  assert.equal(schemas['host-envelope-v2.schema.json'].$schema,
+    'https://json-schema.org/draft/2020-12/schema');
+  assert.equal(schemas['host-envelope-v2.schema.json'].additionalProperties, false);
+  const renderedPlan = schemas['host-envelope-v2.schema.json'].oneOf.find(
+    (variant) => variant.properties.kind.const === 'plan');
+  assert.ok(renderedPlan.required.includes('invocationId'));
+  assert.ok(planRequired.every((required) => renderedPlan.required.includes(required)));
+  assert.ok(renderedPlan.not.anyOf.some((entry) => entry.required.includes('availability')));
+  assert.equal(schemas['host-envelope-v2.schema.json'].properties.process
+    .additionalProperties, false);
+  assert.equal(schemas['host-envelope-v2.schema.json'].properties.findings.items
+    .additionalProperties, false);
 
-  const codexReceiptPath = path.join(runRoot, 'evaluator', 'receipts', 'hosts', 'codex.json');
-  const codexReceiptBytes = fs.readFileSync(codexReceiptPath);
-  const fabricatedReceipt = readJson(codexReceiptPath);
-  fabricatedReceipt.evaluatorNonce = '0'.repeat(64);
-  writeJson(codexReceiptPath, fabricatedReceipt);
-  const fabricated = forward.gradeScenario('audit', runRoot);
-  assert.equal(fabricated.outcome, 'fail');
-  assert.equal(fabricated.checks.find((check) => check.id === 'host_evidence').status, 'fail');
-  fs.writeFileSync(codexReceiptPath, codexReceiptBytes);
+  const attackResults = new Map();
+  const attack = (mode, expectedOutcome) => {
+    const attackRoot = fs.mkdtempSync(path.join(os.tmpdir(), `instruction-audit-${mode}-`));
+    t.after(() => fs.rmSync(attackRoot, { recursive: true, force: true }));
+    forward.prepareFixture('audit', attackRoot, runtime);
+    const launcher = writeTrustedAdapterFixture(t, 'codex', mode);
+    const result = forward.executeHost('audit', attackRoot,
+      { host: 'codex', launcherPath: launcher }, runtime);
+    assert.equal(result.outcome, expectedOutcome, mode);
+    if (expectedOutcome === 'unverified' || ['malformed-preflight', 'nonzero-preflight',
+      'timeout-preflight', 'oversize-preflight', 'identity-change', 'lying-probe']
+      .includes(mode)) {
+      assert.equal(fs.existsSync(path.join(path.dirname(launcher), 'behavior.log')), false,
+        `${mode} must not launch plan or verify behavior`);
+    }
+    assert.ok(['adapter-preflight-failed', 'adapter-behavior-failed',
+      'preflight-unavailable', 'semantic-observation-failed', 'privacy-scan-failed',
+      'target-integrity-failed'].includes(result.reason),
+    `public reason must be a controller-owned code: ${result.reason}`);
+    const survivorPath = path.join(path.dirname(launcher), 'survivor.pid');
+    if (fs.existsSync(survivorPath)) {
+      const pid = Number(fs.readFileSync(survivorPath, 'utf8'));
+      stopTestProcess(pid);
+    }
+    const attacked = { attackRoot, result, launcher };
+    attackResults.set(mode, attacked);
+    return attacked;
+  };
+  for (const mode of ['wrong-host', 'mutate', 'forged-inventory', 'malformed', 'blind',
+    'lying-probe', 'malformed-preflight', 'nonzero-preflight', 'oversize-preflight',
+    'timeout-preflight', 'identity-change', 'checksum-only', 'canned-qualitative',
+    'unreferenced-qualitative', 'extra-qualitative']) {
+    attack(mode, 'fail');
+  }
+  for (const mode of ['unsafe', 'unauthenticated', 'readable-controller',
+    'readable-recovery', 'readable-evidence', 'readable-sibling', 'writable-view',
+    'unavailable-null-child']) {
+    attack(mode, 'unverified');
+  }
+  for (const mode of ['unsafe', 'unavailable-null-child']) {
+    const attacked = attackResults.get(mode);
+    const hostController = path.join(attacked.attackRoot, 'hosts', 'codex', 'controller');
+    const statePath = path.join(hostController, 'audit-state.json');
+    assert.equal(fs.existsSync(statePath), true,
+      `${mode} must retain controller-observed launch state for regrade`);
+    const originalState = fs.readFileSync(statePath);
+    const state = JSON.parse(originalState);
+    assert.equal(state.launches.length, 1);
+    assert.deepEqual(attacked.result.invocations[0].process, {
+      adapterPid: state.launches[0].process.adapterPid,
+      childPid: state.launches[0].process.childPid,
+      descendant: state.launches[0].process.descendant,
+      observedPids: state.launches[0].process.observedPids,
+    });
+    assert.equal(forward.gradeScenario('audit', attacked.attackRoot, runtime).outcome,
+      'unverified');
+    const rawPath = path.join(hostController, 'blobs',
+      `${attacked.result.invocations[0].stdoutSha256}.blob`);
+    const originalRaw = fs.readFileSync(rawPath);
+    fs.appendFileSync(rawPath, 'tampered');
+    assert.equal(forward.gradeScenario('audit', attacked.attackRoot, runtime).outcome, 'fail');
+    fs.writeFileSync(rawPath, originalRaw);
+    assert.equal(forward.gradeScenario('audit', attacked.attackRoot, runtime).outcome,
+      'unverified');
+    state.launches[0].identity.post[0].sha256 = '0'.repeat(64);
+    writeJson(statePath, state);
+    assert.equal(forward.gradeScenario('audit', attacked.attackRoot, runtime).outcome, 'fail');
+    fs.writeFileSync(statePath, originalState);
+    assert.equal(forward.gradeScenario('audit', attacked.attackRoot, runtime).outcome,
+      'unverified');
+    const recordedPid = attacked.result.invocations[0].process.adapterPid;
+    const liveRuntime = { ...runtime, processAlive: (pid) => pid === recordedPid ||
+      runtime.processAlive(pid) };
+    assert.equal(forward.gradeScenario('audit', attacked.attackRoot, liveRuntime).outcome,
+      'fail', `${mode} regrade must repeat controller liveness checks`);
+  }
+  const malformedStarted = attackResults.get('malformed-preflight');
+  const attemptsPath = path.join(malformedStarted.attackRoot, 'hosts', 'codex', 'controller',
+    'launch-attempts.json');
+  assert.equal(fs.existsSync(attemptsPath), true,
+    'a started malformed preflight must retain a private launch attempt');
+  const attempts = readJson(attemptsPath);
+  assert.equal(attempts.length, 1);
+  assert.equal(sha256(fs.readFileSync(path.join(malformedStarted.attackRoot, 'hosts', 'codex',
+    'controller', 'blobs', `${attempts[0].stdoutSha256}.blob`))),
+  attempts[0].stdoutSha256);
+  const malformedPublic = path.join(malformedStarted.attackRoot, 'hosts', 'codex', 'result.json');
+  const malformedPrivate = path.join(malformedStarted.attackRoot, 'hosts', 'codex', 'controller',
+    'result.json');
+  const malformedReceipt = path.join(malformedStarted.attackRoot, 'hosts', 'codex', 'controller',
+    'result-receipt.json');
+  const originalMalformedPublic = fs.readFileSync(malformedPublic);
+  const originalMalformedPrivate = fs.readFileSync(malformedPrivate);
+  const originalMalformedReceipt = fs.readFileSync(malformedReceipt);
+  const forgedUnverified = JSON.parse(originalMalformedPublic);
+  forgedUnverified.outcome = 'unverified';
+  forgedUnverified.protocolOutcome = 'unverified';
+  forgedUnverified.taskOutcome = 'not-executed';
+  writeJson(malformedPublic, forgedUnverified);
+  writeJson(malformedPrivate, forgedUnverified);
+  writeJson(malformedReceipt, { schemaVersion: 2, host: 'codex',
+    runId: forgedUnverified.runId, resultSha256: sha256(fs.readFileSync(malformedPublic)) });
+  assert.equal(forward.gradeScenario('audit', malformedStarted.attackRoot, runtime).outcome,
+    'fail', 'a started failed launch cannot be rewritten as unverified');
+  fs.writeFileSync(malformedPublic, originalMalformedPublic);
+  fs.writeFileSync(malformedPrivate, originalMalformedPrivate);
+  fs.writeFileSync(malformedReceipt, originalMalformedReceipt);
+  attack('surviving-descendant', 'fail');
+  const behaviorSurvivorRoot = fs.mkdtempSync(path.join(os.tmpdir(),
+    'instruction-audit-behavior-survivor-'));
+  t.after(() => fs.rmSync(behaviorSurvivorRoot, { recursive: true, force: true }));
+  forward.prepareFixture('audit', behaviorSurvivorRoot, runtime);
+  const behaviorSurvivorLauncher = writeTrustedAdapterFixture(t, 'codex',
+    'behavior-surviving-descendant');
+  const survivorPath = path.join(path.dirname(behaviorSurvivorLauncher), 'survivor.pid');
+  let behaviorSurvivor;
+  try {
+    behaviorSurvivor = forward.executeHost('audit', behaviorSurvivorRoot, {
+      host: 'codex', launcherPath: behaviorSurvivorLauncher,
+    }, runtime);
+    assert.equal(behaviorSurvivor.outcome, 'fail');
+    assert.equal(behaviorSurvivor.reason, 'adapter-behavior-failed');
+    const survivorPid = Number(fs.readFileSync(survivorPath, 'utf8'));
+    assert.throws(() => process.kill(survivorPid, 0), { code: 'ESRCH' },
+      'the trusted adapter must stop a live behavioral descendant before returning');
+  } finally {
+    if (fs.existsSync(survivorPath)) {
+      stopTestProcess(Number(fs.readFileSync(survivorPath, 'utf8')));
+    }
+  }
+  const omittedDescendantRoot = fs.mkdtempSync(path.join(os.tmpdir(),
+    'instruction-audit-omitted-descendant-'));
+  t.after(() => fs.rmSync(omittedDescendantRoot, { recursive: true, force: true }));
+  forward.prepareFixture('audit', omittedDescendantRoot, runtime);
+  const omittedDescendantLauncher = writeTrustedAdapterFixture(t, 'codex',
+    'omitted-detached-descendant');
+  const omittedSurvivorPath = path.join(path.dirname(omittedDescendantLauncher), 'survivor.pid');
+  try {
+    const omittedDescendant = forward.executeHost('audit', omittedDescendantRoot, {
+      host: 'codex', launcherPath: omittedDescendantLauncher,
+    }, runtime);
+    assert.equal(omittedDescendant.outcome, 'fail',
+      'an adapter must independently reject a detached descendant omitted by child output');
+    const omittedPid = Number(fs.readFileSync(omittedSurvivorPath, 'utf8'));
+    const attempts = readJson(path.join(omittedDescendantRoot, 'hosts', 'codex', 'controller',
+      'launch-attempts.json'));
+    const planAttempt = attempts.find((entry) => entry.profile === 'plan');
+    assert.ok(Array.isArray(planAttempt.process.observedPids) &&
+      planAttempt.process.observedPids.includes(omittedPid),
+      'the trusted adapter must independently enumerate the child process tree');
+    assert.throws(() => process.kill(omittedPid, 0), { code: 'ESRCH' },
+      'the trusted adapter must contain every independently observed descendant');
+  } finally {
+    if (fs.existsSync(omittedSurvivorPath)) {
+      stopTestProcess(Number(fs.readFileSync(omittedSurvivorPath, 'utf8')));
+    }
+  }
+  const escapedProcessRoot = fs.mkdtempSync(path.join(os.tmpdir(),
+    'instruction-audit-process-escape-'));
+  t.after(() => fs.rmSync(escapedProcessRoot, { recursive: true, force: true }));
+  const escapedProcessRuntime = { ...runtime, processAlive: () => true };
+  forward.prepareFixture('audit', escapedProcessRoot, escapedProcessRuntime);
+  const escapedProcessLauncher = writeTrustedAdapterFixture(t, 'codex');
+  const escapedProcess = forward.executeHost('audit', escapedProcessRoot, {
+    host: 'codex', launcherPath: escapedProcessLauncher,
+  }, escapedProcessRuntime);
+  assert.equal(escapedProcess.outcome, 'fail');
+  assert.equal(escapedProcess.reason, 'adapter-preflight-failed');
+  assert.equal(fs.existsSync(path.join(path.dirname(escapedProcessLauncher), 'behavior.log')),
+    false);
+  const leaking = attack('leak-failure', 'fail');
+  assert.equal(fs.existsSync(path.join(leaking.attackRoot, 'hosts', 'codex',
+    'result.json')), false, 'a tainted candidate result must never be published');
+  const leakingPrivate = collectRelativeFiles(path.join(leaking.attackRoot, 'hosts', 'codex',
+    'controller')).map((entry) => fs.readFileSync(path.join(leaking.attackRoot, 'hosts',
+    'codex', 'controller', entry))).map((entry) => entry.toString('utf8')).join('\n');
+  assert.match(leakingPrivate, /AUDIT%2DINSTRUCTION-SENTINEL/,
+    'the schema-valid leaking envelope must reach private quarantine scanning');
+  const privateCanaryLeak = attack('private-canary-leak', 'fail');
+  assert.equal(fs.existsSync(path.join(privateCanaryLeak.attackRoot, 'hosts', 'codex',
+    'result.json')), false, 'controller-private canaries must never enter a public failure');
+  const qualitativeCanaryLeak = attack('secret-qualitative', 'fail');
+  assert.equal(fs.existsSync(path.join(qualitativeCanaryLeak.attackRoot, 'hosts', 'codex',
+    'result.json')), false, 'secret-bearing qualitative findings must be quarantined');
 
-  const contradictoryReportPath = path.join(logs, 'hosts', 'codex', 'machine-report.json');
-  const contradictoryReportBytes = fs.readFileSync(contradictoryReportPath);
-  const contradictoryReport = structuredClone(auditReport);
-  contradictoryReport.verificationMatrix[0].status = 'unverified';
-  writeJson(contradictoryReportPath, contradictoryReport);
-  const contradictory = forward.gradeScenario('audit', runRoot);
-  assert.equal(contradictory.outcome, 'fail');
-  assert.equal(contradictory.checks.find((check) => check.id === 'report_complete').status,
-    'fail');
-  fs.writeFileSync(contradictoryReportPath, contradictoryReportBytes);
+  const partialManifestRoot = fs.mkdtempSync(path.join(os.tmpdir(),
+    'instruction-audit-partial-manifest-'));
+  t.after(() => fs.rmSync(partialManifestRoot, { recursive: true, force: true }));
+  let tamperedInventory = false;
+  const partialManifestRuntime = {
+    ...runtime,
+    spawnSync(command, args, options) {
+      const execution = childProcess.spawnSync(command, args, options);
+      if (!tamperedInventory && Array.isArray(args) && args.some((entry) =>
+        String(entry).endsWith('inventory.mjs')) && execution.status === 0) {
+        tamperedInventory = true;
+        const manifest = JSON.parse(Buffer.from(execution.stdout).toString('utf8'));
+        manifest.sources.pop();
+        return { ...execution, stdout: Buffer.from(JSON.stringify(manifest)) };
+      }
+      return execution;
+    },
+  };
+  forward.prepareFixture('audit', partialManifestRoot, partialManifestRuntime);
+  const partialManifestResult = forward.executeHost('audit', partialManifestRoot, {
+    host: 'codex', launcherPath: writeTrustedAdapterFixture(t, 'codex'),
+  }, partialManifestRuntime);
+  assert.equal(partialManifestResult.outcome, 'fail');
+  assert.equal(partialManifestResult.reason, 'adapter-behavior-failed');
 
-  fs.appendFileSync(path.join(subject, 'repo', 'AGENTS.md'), 'changed\n');
-  const corrupted = forward.gradeScenario('audit', runRoot);
-  assert.equal(corrupted.outcome, 'fail');
-  assert.equal(corrupted.checks.find((check) => check.id === 'targets_unchanged').status, 'fail');
+  const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-audit-missing-'));
+  t.after(() => fs.rmSync(missingRoot, { recursive: true, force: true }));
+  forward.prepareFixture('audit', missingRoot, runtime);
+  const missing = forward.executeHost('audit', missingRoot, {
+    host: 'codex',
+    launcherPath: path.join(missingRoot, '..', 'missing-launcher.json'),
+  });
+  assert.equal(missing.outcome, 'unverified');
+  assert.equal(fs.existsSync(path.join(missingRoot, 'hosts', 'codex', 'evidence')), false);
+  assert.equal(forward.gradeScenario('audit', missingRoot, runtime).outcome, 'unverified',
+    'a prelaunch-unavailable result must remain unverified when regraded');
+
+  const isolationAttack = attack('mutate', 'fail');
+  assert.deepEqual(forward.snapshotTargets(
+    path.join(isolationAttack.attackRoot, 'hosts', 'claude', 'subject')),
+  forward.snapshotTargets(claudeSubject),
+  'the second host must retain its independently prepared subject');
+  const cliOutcomeRoot = fs.mkdtempSync(path.join(os.tmpdir(),
+    'instruction-audit-cli-outcomes-'));
+  t.after(() => fs.rmSync(cliOutcomeRoot, { recursive: true, force: true }));
+  forward.prepareFixture('audit', cliOutcomeRoot, runtime);
+  const cliOutput = [];
+  const cliIo = {
+    stdout: { write: (message) => cliOutput.push(message) },
+    stderr: { write: (message) => assert.fail(message) },
+  };
+  assert.equal(forward.runCli(['execute', 'audit', cliOutcomeRoot, '--host', 'codex',
+    '--launcher', writeTrustedAdapterFixture(t, 'codex', 'unsafe')], cliIo, runtime), 1);
+  assert.equal(JSON.parse(cliOutput.pop()).outcome, 'unverified');
+  assert.equal(forward.runCli(['recover', 'audit', cliOutcomeRoot, '--host', 'codex'],
+    cliIo, runtime), 1);
+  assert.equal(JSON.parse(cliOutput.pop()).outcome, 'unverified');
+  assert.equal(forward.runCli(['grade', 'audit', cliOutcomeRoot], cliIo, runtime), 1);
+  assert.equal(JSON.parse(cliOutput.pop()).outcome, 'unverified');
+  const blockedPublicPath = path.join(cliOutcomeRoot, 'hosts', 'codex', 'result.json');
+  const blockedPrivatePath = path.join(cliOutcomeRoot, 'hosts', 'codex', 'controller',
+    'result.json');
+  const blockedReceiptPath = path.join(cliOutcomeRoot, 'hosts', 'codex', 'controller',
+    'result-receipt.json');
+  const blockedResult = readJson(blockedPublicPath);
+  blockedResult.outcome = 'blocked';
+  blockedResult.protocolOutcome = 'blocked';
+  blockedResult.taskOutcome = 'not-completed';
+  writeJson(blockedPublicPath, blockedResult);
+  writeJson(blockedPrivatePath, blockedResult);
+  writeJson(blockedReceiptPath, { schemaVersion: 2, host: 'codex',
+    runId: blockedResult.runId, resultSha256: sha256(fs.readFileSync(blockedPublicPath)) });
+  assert.equal(forward.runCli(['grade', 'audit', cliOutcomeRoot], cliIo, runtime), 1);
+  assert.equal(JSON.parse(cliOutput.pop()).outcome, 'fail',
+    'Task 1 must reject a blocked result that no controller path produced');
+  const originalGradeControllerRun = controller.gradeControllerRun;
+  try {
+    controller.gradeControllerRun = () => ({ schemaVersion: 2, scenarioId: 'audit',
+      outcome: 'blocked' });
+    assert.equal(forward.runCli(['grade', 'audit', cliOutcomeRoot], cliIo, runtime), 1);
+    assert.equal(JSON.parse(cliOutput.pop()).outcome, 'blocked',
+      'CLI mapping must still fail a future controller-authentic blocked outcome');
+  } finally {
+    controller.gradeControllerRun = originalGradeControllerRun;
+  }
+  const cliFailRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-audit-cli-fail-'));
+  t.after(() => fs.rmSync(cliFailRoot, { recursive: true, force: true }));
+  forward.prepareFixture('audit', cliFailRoot, runtime);
+  assert.equal(forward.runCli(['execute', 'audit', cliFailRoot, '--host', 'codex',
+    '--launcher', writeTrustedAdapterFixture(t, 'codex', 'wrong-host')], cliIo, runtime), 1);
+  assert.equal(JSON.parse(cliOutput.pop()).outcome, 'fail');
+  const cliPassStatus = forward.runCli(['grade', 'audit', runRoot], cliIo, runtime);
+  const cliPassResult = JSON.parse(cliOutput.pop());
+  assert.equal(cliPassStatus, 0, JSON.stringify(cliPassResult));
+  assert.equal(cliPassResult.outcome, 'pass');
+  const duplicateErrors = [];
+  assert.equal(forward.runCli(['execute', 'audit', missingRoot, '--host', 'codex',
+    '--launcher', path.join(missingRoot, '..', 'missing-launcher.json')], {
+    stdout: { write() {} },
+    stderr: { write: (message) => duplicateErrors.push(message) },
+  }), 1, 'duplicate execution is an operational failure');
+  assert.deepEqual(duplicateErrors, ['Forward evaluation failed.\n']);
+  assert.equal(forward.runCli(['execute', 'audit'], {
+    stdout: { write: () => assert.fail('invalid usage must not emit JSON') },
+    stderr: { write() {} },
+  }), 2);
+
+  const evidencePath = (host, relative) => path.join(runRoot, 'hosts', host, 'evidence', relative);
+  const expectGradeFailure = (mutate, restore) => {
+    mutate();
+    assert.equal(forward.gradeScenario('audit', runRoot, runtime).outcome, 'fail');
+    restore();
+    assert.equal(forward.gradeScenario('audit', runRoot, runtime).outcome, 'pass');
+  };
+  const codexEventsPath = evidencePath('codex', 'events.json');
+  const originalEvents = fs.readFileSync(codexEventsPath);
+  expectGradeFailure(() => {
+    const events = JSON.parse(originalEvents);
+    events[1].previousEventSha256 = '0'.repeat(64);
+    writeJson(codexEventsPath, events);
+  }, () => fs.writeFileSync(codexEventsPath, originalEvents));
+  expectGradeFailure(() => {
+    const events = JSON.parse(originalEvents);
+    events.splice(4, 0, structuredClone(events[3]));
+    writeJson(codexEventsPath, events);
+  }, () => fs.writeFileSync(codexEventsPath, originalEvents));
+  expectGradeFailure(() => {
+    const events = JSON.parse(originalEvents);
+    [events[3], events[4]] = [events[4], events[3]];
+    writeJson(codexEventsPath, events);
+  }, () => fs.writeFileSync(codexEventsPath, originalEvents));
+  const receiptPath = evidencePath('codex', 'inventory-2-receipt.json');
+  const originalReceipt = fs.readFileSync(receiptPath);
+  expectGradeFailure(() => fs.rmSync(receiptPath),
+    () => fs.writeFileSync(receiptPath, originalReceipt));
+  const codexResult = readJson(path.join(runRoot, 'hosts', 'codex', 'result.json'));
+  const rawBlobPath = path.join(runRoot, 'hosts', 'codex', 'controller', 'blobs',
+    `${codexResult.invocations[1].stdoutSha256}.blob`);
+  const originalRawBlob = fs.readFileSync(rawBlobPath);
+  expectGradeFailure(() => fs.appendFileSync(rawBlobPath, 'tampered'),
+    () => fs.writeFileSync(rawBlobPath, originalRawBlob));
+  const auditStatePath = path.join(runRoot, 'hosts', 'codex', 'controller',
+    'audit-state.json');
+  const originalAuditState = fs.readFileSync(auditStatePath);
+  expectGradeFailure(() => {
+    const auditState = JSON.parse(originalAuditState);
+    auditState.launches[1].identity.post[0].sha256 = '0'.repeat(64);
+    writeJson(auditStatePath, auditState);
+  }, () => fs.writeFileSync(auditStatePath, originalAuditState));
+  const extraPath = evidencePath('codex', 'unexpected.json');
+  expectGradeFailure(() => writeJson(extraPath, { unexpected: true }),
+    () => fs.rmSync(extraPath));
+  const rogueHost = path.join(runRoot, 'hosts', 'rogue');
+  expectGradeFailure(() => {
+    fs.mkdirSync(rogueHost);
+    fs.writeFileSync(path.join(rogueHost, 'result.json'), 'CONTROLLER-PRIVATE-CANARY\n');
+  }, () => fs.rmSync(rogueHost, { recursive: true, force: true }));
+  const codexHost = path.join(runRoot, 'hosts', 'codex');
+  const codexHostBackup = path.join(runRoot, 'controller', 'codex-host-backup');
+  expectGradeFailure(() => {
+    fs.renameSync(codexHost, codexHostBackup);
+    fs.symlinkSync(codexHostBackup, codexHost,
+      process.platform === 'win32' ? 'junction' : 'dir');
+  }, () => {
+    fs.rmSync(codexHost);
+    fs.renameSync(codexHostBackup, codexHost);
+  });
+  const resultsDirectory = path.join(runRoot, 'results');
+  const resultsBackup = path.join(runRoot, 'controller', 'results-backup');
+  expectGradeFailure(() => {
+    fs.renameSync(resultsDirectory, resultsBackup);
+    fs.symlinkSync(resultsBackup, resultsDirectory,
+      process.platform === 'win32' ? 'junction' : 'dir');
+  }, () => {
+    fs.rmSync(resultsDirectory);
+    fs.renameSync(resultsBackup, resultsDirectory);
+  });
+  expectGradeFailure(() => fs.writeFileSync(codexEventsPath,
+    fs.readFileSync(evidencePath('claude', 'events.json'))),
+  () => fs.writeFileSync(codexEventsPath, originalEvents));
+  const schemaPath = path.join(runRoot, 'protocol', 'protocol-v2.schema.json');
+  const originalSchema = fs.readFileSync(schemaPath);
+  expectGradeFailure(() => fs.appendFileSync(schemaPath, ' '),
+    () => fs.writeFileSync(schemaPath, originalSchema));
+  const reportPath = evidencePath('codex', 'report.md');
+  const originalReport = fs.readFileSync(reportPath);
+  expectGradeFailure(() => fs.appendFileSync(reportPath,
+    '\nAUDIT%2DINSTRUCTION-SENTINEL\n'),
+  () => fs.writeFileSync(reportPath, originalReport));
+  const aliasPath = evidencePath('codex', 'report.md');
+  expectGradeFailure(() => {
+    fs.rmSync(aliasPath);
+    fs.linkSync(evidencePath('claude', 'report.md'), aliasPath);
+  }, () => {
+    fs.rmSync(aliasPath);
+    fs.writeFileSync(aliasPath, originalReport);
+  });
 });
 
-test('apply fixture passes durable idempotent evidence and rejects a bad backup', (t) => {
+test('apply fixture keeps synthetic legacy evidence non-authoritative', (t) => {
+  const cliRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-forward-cli-apply-'));
+  t.after(() => fs.rmSync(cliRoot, { recursive: true, force: true }));
+  let cliOutput = '';
+  assert.equal(forward.runCli(['prepare', 'apply', cliRoot], {
+    stdout: { write: (value) => { cliOutput += value; } },
+    stderr: { write: () => assert.fail('legacy prepare must not emit an error') },
+  }), 0);
+  assert.equal(readJson(path.join(cliRoot, 'evaluator', 'expected.json')).scenarioId, 'apply');
+  assert.equal(JSON.parse(cliOutput).path, path.join(cliRoot, 'subject'));
+  let usage = '';
+  assert.equal(forward.runCli(['capture', 'apply'], {
+    stdout: { write: () => assert.fail('invalid capture must not emit JSON') },
+    stderr: { write: (value) => { usage += value; } },
+  }), 2);
+  assert.match(usage, /prepare\|execute\|recover\|capture\|grade/);
+
   const { runRoot, subject, logs } = temporaryRun(t, 'apply');
   assertCommonRequest(runRoot, subject, 'apply', path.join(subject, 'repo'));
   const repositoryRecord = readJson(path.join(runRoot, 'evaluator', 'expected.json'))
@@ -932,7 +2176,11 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
     createWorkerArtifacts(runRoot, subject, 'apply', 'claude', applyOptions));
   const applyReport = readJson(path.join(logs, 'report.json'));
 
-  assert.equal(forward.gradeScenario('apply', runRoot).outcome, 'pass');
+  const syntheticApply = forward.gradeScenario('apply', runRoot);
+  assert.equal(syntheticApply.outcome, 'pass');
+  assert.equal(syntheticApply.authoritative, false);
+  assert.equal(syntheticApply.realHostClaim, false);
+  assert.equal(syntheticApply.realHostOutcome, 'unverified');
 
   const publicShim = path.join(subject, 'tools', 'pnpm.cjs');
   const publicShimBytes = fs.readFileSync(publicShim);
@@ -1025,7 +2273,7 @@ test('apply fixture passes durable idempotent evidence and rejects a bad backup'
   assert.equal(corrupted.checks.find((check) => check.id === 'backup_preimages').status, 'fail');
 });
 
-test('partial fixture passes selective recovery evidence and rejects incomplete rollback', (t) => {
+test('partial fixture keeps synthetic legacy evidence non-authoritative', (t) => {
   const { runRoot, subject, logs } = temporaryRun(t, 'partial');
   assertCommonRequest(runRoot, subject, 'partial', path.join(subject, 'repo'));
   const prompt = fs.readFileSync(path.join(logs, 'prompt.md'), 'utf8');
@@ -1133,7 +2381,11 @@ test('partial fixture passes selective recovery evidence and rejects incomplete 
   captureWorker(runRoot, 'partial',
     createWorkerArtifacts(runRoot, subject, 'partial', 'claude', partialOptions));
 
-  assert.equal(forward.gradeScenario('partial', runRoot).outcome, 'pass');
+  const syntheticPartial = forward.gradeScenario('partial', runRoot);
+  assert.equal(syntheticPartial.outcome, 'pass');
+  assert.equal(syntheticPartial.authoritative, false);
+  assert.equal(syntheticPartial.realHostClaim, false);
+  assert.equal(syntheticPartial.realHostOutcome, 'unverified');
 
   const markerEvidence = path.join(logs, 'hosts', 'codex', 'checkpoints',
     'partial-03-marker.json');

@@ -163,6 +163,88 @@ test('deterministic audit disables optional Git locks', async (t) => {
   }
 });
 
+// Defect: PATH or ambient Git configuration can execute repository-controlled helpers
+// while an inventory claims to be a nonexecuting read-only inspection.
+test('deterministic audit pins Git and rejects ambient executable configuration', (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-pinned-git-'));
+  const home = path.join(temporaryRoot, 'home');
+  const project = path.join(temporaryRoot, 'project');
+  const codexHome = path.join(home, '.codex');
+  const hostileBin = path.join(temporaryRoot, 'hostile-bin');
+  const marker = path.join(temporaryRoot, 'ambient-git-executed');
+  const helper = path.join(temporaryRoot, 'hostile-helper.cjs');
+  const globalConfig = path.join(temporaryRoot, 'hostile.gitconfig');
+  const inventoryPath = path.join(skillRoot, 'scripts', 'inventory.mjs');
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+  fs.mkdirSync(codexHome, { recursive: true });
+  fs.mkdirSync(project, { recursive: true });
+  fs.mkdirSync(hostileBin, { recursive: true });
+  fs.writeFileSync(path.join(codexHome, 'AGENTS.md'), 'Pinned Git inventory.\n');
+
+  const locator = process.platform === 'win32'
+    ? childProcess.spawnSync('where.exe', ['git'], { encoding: 'utf8', shell: false })
+    : childProcess.spawnSync('which', ['git'], { encoding: 'utf8', shell: false });
+  assert.equal(locator.status, 0, locator.stderr);
+  const gitExecutable = fs.realpathSync.native(locator.stdout.split(/\r?\n/)
+    .find((entry) => entry.trim()).trim());
+  childProcess.execFileSync(gitExecutable, ['init', '--quiet', project]);
+  fs.writeFileSync(path.join(project, 'AGENTS.md'), 'Repository instructions.\n');
+  fs.writeFileSync(path.join(project, '.gitattributes'),
+    'AGENTS.md filter=poison diff=poison\n');
+  childProcess.execFileSync(gitExecutable, ['-C', project, 'add', 'AGENTS.md', '.gitattributes']);
+  childProcess.execFileSync(gitExecutable, ['-C', project, '-c', 'user.name=Fixture', '-c',
+    'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'fixture']);
+  fs.writeFileSync(helper, `'use strict';\nrequire('node:fs').writeFileSync(${JSON.stringify(marker)}, 'executed');\n`);
+  const hostileCommand = `"${process.execPath}" "${helper}"`;
+  for (const [key, value] of [
+    ['core.fsmonitor', hostileCommand],
+    ['core.hooksPath', hostileBin],
+    ['filter.poison.clean', hostileCommand],
+    ['filter.poison.smudge', hostileCommand],
+    ['filter.poison.process', hostileCommand],
+    ['filter.poison.required', 'true'],
+    ['diff.poison.command', hostileCommand],
+  ]) childProcess.execFileSync(gitExecutable, ['-C', project, 'config', key, value]);
+  fs.appendFileSync(path.join(project, 'AGENTS.md'), 'Working tree change.\n');
+  fs.writeFileSync(globalConfig,
+    `[core]\n\tfsmonitor = ${process.execPath} ${marker}\n` +
+    `\thooksPath = ${hostileBin}\n` +
+    `[filter "poison"]\n\tclean = ${process.execPath} ${marker}\n` +
+    `\tsmudge = ${process.execPath} ${marker}\n` +
+    `[diff]\n\texternal = ${process.execPath} ${marker}\n`);
+  const hostileGit = process.platform === 'win32'
+    ? path.join(hostileBin, 'git.cmd') : path.join(hostileBin, 'git');
+  fs.writeFileSync(hostileGit, process.platform === 'win32'
+    ? `@echo off\r\ncopy /y NUL "${marker}" >NUL\r\nexit /b 99\r\n`
+    : `#!/bin/sh\n: > '${marker.replaceAll("'", "'\\''")}'\nexit 99\n`);
+  if (process.platform !== 'win32') fs.chmodSync(hostileGit, 0o700);
+
+  const result = childProcess.spawnSync(process.execPath, [inventoryPath,
+    '--home', home, '--project', project, '--cwd', project, '--host', 'codex',
+    '--git-executable', gitExecutable], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PATH: `${hostileBin}${path.delimiter}${process.env.PATH || ''}`,
+      GIT_CONFIG_GLOBAL: globalConfig,
+      GIT_EXTERNAL_DIFF: `${process.execPath} ${marker}`,
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'core.fsmonitor',
+      GIT_CONFIG_VALUE_0: `${process.execPath} ${marker}`,
+    },
+    shell: false,
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  const manifest = JSON.parse(result.stdout);
+  assert.equal(manifest.schemaVersion, 1);
+  assert.equal(manifest.sources.find((source) => source.logicalPath ===
+    path.join(project, 'AGENTS.md')).gitState, 'modified');
+  assert.equal(fs.existsSync(marker), false,
+    'inventory must not execute PATH shims, hooks, fsmonitor, or external diff helpers');
+});
+
 test('deterministic audit sanitizes unknown flags', () => {
   const inventoryPath = path.join(skillRoot, 'scripts', 'inventory.mjs');
   const result = childProcess.spawnSync(
