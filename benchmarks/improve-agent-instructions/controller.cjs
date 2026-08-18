@@ -106,7 +106,8 @@ const qualitativeFindingDefinition = {
   type: 'object',
   additionalProperties: false,
   required: ['id', 'kind', 'severity', 'sourceIds', 'contentEvidence', 'issueCode',
-    'recommendation', 'disposition', 'status', 'observedSha256'],
+    'observationRule', 'observationStatus', 'recommendation', 'disposition',
+    'observedSha256'],
   properties: {
     id: { type: 'string', minLength: 1, maxLength: 64,
       pattern: '^finding-[a-z0-9-]+$' },
@@ -118,9 +119,20 @@ const qualitativeFindingDefinition = {
       items: contentEvidenceDefinition },
     issueCode: { type: 'string', minLength: 1, maxLength: 64,
       pattern: '^[a-z0-9-]+$' },
-    recommendation: { type: 'string', minLength: 1, maxLength: 256 },
-    disposition: { type: 'string', enum: ['recommend-change', 'review', 'no-change'] },
-    status: { type: 'string', const: 'verified' },
+    observationRule: { type: 'string', enum: ['literal-directive-conflict-v1',
+      'truncated-excluded-text-v1', 'host-asserted-v1'] },
+    observationStatus: { type: 'string', enum: ['verified', 'unverified'] },
+    recommendation: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['text', 'provenance', 'status'],
+      properties: {
+        text: { type: 'string', minLength: 1, maxLength: 256 },
+        provenance: { type: 'string', const: 'host-asserted' },
+        status: { type: 'string', const: 'unverified' },
+      },
+    },
+    disposition: { type: 'string', const: 'host-asserted-unverified' },
     observedSha256: { type: 'string', pattern: '^[0-9a-f]{64}$' },
   },
 };
@@ -279,7 +291,15 @@ const CONTRACT_DEFINITIONS = deepFreeze({
       host: { type: 'string', enum: HOSTS },
       controllerOwned: { type: 'boolean', const: true },
       outcome: { type: 'string', enum: ['pass', 'fail', 'unverified', 'blocked'] },
-      auditSummary: { type: 'string', minLength: 1, maxLength: 512 },
+      auditSummary: {
+        type: 'object', additionalProperties: false,
+        required: ['text', 'provenance', 'status'],
+        properties: {
+          text: { type: 'string', minLength: 1, maxLength: 512 },
+          provenance: { type: 'string', const: 'host-asserted' },
+          status: { type: 'string', const: 'unverified' },
+        },
+      },
       targetMatrix: { type: 'array', items: targetEvidenceDefinition },
       effectiveChain: { type: 'array', items: chainEvidenceDefinition },
       decisionLedger: { type: 'array', items: decisionEvidenceDefinition },
@@ -514,13 +534,13 @@ function dependencies(overrides = {}) {
     randomUUID: overrides.randomUUID ?? crypto.randomUUID,
     randomBytes: overrides.randomBytes ?? crypto.randomBytes,
     renameSync: overrides.renameSync ?? fs.renameSync,
-    processAlive: overrides.processAlive ?? ((pid) => {
-      try { process.kill(pid, 0); return true; } catch (error) { return error?.code !== 'ESRCH'; }
-    }),
+    launchSynthetic: overrides.launchSynthetic,
   };
-  for (const name of ['spawnSync', 'now', 'randomUUID', 'randomBytes', 'renameSync',
-    'processAlive']) {
+  for (const name of ['spawnSync', 'now', 'randomUUID', 'randomBytes', 'renameSync']) {
     if (typeof resolved[name] !== 'function') throw new Error(`Invalid runtime dependency: ${name}.`);
+  }
+  if (resolved.launchSynthetic !== undefined && typeof resolved.launchSynthetic !== 'function') {
+    throw new Error('Invalid runtime dependency: launchSynthetic.');
   }
   return resolved;
 }
@@ -891,7 +911,7 @@ function launchState(invocation) {
     controllerIdentity: invocation.controllerIdentity,
     stdoutSha256: invocation.rawStdoutSha256,
     stderrSha256: invocation.rawStderrSha256,
-    process: invocation.envelope.process,
+    containment: invocation.containment,
   };
 }
 
@@ -926,23 +946,60 @@ function persistLaunchAttempts(root, host, attempts) {
   writeJson(path.join(root, 'hosts', host, 'controller', 'launch-attempts.json'), attempts);
 }
 
-function validateStoppedProcess(envelope, runtime) {
+function validateContainmentReceipt(receipt) {
+  if (!exactKeys(receipt, ['schemaVersion', 'observationSource', 'adapterPid',
+    'observedProcesses', 'treeStopped']) || receipt.schemaVersion !== 1 ||
+      receipt.observationSource !== 'trusted-synthetic-runtime-v1' ||
+      !Number.isInteger(receipt.adapterPid) || receipt.adapterPid < 1 ||
+      !Array.isArray(receipt.observedProcesses) || receipt.observedProcesses.length < 1 ||
+      receipt.observedProcesses.length > 64 || receipt.treeStopped !== true) {
+    throw new Error('Trusted process containment receipt is invalid.');
+  }
+  const byPid = new Map();
+  for (const observed of receipt.observedProcesses) {
+    if (!exactKeys(observed, ['pid', 'parentPid', 'startToken']) ||
+        !Number.isInteger(observed.pid) || observed.pid < 1 ||
+        !(observed.parentPid === null || Number.isInteger(observed.parentPid) &&
+          observed.parentPid >= 0) || typeof observed.startToken !== 'string' ||
+        observed.startToken.length < 1 || observed.startToken.length > 256 ||
+        byPid.has(observed.pid)) {
+      throw new Error('Trusted process containment receipt is invalid.');
+    }
+    byPid.set(observed.pid, observed);
+  }
+  if (!byPid.has(receipt.adapterPid)) {
+    throw new Error('Trusted process containment receipt omitted its adapter root.');
+  }
+  for (const observed of receipt.observedProcesses) {
+    if (observed.pid === receipt.adapterPid) continue;
+    const visited = new Set([observed.pid]);
+    let parentPid = observed.parentPid;
+    while (parentPid !== receipt.adapterPid) {
+      if (!byPid.has(parentPid) || visited.has(parentPid)) {
+        throw new Error('Trusted process containment receipt is not rooted at the adapter.');
+      }
+      visited.add(parentPid);
+      parentPid = byPid.get(parentPid).parentPid;
+    }
+  }
+  return [...byPid.keys()].sort((left, right) => left - right);
+}
+
+function validateStoppedProcess(envelope, containment) {
+  const observedPids = validateContainmentReceipt(containment);
   const processReceipt = envelope.process;
   const unavailable = envelope.kind === 'preflight' &&
     envelope.availability !== 'available-safe';
   const descendant = processReceipt.descendant;
-  if (!processReceipt.observedPids.includes(processReceipt.adapterPid) ||
+  if (processReceipt.adapterPid !== containment.adapterPid ||
+      !same([...processReceipt.observedPids].sort((left, right) => left - right), observedPids) ||
+      !processReceipt.observedPids.includes(processReceipt.adapterPid) ||
       Number.isInteger(processReceipt.childPid) &&
         !processReceipt.observedPids.includes(processReceipt.childPid) ||
       Number.isInteger(descendant.pid) &&
         !processReceipt.observedPids.includes(descendant.pid) ||
       processReceipt.treeStopped !== true) {
     throw new Error('Adapter process tree was not positively stopped.');
-  }
-  for (const pid of processReceipt.observedPids) {
-    if (runtime.processAlive(pid)) {
-      throw new Error('Adapter process tree was not positively stopped.');
-    }
   }
   if (unavailable) {
     const nullChild = processReceipt.childPid === null && processReceipt.childExitCode === null;
@@ -986,7 +1043,7 @@ function launchAdapter(root, campaign, host, launcher, profile, runtime) {
   const controllerIdentityPre = assertPinnedIdentity(campaign);
   const pre = descriptor.identityFiles.map(observedIdentity);
   const startedAt = runtime.now();
-  const result = runtime.spawnSync(descriptor.adapterProgram,
+  const launch = runtime.launchSynthetic(descriptor.adapterProgram,
     [...descriptor.profiles[profile].args, profile], {
       cwd: request.hostView,
       input: JSON.stringify(request),
@@ -997,6 +1054,9 @@ function launchAdapter(root, campaign, host, launcher, profile, runtime) {
       timeout: descriptor.timeoutMs,
       maxBuffer: MAX_OUTPUT_BYTES,
   });
+  const result = launch && typeof launch === 'object' && launch.result &&
+    typeof launch.result === 'object' ? launch.result : {};
+  const containment = launch && typeof launch === 'object' ? launch.containment : null;
   const completedAt = runtime.now();
   const stdout = Buffer.from(result.stdout || '');
   const stderr = Buffer.from(result.stderr || '');
@@ -1029,10 +1089,11 @@ function launchAdapter(root, campaign, host, launcher, profile, runtime) {
     controllerIdentity,
     stdoutSha256: rawStdoutSha256,
     stderrSha256: rawStderrSha256,
-    process: null,
+    containment,
   };
   attempts.push(attempt);
   persistLaunchAttempts(root, host, attempts);
+  validateContainmentReceipt(containment);
   if (!same(pre.map(({ path: filePath, size, sha256: digest }) => ({ path: filePath, size,
     sha256: digest })), post.map(({ path: filePath, size, sha256: digest }) => ({ path: filePath,
     size, sha256: digest })))) {
@@ -1059,9 +1120,7 @@ function launchAdapter(root, campaign, host, launcher, profile, runtime) {
   if (envelope.policySha256 !== request.policySha256) {
     throw new Error('Adapter isolation policy does not match the controller profile.');
   }
-  attempt.process = envelope.process;
-  persistLaunchAttempts(root, host, attempts);
-  validateStoppedProcess(envelope, runtime);
+  validateStoppedProcess(envelope, containment);
   attempt.disposition = 'validated';
   persistLaunchAttempts(root, host, attempts);
   return {
@@ -1070,6 +1129,7 @@ function launchAdapter(root, campaign, host, launcher, profile, runtime) {
     startedAt,
     completedAt,
     processTreeStopped: true,
+    containment,
     identity,
     identitySha256,
     envelope,
@@ -1348,6 +1408,8 @@ function semanticFindings(hostView, phase, nonce) {
 }
 
 function validateQualitativeAudit(hostView, phase, nonce, reportDraft) {
+  const inventory = readJson(path.join(hostView, 'inventory.json'));
+  const sourceById = new Map(inventory.sources.map((source) => [source.id, source]));
   const inputIndex = readJson(path.join(hostView, 'inputs', 'index.json'));
   const inputById = new Map(inputIndex.map((entry) => [entry.id, entry]));
   const seenFindingIds = new Set();
@@ -1356,6 +1418,7 @@ function validateQualitativeAudit(hostView, phase, nonce, reportDraft) {
     seenFindingIds.add(finding.id);
     const evidenceSourceIds = new Set();
     const rawById = new Map();
+    const evidenceBytes = [];
     for (const evidence of finding.contentEvidence) {
       const entry = inputById.get(evidence.sourceId);
       if (!finding.sourceIds.includes(evidence.sourceId) || !entry || entry.path === null) {
@@ -1368,6 +1431,8 @@ function validateQualitativeAudit(hostView, phase, nonce, reportDraft) {
           sha256(body.subarray(evidence.startByte, evidence.endByte)) !== evidence.sha256) {
         throw new Error('Qualitative evidence does not match the referenced bytes.');
       }
+      evidenceBytes.push({ evidence, bytes: body.subarray(evidence.startByte,
+        evidence.endByte) });
       evidenceSourceIds.add(evidence.sourceId);
     }
     if (finding.sourceIds.some((sourceId) => !evidenceSourceIds.has(sourceId)) ||
@@ -1385,7 +1450,45 @@ function validateQualitativeAudit(hostView, phase, nonce, reportDraft) {
     if (observedSha256 !== proofDigest(nonce, phase, finding.id, value, raw)) {
       throw new Error('Qualitative finding receipt is invalid.');
     }
+    validateClosedQualitativeObservation(finding, evidenceBytes, sourceById);
   }
+}
+
+function validateClosedQualitativeObservation(finding, evidenceBytes, sourceById) {
+  const text = evidenceBytes.map((entry) => new TextDecoder('utf-8', { fatal: true })
+    .decode(entry.bytes));
+  if (finding.issueCode === 'conflicting-package-manager') {
+    const directives = text.map((entry) =>
+      /^Use ([a-z0-9._-]+) for repository commands\.$/i.exec(entry)?.[1]?.toLowerCase());
+    const sources = finding.sourceIds.map((sourceId) => sourceById.get(sourceId));
+    if (finding.observationRule !== 'literal-directive-conflict-v1' ||
+        finding.observationStatus !== 'verified' || finding.kind !== 'conflict' ||
+        finding.severity !== 'high' ||
+        evidenceBytes.length !== 2 || directives.some((entry) => !entry) ||
+        new Set(directives).size !== 2 || sources.some((source) => source?.host !== 'codex' ||
+          source.scope !== 'global') || !same(sources.map((source) => source.loadState).sort(),
+          ['active', 'shadowed'])) {
+      throw new Error('Package-manager conflict is not mechanically proven.');
+    }
+    return;
+  }
+  if (finding.issueCode === 'truncated-safety-guidance') {
+    const source = sourceById.get(finding.sourceIds[0]);
+    const evidence = evidenceBytes[0]?.evidence;
+    if (finding.observationRule !== 'truncated-excluded-text-v1' ||
+        finding.observationStatus !== 'verified' || finding.kind !== 'defect' ||
+        finding.severity !== 'high' ||
+        finding.sourceIds.length !== 1 || evidenceBytes.length !== 1 ||
+        source?.loadState !== 'truncated' || !Number.isInteger(source.byteContribution) ||
+        evidence.startByte < source.byteContribution ||
+        !/approval before writes/i.test(text[0])) {
+      throw new Error('Truncated safety guidance is not mechanically proven.');
+    }
+    return;
+  }
+  if (finding.observationRule === 'host-asserted-v1' &&
+      finding.observationStatus === 'unverified') return;
+  throw new Error('Qualitative observation has no controller-owned proof rule.');
 }
 
 function createPhaseHostView(root, campaign, host, phase, inventory) {
@@ -1451,7 +1554,7 @@ function probeRequests(root, host) {
   ];
 }
 
-function validatePreflight(invocation, root, host, runtime) {
+function validatePreflight(invocation, root, host) {
   const envelope = invocation.envelope;
   if (envelope.availability !== 'available-safe' || envelope.authentication !== 'available') {
     return false;
@@ -1476,9 +1579,7 @@ function validatePreflight(invocation, root, host, runtime) {
   const descendant = envelope.isolation.descendant;
   if (descendant.started !== true || !Number.isInteger(descendant.pid) ||
       descendant.exitCode !== 0 || descendant.stopped !== true ||
-      !same(descendant, envelope.process.descendant) ||
-      runtime.processAlive(descendant.pid) || runtime.processAlive(envelope.process.childPid) ||
-      runtime.processAlive(envelope.process.adapterPid)) {
+      !same(descendant, envelope.process.descendant)) {
     throw new Error('Preflight descendant did not stop.');
   }
   return true;
@@ -1495,12 +1596,6 @@ function validateSemanticInvocation(invocation, expected, hostView) {
 }
 
 function sanitizeInvocation(invocation, includeValidatedEvidence = false) {
-  const process = {
-    adapterPid: invocation.envelope.process.adapterPid,
-    childPid: invocation.envelope.process.childPid,
-    descendant: invocation.envelope.process.descendant,
-    observedPids: invocation.envelope.process.observedPids,
-  };
   const common = {
     invocationId: invocation.invocationId,
     profile: invocation.profile,
@@ -1512,15 +1607,16 @@ function sanitizeInvocation(invocation, includeValidatedEvidence = false) {
     policySha256: invocation.envelope.policySha256,
     stdoutSha256: invocation.rawStdoutSha256,
     stderrSha256: invocation.rawStderrSha256,
-    process,
+    containment: invocation.containment,
   };
   if (!includeValidatedEvidence) return common;
   if (invocation.profile === 'preflight') {
-    return { ...common, process, probes: invocation.envelope.isolation.probes,
+    return { ...common, probes: invocation.envelope.isolation.probes,
       descendant: invocation.envelope.isolation.descendant };
   }
   return { ...common, process, findings: invocation.envelope.findings,
-    summary: invocation.envelope.reportDraft.summary,
+    summary: { text: invocation.envelope.reportDraft.summary,
+      provenance: 'host-asserted', status: 'unverified' },
     qualitativeFindings: invocation.envelope.reportDraft.qualitativeFindings };
 }
 
@@ -1557,8 +1653,8 @@ function reportForAudit(campaign, host, manifest, plan, verify) {
     plan.qualitativeFindings;
   const verifyQualitative = verify.envelope?.reportDraft?.qualitativeFindings ??
     verify.qualitativeFindings;
-  const planSummary = plan.envelope?.reportDraft?.summary ?? plan.summary;
-  const verifySummary = verify.envelope?.reportDraft?.summary ?? verify.summary;
+  const planSummary = plan.envelope?.reportDraft?.summary ?? plan.summary?.text;
+  const verifySummary = verify.envelope?.reportDraft?.summary ?? verify.summary?.text;
   if (planSummary !== verifySummary) throw new Error('Audit summaries diverged.');
   const issueSourceIds = new Set([...planQualitative, ...verifyQualitative]
     .flatMap((finding) => finding.sourceIds));
@@ -1569,7 +1665,7 @@ function reportForAudit(campaign, host, manifest, plan, verify) {
     host,
     controllerOwned: true,
     outcome: 'pass',
-    auditSummary: planSummary,
+    auditSummary: { text: planSummary, provenance: 'host-asserted', status: 'unverified' },
     targetMatrix: manifest.sources.map((source) => ({
       id: source.id,
       host: source.host,
@@ -1603,12 +1699,21 @@ function reportForAudit(campaign, host, manifest, plan, verify) {
       { claim: 'distinct-host-invocations', status: 'verified' },
       { claim: 'process-trees-stopped', status: 'verified' },
       { claim: 'known-sensitive-fixture-nondisclosure', status: 'verified' },
-      { claim: 'semantic-plan-observations', status: planFindings.every(
-        (finding) => finding.status === 'verified') && planQualitative.length > 0
+      { claim: 'controller-bound-plan-inputs', status: planFindings.every(
+        (finding) => finding.status === 'verified')
         ? 'verified' : 'unverified' },
-      { claim: 'semantic-verify-observations', status: verifyFindings.every(
-        (finding) => finding.status === 'verified') && verifyQualitative.length > 0
+      { claim: 'content-derived-plan-observations', status: planQualitative.length > 0 &&
+        planQualitative.every((finding) => finding.observationStatus === 'verified')
         ? 'verified' : 'unverified' },
+      { claim: 'host-plan-recommendations', status: 'unverified' },
+      { claim: 'controller-bound-verify-inputs', status: verifyFindings.every(
+        (finding) => finding.status === 'verified')
+        ? 'verified' : 'unverified' },
+      { claim: 'content-derived-verify-observations', status: verifyQualitative.length > 0 &&
+        verifyQualitative.every((finding) => finding.observationStatus === 'verified')
+        ? 'verified' : 'unverified' },
+      { claim: 'host-verify-recommendations', status: 'unverified' },
+      { claim: 'host-audit-summary', status: 'unverified' },
       { claim: 'closed-fixture-coverage', status: manifest.chains.claude.coverage === 'complete' &&
         manifest.warnings.length === 0 ? 'verified' : 'unverified' },
       { claim: 'exact-executed-bytes', status: 'unverified' },
@@ -1888,6 +1993,10 @@ function executeHost(scenarioId, campaignRoot, options, runtimeOverrides) {
     return unverifiedResult(root, campaign, host, 'preflight-unavailable', runtime,
       [], [], [snapshotTargets(subject)]);
   }
+  if (typeof runtime.launchSynthetic !== 'function') {
+    return unverifiedResult(root, campaign, host, 'preflight-unavailable', runtime,
+      [], [], [snapshotTargets(subject)]);
+  }
   const events = [];
   const invocations = [];
   const inventories = [];
@@ -1909,7 +2018,7 @@ function executeHost(scenarioId, campaignRoot, options, runtimeOverrides) {
   }
   let safePreflight;
   try {
-    safePreflight = validatePreflight(preflight, root, host, runtime);
+    safePreflight = validatePreflight(preflight, root, host);
   } catch {
     appendEvent(events, { runId: campaign.runId, host, invocationId: preflight.invocationId,
       phase: 'preflight', startedAt: preflight.startedAt, completedAt: preflight.completedAt,
@@ -2241,7 +2350,7 @@ function readVerifiedBlob(root, host, digest) {
   return bytes;
 }
 
-function validateLaunchIdentity(root, campaign, host, invocation, launch, runtime) {
+function validateLaunchIdentity(root, campaign, host, invocation, launch) {
   if (launch.invocationId !== invocation.invocationId || launch.profile !== invocation.profile ||
       launch.stdoutSha256 !== invocation.stdoutSha256 ||
       launch.stderrSha256 !== invocation.stderrSha256 ||
@@ -2288,13 +2397,10 @@ function validateLaunchIdentity(root, campaign, host, invocation, launch, runtim
       envelope.process.treeStopped !== true || envelope.process.childExitCode !== 0) {
     throw new Error('Raw launch envelope cannot be revalidated.');
   }
-  validateStoppedProcess(envelope, runtime);
-  if (!same(invocation.process, {
-    adapterPid: envelope.process.adapterPid,
-    childPid: envelope.process.childPid,
-    descendant: envelope.process.descendant,
-    observedPids: envelope.process.observedPids,
-  })) throw new Error('Public process receipt differs from the raw envelope.');
+  validateStoppedProcess(envelope, launch.containment);
+  if (!same(invocation.containment, launch.containment)) {
+    throw new Error('Public containment receipt differs from controller state.');
+  }
   if (invocation.profile === 'preflight') {
     if (envelope.availability !== 'available-safe' || envelope.authentication !== 'available' ||
         envelope.isolation.policy !== 'synthetic-read-only-v1' ||
@@ -2307,7 +2413,8 @@ function validateLaunchIdentity(root, campaign, host, invocation, launch, runtim
   } else if (envelope.authorization !== 'audit-read-only' ||
       envelope.operations.length !== 0 || envelope.blockedTargets.length !== 0 ||
       !same(envelope.findings, invocation.findings) ||
-      envelope.reportDraft.summary !== invocation.summary ||
+      !same(invocation.summary, { text: envelope.reportDraft.summary,
+        provenance: 'host-asserted', status: 'unverified' }) ||
       !same(envelope.reportDraft.qualitativeFindings, invocation.qualitativeFindings)) {
     throw new Error('Raw semantic evidence differs from its summary.');
   }
@@ -2323,18 +2430,19 @@ function validateSanitizedInvocations(root, campaign, host, result, runtime) {
         invocation.processTreeStopped !== true || !/^[0-9a-f]{64}$/.test(
           invocation.identitySha256) || !/^[0-9a-f]{64}$/.test(invocation.stdoutSha256) ||
         !/^[0-9a-f]{64}$/.test(invocation.stderrSha256) ||
-        !Number.isInteger(invocation.process?.adapterPid) ||
-        !Number.isInteger(invocation.process?.childPid) ||
-        !Number.isInteger(invocation.process?.descendant?.pid)) {
+        !Number.isInteger(invocation.containment?.adapterPid) ||
+        invocation.containment?.observationSource !== 'trusted-synthetic-runtime-v1' ||
+        invocation.containment?.treeStopped !== true) {
       throw new Error('Invocation summary is invalid.');
     }
+    validateContainmentReceipt(invocation.containment);
   }
   const state = readJson(path.join(root, 'hosts', host, 'controller', 'audit-state.json'));
   if (state.schemaVersion !== 2 || state.runId !== campaign.runId || state.host !== host ||
       state.policySha256 !== policy || !Array.isArray(state.launches) ||
       state.launches.length !== 3) throw new Error('Private semantic state is invalid.');
   const rawEnvelopes = result.invocations.map((invocation, index) =>
-    validateLaunchIdentity(root, campaign, host, invocation, state.launches[index], runtime));
+    validateLaunchIdentity(root, campaign, host, invocation, state.launches[index]));
   for (const phase of ['plan', 'verify']) {
     const invocation = result.invocations.find((entry) => entry.profile === phase);
     const rawEnvelope = rawEnvelopes.find((entry) => entry.kind === phase);
@@ -2345,7 +2453,8 @@ function validateSanitizedInvocations(root, campaign, host, result, runtime) {
     if (state[phase].invocationId !== invocation.invocationId ||
         state[phase].controllerNonce !== rawEnvelope.controllerNonce ||
         !same(state[phase].findings, expected) || !same(invocation.findings, expected) ||
-        invocation.summary !== state[phase].reportDraft.summary ||
+        !same(invocation.summary, { text: state[phase].reportDraft.summary,
+          provenance: 'host-asserted', status: 'unverified' }) ||
         !same(invocation.qualitativeFindings, state[phase].reportDraft.qualitativeFindings)) {
       throw new Error('Semantic invocation cannot be revalidated.');
     }
@@ -2371,8 +2480,7 @@ function validateSanitizedInvocations(root, campaign, host, result, runtime) {
     ({ id, operation, outcome, errorCode, observedSha256 }));
   if (!same(preflight.probes, expectedProbes) || preflight.descendant.started !== true ||
       !Number.isInteger(preflight.descendant.pid) || preflight.descendant.exitCode !== 0 ||
-      preflight.descendant.stopped !== true ||
-      !same(preflight.process.descendant, preflight.descendant)) {
+      preflight.descendant.stopped !== true) {
     throw new Error('Preflight probes are invalid.');
   }
 }
@@ -2416,37 +2524,22 @@ function validatePartialInvocations(invocations) {
   }
   const expectedKeys = ['invocationId', 'profile', 'startedAt', 'completedAt',
     'processTreeStopped', 'identitySha256', 'provenance', 'policySha256', 'stdoutSha256',
-    'stderrSha256', 'process'];
+    'stderrSha256', 'containment'];
   if (!same(invocations.map((entry) => entry.profile),
     ['preflight', 'plan', 'verify'].slice(0, invocations.length))) {
     throw new Error('Invocation summary is invalid.');
   }
   for (const invocation of invocations) {
-    const processReceipt = invocation.process;
-    const descendant = processReceipt?.descendant;
     if (!exactKeys(invocation, expectedKeys) ||
         !['preflight', 'plan', 'verify'].includes(invocation.profile) ||
         typeof invocation.invocationId !== 'string' || invocation.invocationId.length === 0 ||
         typeof invocation.startedAt !== 'string' || typeof invocation.completedAt !== 'string' ||
         invocation.processTreeStopped !== true || invocation.provenance !== 'synthetic-v1' ||
-        !exactKeys(processReceipt, ['adapterPid', 'childPid', 'descendant', 'observedPids']) ||
-        !Number.isInteger(processReceipt.adapterPid) ||
-        !(processReceipt.childPid === null || Number.isInteger(processReceipt.childPid)) ||
-        !Array.isArray(processReceipt.observedPids) || processReceipt.observedPids.length === 0 ||
-        new Set(processReceipt.observedPids).size !== processReceipt.observedPids.length ||
-        !processReceipt.observedPids.every(Number.isInteger) ||
-        !processReceipt.observedPids.includes(processReceipt.adapterPid) ||
-        Number.isInteger(processReceipt.childPid) &&
-          !processReceipt.observedPids.includes(processReceipt.childPid) ||
-        !exactKeys(descendant, ['started', 'pid', 'exitCode', 'stopped']) ||
-        typeof descendant.started !== 'boolean' ||
-        !(descendant.pid === null || Number.isInteger(descendant.pid)) ||
-        !(descendant.exitCode === null || Number.isInteger(descendant.exitCode)) ||
-        typeof descendant.stopped !== 'boolean' ||
         ![invocation.identitySha256, invocation.policySha256, invocation.stdoutSha256,
           invocation.stderrSha256].every((digest) => /^[0-9a-f]{64}$/.test(digest))) {
       throw new Error('Invocation summary is invalid.');
     }
+    validateContainmentReceipt(invocation.containment);
   }
 }
 
@@ -2525,7 +2618,7 @@ function validateNonPassLaunchState(root, campaign, host, result, runtime) {
   const attemptKeys = ['schemaVersion', 'runId', 'host', 'invocationId', 'profile',
     'controllerNonce', 'policySha256', 'startedAt', 'completedAt', 'adapterStatus',
     'adapterSignal', 'adapterErrorCode', 'disposition', 'identity', 'identitySha256',
-    'controllerIdentity', 'stdoutSha256', 'stderrSha256', 'process'];
+    'controllerIdentity', 'stdoutSha256', 'stderrSha256', 'containment'];
   if (!Array.isArray(attempts) || attempts.length === 0 || attempts.length > 3 ||
       !same(attempts.map((entry) => entry.profile),
         ['preflight', 'plan', 'verify'].slice(0, attempts.length))) {
@@ -2554,16 +2647,14 @@ function validateNonPassLaunchState(root, campaign, host, result, runtime) {
         throw new Error('Validated launch envelope is malformed.');
       }
     }
+    if (attempt.containment !== null) validateContainmentReceipt(attempt.containment);
     if (envelope && validateContract('hostEnvelope', envelope).valid &&
         envelope.kind === attempt.profile && envelope.scenarioId === 'audit' &&
         envelope.runId === campaign.runId && envelope.host === host &&
         envelope.invocationId === attempt.invocationId &&
         envelope.controllerNonce === attempt.controllerNonce &&
         envelope.policySha256 === attempt.policySha256) {
-      if (attempt.process !== null && !same(attempt.process, envelope.process)) {
-        throw new Error('Private launch process receipt changed.');
-      }
-      validateStoppedProcess(envelope, runtime);
+      if (attempt.containment !== null) validateStoppedProcess(envelope, attempt.containment);
     } else if (attempt.disposition === 'validated') {
       throw new Error('Validated launch envelope is not controller-bound.');
     }
@@ -2572,15 +2663,9 @@ function validateNonPassLaunchState(root, campaign, host, result, runtime) {
       continue;
     }
     if (attempt.adapterStatus !== 0 || attempt.adapterSignal !== null ||
-        attempt.adapterErrorCode !== null || attempt.process === null || envelope === null) {
+        attempt.adapterErrorCode !== null || attempt.containment === null || envelope === null) {
       throw new Error('Validated launch attempt is inconsistent.');
     }
-    const processReceipt = {
-      adapterPid: envelope.process.adapterPid,
-      childPid: envelope.process.childPid,
-      descendant: envelope.process.descendant,
-      observedPids: envelope.process.observedPids,
-    };
     validated.push({
       attempt,
       envelope,
@@ -2592,7 +2677,7 @@ function validateNonPassLaunchState(root, campaign, host, result, runtime) {
         controllerIdentity: attempt.controllerIdentity,
         stdoutSha256: attempt.stdoutSha256,
         stderrSha256: attempt.stderrSha256,
-        process: attempt.process,
+        containment: attempt.containment,
       },
       summary: {
         invocationId: attempt.invocationId,
@@ -2605,7 +2690,7 @@ function validateNonPassLaunchState(root, campaign, host, result, runtime) {
         policySha256: attempt.policySha256,
         stdoutSha256: attempt.stdoutSha256,
         stderrSha256: attempt.stderrSha256,
-        process: processReceipt,
+        containment: attempt.containment,
       },
     });
   }

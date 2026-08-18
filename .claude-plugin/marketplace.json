@@ -1,12 +1,12 @@
 {
   "name": "skillquiver",
-  "description": "Twenty-three Agent Skills shared by ChatGPT, Claude Code, and Codex",
+  "description": "Twenty-four Agent Skills shared by ChatGPT, Claude Code, and Codex",
   "owner": { "name": "Drizzy07x", "url": "https://github.com/Drizzy07x" },
   "plugins": [
     {
       "name": "skillquiver",
       "source": "./",
-      "description": "Twenty-three shared Agent Skills for ChatGPT, Claude Code, and Codex"
+      "description": "Twenty-four shared Agent Skills for ChatGPT, Claude Code, and Codex"
     }
   ]
 }

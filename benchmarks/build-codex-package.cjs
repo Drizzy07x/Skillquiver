@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const PACKAGE_LONG_DESCRIPTION = 'Skillquiver is a collection of 23 reusable Agent Skills for planning, implementation, debugging, review, verification, UI, host boundaries, and safe environment maintenance. The public plugin works in ChatGPT and Codex; the same source catalog also supports Claude Code. It has no hosted backend, account, authentication, MCP server, bundled hooks, or app UI, and runs only through host-approved tools.';
+const PACKAGE_LONG_DESCRIPTION = 'Skillquiver is a collection of 24 reusable Agent Skills for planning, implementation, debugging, review, verification, UI, host boundaries, agent instructions, and safe environment maintenance. The skills-only package works in ChatGPT and Codex; the same source catalog also supports Claude Code. It has no hosted backend, account, authentication, MCP server, bundled hooks, or app UI, and runs only through host-approved tools.';
 const PACKAGE_CAPABILITIES = [
   'Read project files and relevant local context.',
   "Write project files when the user's task authorizes changes.",
@@ -10,7 +10,7 @@ const PACKAGE_CAPABILITIES = [
   'Use optional host-provided browser, UI automation, or subagent capabilities when available.'
 ];
 const PORTABLE_TEXT_EXTENSIONS = new Set([
-  '.cjs', '.html', '.js', '.json', '.md', '.ps1', '.sh', '.txt', '.yaml', '.yml'
+  '.cjs', '.html', '.js', '.json', '.md', '.mjs', '.ps1', '.sh', '.txt', '.yaml', '.yml'
 ]);
 
 function readJson(filePath) {
@@ -39,8 +39,8 @@ function listSharedSkills(root) {
     .map(entry => entry.name)
     .sort();
 
-  if (skills.length !== 23) {
-    throw new Error(`Codex package must contain exactly 23 skills; found ${skills.length}.`);
+  if (skills.length !== 24) {
+    throw new Error(`Codex package must contain exactly 24 skills; found ${skills.length}.`);
   }
 
   for (const skill of skills) {

@@ -2,7 +2,7 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$PluginEvalScript,
   [string]$Target = '.plugin-eval\codex-package\skillquiver',
-  [string]$ResultPrefix = '.plugin-eval\package-2.1.0-final',
+  [string]$ResultPrefix = '.plugin-eval\package-2.2.0-final',
   [ValidatePattern('^[D-Z]$')]
   [string]$DriveLetter = 'Z'
 )

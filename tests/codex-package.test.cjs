@@ -10,7 +10,8 @@ const {
   PACKAGE_LONG_DESCRIPTION,
   assertPortableTree,
   buildCodexPackage,
-  listSharedSkills
+  listSharedSkills,
+  normalizePortableText
 } = require('../benchmarks/build-codex-package.cjs');
 
 function filesUnder(directory) {
@@ -20,10 +21,11 @@ function filesUnder(directory) {
   });
 }
 
-test('Codex package selects the complete 23-skill catalog', () => {
+test('Codex package selects the complete 24-skill catalog', () => {
   const skills = listSharedSkills(root);
 
-  assert.equal(skills.length, 23);
+  assert.equal(skills.length, 24);
+  assert.ok(skills.includes('improve-agent-instructions'));
   assert.ok(skills.includes('skillquiver-doctor'));
   assert.deepEqual(skills, [...skills].sort());
 });
@@ -39,11 +41,11 @@ test('Codex package contains every skill and consistent public metadata', t => {
   const builtSkills = fs.readdirSync(path.join(outputRoot, 'skills')).sort();
 
   assert.deepEqual(builtSkills, result.skills);
-  assert.equal(builtSkills.length, 23);
+  assert.equal(builtSkills.length, 24);
   assert.equal(manifest.name, 'skillquiver');
-  assert.equal(manifest.version, '2.1.0');
+  assert.equal(manifest.version, '2.2.0');
   assert.equal(manifest.skills, './skills/');
-  assert.match(manifest.description, /Twenty-three reusable Agent Skills/);
+  assert.match(manifest.description, /Twenty-four reusable Agent Skills/);
   assert.equal(manifest.interface.displayName, 'Skillquiver');
   assert.equal(manifest.interface.shortDescription, 'Practical software workflows');
   assert.equal(manifest.interface.longDescription, PACKAGE_LONG_DESCRIPTION);
@@ -63,7 +65,7 @@ test('Codex package contains every skill and consistent public metadata', t => {
     'Review this code change and report only evidence-backed findings.'
   ]);
   assert.match(manifest.description, /ChatGPT and Codex/);
-  assert.match(manifest.interface.longDescription, /public plugin works in ChatGPT and Codex/);
+  assert.match(manifest.interface.longDescription, /skills-only package works in ChatGPT and Codex/);
   assert.match(manifest.interface.longDescription, /same source catalog also supports Claude Code/);
   assert.ok(manifest.keywords.includes('chatgpt'));
   assert.ok(manifest.interface.defaultPrompt.every(prompt =>
@@ -80,17 +82,41 @@ test('Codex package contains every skill and consistent public metadata', t => {
   for (const file of filesUnder(outputRoot).filter(file => !file.endsWith('.png'))) {
     assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /\r/);
   }
+  const packagedInspector = path.join(
+    outputRoot,
+    'skills',
+    'improve-agent-instructions',
+    'scripts',
+    'inventory.mjs'
+  );
+  assert.equal(fs.existsSync(packagedInspector), true);
+  assert.doesNotMatch(fs.readFileSync(packagedInspector, 'utf8'), /\r/);
 
+});
+
+test('portable text normalization converts CRLF in .mjs files to LF', t => {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'skillquiver-mjs-test-'));
+  t.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }));
+  const modulePath = path.join(fixtureRoot, 'inventory.mjs');
+  fs.writeFileSync(modulePath, 'const first = 1;\r\nconst second = 2;\r\n');
+
+  normalizePortableText(fixtureRoot);
+
+  assert.equal(
+    fs.readFileSync(modulePath, 'utf8'),
+    'const first = 1;\nconst second = 2;\n'
+  );
+});
+
+test('historical submission evidence remains pinned to 2.1.0', () => {
   const dossier = fs.readFileSync(
     path.join(root, 'submission', 'openai-directory.md'), 'utf8'
   );
+
   assert.match(dossier, /\| Plugin name \| Skillquiver \|/);
   assert.match(dossier, /\| Version \| 2\.1\.0 \|/);
   assert.match(dossier, /\| Short description \| Practical software workflows \|/);
-  assert.ok(dossier.includes(PACKAGE_LONG_DESCRIPTION));
-  for (const capability of PACKAGE_CAPABILITIES) {
-    assert.ok(dossier.includes(`- ${capability}`));
-  }
+  assert.doesNotMatch(dossier, /\| Version \| 2\.2\.0 \|/);
 });
 
 test('Codex package refuses output outside its artifact or temp roots', () => {

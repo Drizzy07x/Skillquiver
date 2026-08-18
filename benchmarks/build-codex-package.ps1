@@ -67,7 +67,7 @@ if (-not $usesDefaultRoot -and -not $usesTemp) {
 }
 
 $packagePath = Join-Path $resolvedArtifactRoot 'skillquiver'
-$archivePath = Join-Path $resolvedArtifactRoot 'skillquiver-2.1.0.zip'
+$archivePath = Join-Path $resolvedArtifactRoot 'skillquiver-2.2.0.zip'
 $builder = Join-Path $PSScriptRoot 'build-codex-package.cjs'
 
 # The Node builder resolves existing ancestors physically and creates the

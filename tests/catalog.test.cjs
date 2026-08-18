@@ -65,11 +65,12 @@ function markdownFiles(dir) {
   });
 }
 
-test('catalog contains 23 universal skills with OpenAI metadata', () => {
+test('catalog contains 24 universal skills with OpenAI metadata', () => {
   const shared = skillNames(sharedSkillsRoot);
 
-  assert.equal(shared.length, 23);
+  assert.equal(shared.length, 24);
   assert.ok(shared.includes('handle-host-boundaries'));
+  assert.ok(shared.includes('improve-agent-instructions'));
   assert.ok(shared.includes('skillquiver-doctor'));
 
   for (const name of shared) {
@@ -102,7 +103,7 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
 
   assert.equal(codexPlugin.name, 'skillquiver');
-  assert.equal(codexPlugin.version, '2.1.0');
+  assert.equal(codexPlugin.version, '2.2.0');
   assert.equal(codexPlugin.skills, './skills/');
   assert.deepEqual(codexPlugin.interface.capabilities, [
     'Read project files and relevant local context.',
@@ -136,13 +137,13 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   assert.equal(claudePlugin.name, 'skillquiver');
   assert.equal(claudePlugin.version, codexPlugin.version);
   assert.equal(claudePlugin.skills, './skills');
-  assert.match(codexPlugin.description, /Twenty-three reusable Agent Skills/);
+  assert.match(codexPlugin.description, /Twenty-four reusable Agent Skills/);
   assert.match(codexPlugin.description, /ChatGPT and Codex/);
-  assert.match(codexPlugin.interface.longDescription, /public plugin works in ChatGPT and Codex/);
+  assert.match(codexPlugin.interface.longDescription, /skills-only package works in ChatGPT and Codex/);
   assert.match(codexPlugin.interface.longDescription, /same source catalog also supports Claude Code/);
   assert.ok(codexPlugin.keywords.includes('chatgpt'));
-  assert.match(codexPlugin.interface.longDescription, /23 reusable Agent Skills/);
-  assert.match(claudePlugin.description, /Twenty-three Agent Skills shared/);
+  assert.match(codexPlugin.interface.longDescription, /24 reusable Agent Skills/);
+  assert.match(claudePlugin.description, /Twenty-four Agent Skills shared/);
   assert.match(claudePlugin.description, /ChatGPT, Claude Code, and Codex/);
 
   assert.equal(codexMarketplace.name, 'skillquiver');
@@ -159,12 +160,12 @@ test('plugin manifests and marketplaces expose the intended catalogs', () => {
   });
 
   assert.equal(claudeMarketplace.name, 'skillquiver');
-  assert.match(claudeMarketplace.description, /Twenty-three Agent Skills shared/);
+  assert.match(claudeMarketplace.description, /Twenty-four Agent Skills shared/);
   assert.match(claudeMarketplace.description, /ChatGPT, Claude Code, and Codex/);
   assert.equal(claudeMarketplace.plugins.length, 1);
   assert.equal(claudeMarketplace.plugins[0].name, 'skillquiver');
   assert.equal(claudeMarketplace.plugins[0].source, './');
-  assert.match(claudeMarketplace.plugins[0].description, /Twenty-three shared Agent Skills/);
+  assert.match(claudeMarketplace.plugins[0].description, /Twenty-four shared Agent Skills/);
 });
 
 test('host boundaries keep generic capability and destructive safeguards', () => {
@@ -284,8 +285,8 @@ test('ChatGPT host routes stay capability-aware', () => {
     path.join(sharedSkillsRoot, 'brainstorming', 'visual-companion.md'), 'utf8');
   const automateUi = fs.readFileSync(
     path.join(sharedSkillsRoot, 'automate-ui', 'SKILL.md'), 'utf8');
-  const projectMap = fs.readFileSync(
-    path.join(sharedSkillsRoot, 'solve-efficiently', 'SKILL.md'), 'utf8');
+  const instructionSkill = fs.readFileSync(
+    path.join(sharedSkillsRoot, 'improve-agent-instructions', 'SKILL.md'), 'utf8');
   const chatgptDoctorPath = path.join(
     sharedSkillsRoot, 'skillquiver-doctor', 'references', 'chatgpt.md');
 
@@ -304,7 +305,8 @@ test('ChatGPT host routes stay capability-aware', () => {
   assert.match(visualCompanion, /long-running or yielded shell capability/);
   assert.match(visualCompanion, /continue text-only/);
   assert.match(automateUi, /ChatGPT and Codex examples include/);
-  assert.match(projectMap, /ChatGPT or Codex surface/);
+  assert.match(instructionSkill, /Codex: \[references\/codex\.md\]/);
+  assert.match(instructionSkill, /Claude Code: \[references\/claude\.md\]/);
 });
 
 test('website identifies the complete universal package honestly', () => {
@@ -312,18 +314,18 @@ test('website identifies the complete universal package honestly', () => {
   const packageSection = html.slice(html.indexOf('<section class="band" id="package">'),
     html.indexOf('<section class="band" id="install">'));
 
-  assert.match(packageSection, /Skillquiver v2\.1\.0/);
-  assert.match(packageSection, /23 shared Agent Skills/);
-  assert.match(packageSection, /public plugin works in ChatGPT and Codex/);
+  assert.match(packageSection, /Skillquiver v2\.2\.0/);
+  assert.match(packageSection, /24 shared Agent Skills/);
+  assert.match(packageSection, /skills-only package works in ChatGPT and Codex/);
   assert.doesNotMatch(html, /Claude-only or Codex-only capability/);
   assert.match(fs.readFileSync(path.join(root, 'assets', 'banner.svg'), 'utf8'),
-    /23 SKILLS · CHATGPT · CLAUDE CODE · CODEX/);
+    /24 SKILLS · CHATGPT · CLAUDE CODE · CODEX/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
-    /Skillquiver is a public package of 23 Agent Skills for ChatGPT and Codex/);
+    /Skillquiver is a skills-only package of 24 Agent Skills for ChatGPT and Codex/);
   assert.match(fs.readFileSync(path.join(root, 'privacy.html'), 'utf8'),
     /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
   assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
-    /Skillquiver is a public package of 23 Agent Skills for ChatGPT and Codex/);
+    /Skillquiver is a skills-only package of 24 Agent Skills for ChatGPT and Codex/);
   assert.match(fs.readFileSync(path.join(root, 'terms.html'), 'utf8'),
     /published and maintained under the public publisher name <a[^>]+>Drizzy07x<\/a>/);
 });

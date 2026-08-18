@@ -1,15 +1,15 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Skillquiver — 23 skills shared by ChatGPT, Claude Code, and Codex" width="800">
+<img src="assets/banner.svg" alt="Skillquiver — 24 skills shared by ChatGPT, Claude Code, and Codex" width="800">
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-8B929E)](LICENSE)
-![Skills](https://img.shields.io/badge/skills-23-C87941)
-![Shared](https://img.shields.io/badge/shared-23-7FA6A0)
-![ChatGPT](https://img.shields.io/badge/ChatGPT-23-10A37F)
-![Claude Code](https://img.shields.io/badge/Claude%20Code-23-E0A458)
-![Codex](https://img.shields.io/badge/Codex-23-E8E4DC)
+![Skills](https://img.shields.io/badge/skills-24-C87941)
+![Shared](https://img.shields.io/badge/shared-24-7FA6A0)
+![ChatGPT](https://img.shields.io/badge/ChatGPT-24-10A37F)
+![Claude Code](https://img.shields.io/badge/Claude%20Code-24-E0A458)
+![Codex](https://img.shields.io/badge/Codex-24-E8E4DC)
 
-**23 skills shared by ChatGPT, Claude Code, and Codex.**
+**24 skills shared by ChatGPT, Claude Code, and Codex.**
 
 Each skill tells the agent what it does and when to use it, so the right workflow can activate without you memorizing its name.
 
@@ -19,11 +19,11 @@ Each skill tells the agent what it does and when to use it, so the right workflo
 
 ## Installation
 
-The official Plugins Directory is the recommended distribution for ChatGPT and Codex once the listing shows version 2.1.0. Claude Code can install the same source catalog from the repository marketplace.
+The repository contains the 24-skill `2.2.0` candidate. The official Plugins Directory remains the recommended distribution for ChatGPT and Codex, but its published version can lag this source tree. Claude Code can install the current source catalog from the repository marketplace.
 
 ### ChatGPT
 
-Open the Plugins Directory in ChatGPT, search for **Skillquiver**, confirm that the listing shows version 2.1.0, and select Add. ChatGPT uses `@` mentions when you want to select a bundled skill explicitly. Until 2.1.0 is approved, the public listing may still expose the smaller Skillquiver Core catalog.
+Open the Plugins Directory in ChatGPT, search for **Skillquiver**, note the displayed version, and select Add. ChatGPT uses `@` mentions when you want to select a bundled skill explicitly. The new 24-skill catalog is available there only after the listing shows version `2.2.0`.
 
 ### Claude Code
 
@@ -41,7 +41,7 @@ claude plugin marketplace add Drizzy07x/Skillquiver
 claude plugin install skillquiver@skillquiver --scope user
 ```
 
-Claude Code installs all 23 skills. Update later with:
+Claude Code installs all 24 skills. Update later with:
 
 ```text
 /plugin update skillquiver@skillquiver
@@ -72,7 +72,7 @@ codex plugin marketplace add Drizzy07x/Skillquiver
 codex plugin add skillquiver@skillquiver
 ```
 
-Codex installs all 23 skills. Refresh the marketplace and reinstall the plugin to update:
+Codex installs all 24 skills. Refresh the marketplace and reinstall the plugin to update:
 
 ```bash
 codex plugin marketplace upgrade skillquiver
@@ -90,15 +90,15 @@ cp -r Skillquiver/skills/* ~/.codex/skills/
 Use a project's `.agents/skills/` directory instead for a project-only install. Plugins are supported in Codex CLI and the Codex desktop app; use the manual project install for clients that do not load plugins.
 
 > [!IMPORTANT]
-> **v2.1 migration:** Skillquiver Doctor moved into `skills/`. Existing marketplace installs update through their host commands above. Manual installations now copy only `skills/` for the complete 23-skill catalog.
+> **v2.2 candidate:** `improve-agent-instructions` adds scoped `AGENTS.md` and `CLAUDE.md` maintenance. Skillquiver Doctor moved into `skills/` in v2.1. Existing marketplace installs update through their host commands above. Manual installations copy only `skills/` for the complete 24-skill catalog.
 
 ## Repository layout
 
 ```text
 Skillquiver/
-├── skills/                              # 23 skills shared by all three hosts
-├── .claude-plugin/plugin.json           # exposes all 23 to Claude Code
-└── .codex-plugin/plugin.json            # exposes all 23 to Codex
+├── skills/                              # 24 skills shared by all three hosts
+├── .claude-plugin/plugin.json           # exposes all 24 to Claude Code
+└── .codex-plugin/plugin.json            # exposes all 24 to Codex
 ```
 
 ## Skills
@@ -155,6 +155,7 @@ Shared compatibility badge: ![ChatGPT + Claude Code + Codex](https://img.shields
 
 | Skill | Compatibility | What it does |
 |-------|---------------|--------------|
+| [improve-agent-instructions](skills/improve-agent-instructions/SKILL.md) | ![ChatGPT + Claude Code + Codex](https://img.shields.io/badge/ChatGPT%20%2B%20Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Audits and improves global, project, and nested `AGENTS.md` and `CLAUDE.md` guidance while preserving host-specific behavior. |
 | [skillquiver-doctor](skills/skillquiver-doctor/SKILL.md) | ![ChatGPT + Claude Code + Codex](https://img.shields.io/badge/ChatGPT%20%2B%20Claude%20Code%20%2B%20Codex-supported-7FA6A0) | Audits host-local skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs with per-item consent. |
 
 ### Prompt engineering
