@@ -311,8 +311,8 @@ test('ChatGPT host routes stay capability-aware', () => {
 
 test('website identifies the complete universal package honestly', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const packageSection = html.slice(html.indexOf('<section class="band" id="package">'),
-    html.indexOf('<section class="band" id="install">'));
+  const packageSection = html.slice(html.indexOf('<section class="band" id="package"'),
+    html.indexOf('<section class="band" id="install"'));
 
   assert.match(packageSection, /Skillquiver v2\.2\.0/);
   assert.match(packageSection, /24 shared Agent Skills/);
