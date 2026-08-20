@@ -1,7 +1,7 @@
 {
   "name": "Skillquiver",
   "short_name": "Skillquiver",
-  "description": "23 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.",
+  "description": "24 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.",
   "start_url": "/Skillquiver/",
   "scope": "/Skillquiver/",
   "display": "browser",

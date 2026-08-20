@@ -1,0 +1,7 @@
+interface:
+  display_name: "Improve Agent Instructions"
+  short_description: "Improve scoped agent guidance"
+  default_prompt: "Audit the active AGENTS.md and CLAUDE.md chain; write only when this request explicitly authorizes named scopes."
+
+policy:
+  allow_implicit_invocation: true

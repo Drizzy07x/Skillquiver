@@ -33,8 +33,8 @@ plugin-eval benchmark .plugin-eval/codex-package/skillquiver --config .plugin-ev
 $env:SKILLQUIVER_BENCHMARK_TIMEOUT_SECONDS = '300'
 plugin-eval benchmark .plugin-eval/codex-package/skillquiver --config .plugin-eval/boundary.generated.json --format markdown
 pwsh benchmarks/run-safe-destructive.ps1 -PluginEvalScript <plugin-eval.js>
-node benchmarks/collect-usage.cjs .plugin-eval/codex-package/skillquiver .plugin-eval/package-2.1.0-final-usage.jsonl .plugin-eval/benchmark.json
-plugin-eval analyze .plugin-eval/codex-package/skillquiver --observed-usage .plugin-eval/package-2.1.0-final-usage.jsonl --metric-pack benchmarks/metric-pack/manifest.json --format markdown
+node benchmarks/collect-usage.cjs .plugin-eval/codex-package/skillquiver .plugin-eval/package-2.2.0-final-usage.jsonl .plugin-eval/benchmark.json
+plugin-eval analyze .plugin-eval/codex-package/skillquiver --observed-usage .plugin-eval/package-2.2.0-final-usage.jsonl --metric-pack benchmarks/metric-pack/manifest.json --format markdown
 ```
 
 For the Linux gate, run from WSL after building the complete package:
@@ -57,7 +57,7 @@ plugin-eval analyze .plugin-eval/codex-package/skillquiver --format markdown
 ```
 
 The builder enumerates the complete shared catalog and refuses any count other
-than 23. The generated artifact is ignored; rebuild it from reviewed source
+than 24. The generated artifact is ignored; rebuild it from reviewed source
 before every smoke or release check.
 
 The wrapper registers the generated workspace marketplace and installs

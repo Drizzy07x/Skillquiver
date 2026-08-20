@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .DS_Store
 Thumbs.db
+.skillquiver/
 .plugin-eval/runs/
 .plugin-eval/*.generated.json
 .plugin-eval/*-usage*.jsonl
@@ -16,3 +17,5 @@ Thumbs.db
 .plugin-eval/smoke-*/
 benchmarks/bin/
 benchmarks/obj/
+benchmarks/containment-supervisor/bin/
+benchmarks/containment-supervisor/obj/

@@ -53,7 +53,7 @@ try {
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   Assert-Equal $firstPackage.Sha256 $secondPackage.Sha256 `
     'Consecutive package builds must have the same SHA-256.'
-  Assert-Equal 23 $secondPackage.SkillCount 'The release archive must contain 23 skills.'
+  Assert-Equal 24 $secondPackage.SkillCount 'The release archive must contain 24 skills.'
   if (-not (Test-Path -LiteralPath $secondPackage.ArchivePath)) {
     throw 'The release archive was not created.'
   }
@@ -64,7 +64,7 @@ try {
     $entryNames = @($archive.Entries | ForEach-Object FullName)
     Assert-Equal (($entryNames | Sort-Object) -join "`n") ($entryNames -join "`n") `
       'Archive entries must be written in sorted order.'
-    Assert-Equal 23 @($entryNames | Where-Object { $_ -match '^skills/[^/]+/SKILL\.md$' }).Count `
+    Assert-Equal 24 @($entryNames | Where-Object { $_ -match '^skills/[^/]+/SKILL\.md$' }).Count `
       'Archive skill entry count mismatch.'
     if ($entryNames | Where-Object { $_ -match '(^/|(^|/)\.\.(/|$)|\\)' }) {
       throw 'The release archive contains an unsafe path.'
@@ -75,7 +75,7 @@ try {
     try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json }
     finally { $reader.Dispose() }
     Assert-Equal 'skillquiver' $manifest.name 'Archive manifest name mismatch.'
-    Assert-Equal '2.1.0' $manifest.version 'Archive manifest version mismatch.'
+    Assert-Equal '2.2.0' $manifest.version 'Archive manifest version mismatch.'
     $executableEntries = @(
       'skills/brainstorming/scripts/start-server.sh',
       'skills/brainstorming/scripts/stop-server.sh',

@@ -29,8 +29,11 @@ user's choice, consent, or approval:
    invoke, or fabricate it.
 3. Apply the hard stop above before any dependent action. Never invent the
    user's choice, consent, or approval.
-4. Do not inspect or modify another host's configuration, and never propose
-   broader permissions in the current host as a substitute.
+4. Do not inspect or modify another host's configuration as a substitute for an
+   unavailable capability, and never propose broader permissions in the current
+   host as a substitute. Explicitly authorized AGENTS.md or CLAUDE.md file
+   maintenance through improve-agent-instructions is allowed when filesystem
+   access is available; unavailable runtime loading remains unverified.
 5. Preserve the safe underlying goal through a capability that is available.
    For a simple question, ask it directly in plain chat. If the missing
    mechanism carries consent or security semantics that chat cannot preserve,
