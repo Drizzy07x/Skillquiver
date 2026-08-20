@@ -1614,7 +1614,7 @@ function sanitizeInvocation(invocation, includeValidatedEvidence = false) {
     return { ...common, probes: invocation.envelope.isolation.probes,
       descendant: invocation.envelope.isolation.descendant };
   }
-  return { ...common, process, findings: invocation.envelope.findings,
+  return { ...common, findings: invocation.envelope.findings,
     summary: { text: invocation.envelope.reportDraft.summary,
       provenance: 'host-asserted', status: 'unverified' },
     qualitativeFindings: invocation.envelope.reportDraft.qualitativeFindings };
