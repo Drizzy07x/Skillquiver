@@ -17,3 +17,5 @@ Thumbs.db
 .plugin-eval/smoke-*/
 benchmarks/bin/
 benchmarks/obj/
+benchmarks/containment-supervisor/bin/
+benchmarks/containment-supervisor/obj/

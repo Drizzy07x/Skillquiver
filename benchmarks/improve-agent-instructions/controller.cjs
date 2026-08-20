@@ -948,7 +948,7 @@ function persistLaunchAttempts(root, host, attempts) {
 
 function validateContainmentReceipt(receipt) {
   if (!exactKeys(receipt, ['schemaVersion', 'observationSource', 'adapterPid',
-    'observedProcesses', 'treeStopped']) || receipt.schemaVersion !== 1 ||
+    'observedProcesses', 'attributedPids', 'treeStopped']) || receipt.schemaVersion !== 1 ||
       receipt.observationSource !== 'trusted-synthetic-runtime-v1' ||
       !Number.isInteger(receipt.adapterPid) || receipt.adapterPid < 1 ||
       !Array.isArray(receipt.observedProcesses) || receipt.observedProcesses.length < 1 ||
@@ -982,17 +982,33 @@ function validateContainmentReceipt(receipt) {
       parentPid = byPid.get(parentPid).parentPid;
     }
   }
-  return [...byPid.keys()].sort((left, right) => left - right);
+  // Attributed processes are the ones the adapter itself created, with host-injected helpers
+  // such as the Windows console host excluded. Only these are held against its own report.
+  if (!Array.isArray(receipt.attributedPids) || receipt.attributedPids.length < 1 ||
+      receipt.attributedPids.length > 64 ||
+      !receipt.attributedPids.includes(receipt.adapterPid) ||
+      new Set(receipt.attributedPids).size !== receipt.attributedPids.length ||
+      !receipt.attributedPids.every((pid) => byPid.has(pid))) {
+    throw new Error('Trusted process attribution is invalid.');
+  }
+  return { observedPids: [...byPid.keys()].sort((left, right) => left - right),
+    attributedPids: [...receipt.attributedPids].sort((left, right) => left - right) };
 }
 
 function validateStoppedProcess(envelope, containment) {
-  const observedPids = validateContainmentReceipt(containment);
+  const { observedPids, attributedPids } = validateContainmentReceipt(containment);
   const processReceipt = envelope.process;
   const unavailable = envelope.kind === 'preflight' &&
     envelope.availability !== 'available-safe';
   const descendant = processReceipt.descendant;
+  // The adapter may only claim processes the trusted runtime observed, and it must account
+  // for every process the runtime attributed to it. The first direction rejects fabricated
+  // process evidence; the second rejects a descendant the adapter left out of its report.
+  const observedPidSet = new Set(observedPids);
+  const claimedPidSet = new Set(processReceipt.observedPids);
   if (processReceipt.adapterPid !== containment.adapterPid ||
-      !same([...processReceipt.observedPids].sort((left, right) => left - right), observedPids) ||
+      !processReceipt.observedPids.every((pid) => observedPidSet.has(pid)) ||
+      !attributedPids.every((pid) => claimedPidSet.has(pid)) ||
       !processReceipt.observedPids.includes(processReceipt.adapterPid) ||
       Number.isInteger(processReceipt.childPid) &&
         !processReceipt.observedPids.includes(processReceipt.childPid) ||

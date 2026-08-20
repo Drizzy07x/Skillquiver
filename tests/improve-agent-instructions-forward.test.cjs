@@ -1140,7 +1140,35 @@ process.stdout.write(JSON.stringify(result));
   return launcherPath;
 }
 
+// Windows enumerates its process table roughly an order of magnitude slower than the poll
+// interval, so a sampled table cannot observe a descendant that spawns and detaches between
+// two samples. The native supervisor assigns the adapter to a job object before it executes,
+// which makes membership authoritative instead of sampled.
+function resolveContainmentSupervisor() {
+  const projectRoot = path.join(root, 'benchmarks', 'containment-supervisor');
+  const sourcePath = path.join(projectRoot, 'Program.cs');
+  const executablePath = path.join(root, 'benchmarks', 'bin', 'containment-supervisor.exe');
+  if (fs.existsSync(executablePath) &&
+      fs.statSync(executablePath).mtimeMs >= fs.statSync(sourcePath).mtimeMs) {
+    return executablePath;
+  }
+  // Self-contained: the supervisor runs under a sanitized environment, where a
+  // framework-dependent host cannot resolve the shared runtime it would need.
+  const build = childProcess.spawnSync('dotnet', ['publish',
+    path.join(projectRoot, 'containment-supervisor.csproj'), '-c', 'Release', '-r', 'win-x64',
+    '--self-contained', 'true', '-p:PublishSingleFile=true', '-p:DebugType=None',
+    '-o', path.dirname(executablePath)], { encoding: 'utf8', windowsHide: true, shell: false });
+  if (build.status !== 0 || !fs.existsSync(executablePath)) {
+    throw new Error('The trusted containment supervisor is unavailable. Build it with ' +
+      `benchmarks/build-containment-supervisor.ps1.\n${build.stderr || build.stdout || ''}`);
+  }
+  return executablePath;
+}
+
 function writeTrustedSyntheticSupervisor(t) {
+  if (process.platform === 'win32') {
+    return { executable: resolveContainmentSupervisor(), args: [] };
+  }
   const supervisorRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-supervisor-'));
   const supervisorPath = path.join(supervisorRoot, 'supervisor.cjs');
   t.after(() => fs.rmSync(supervisorRoot, { recursive: true, force: true }));
@@ -1289,6 +1317,9 @@ adapter.once('close', (status, signal) => {
     observationSource: 'trusted-synthetic-runtime-v1',
     adapterPid: adapter.pid,
     observedProcesses: [...observed.values()].sort((left, right) => left.pid - right.pid),
+    // No host-injected helper joins a process tree here, so every observed process is
+    // attributed to the adapter.
+    attributedPids: [...observed.keys()].sort((left, right) => left - right),
     treeStopped,
   };
   process.stdout.write(JSON.stringify({
@@ -1303,10 +1334,10 @@ adapter.once('close', (status, signal) => {
   }));
 });
 `);
-  return supervisorPath;
+  return { executable: process.execPath, args: [supervisorPath] };
 }
 
-function trustedSyntheticLauncher(supervisorPath, runtimeCalls) {
+function trustedSyntheticLauncher(supervisor, runtimeCalls) {
   return (executable, args, options) => {
     runtimeCalls.trustedLaunch += 1;
     const request = {
@@ -1320,7 +1351,7 @@ function trustedSyntheticLauncher(supervisorPath, runtimeCalls) {
         maxBuffer: options.maxBuffer,
       },
     };
-    const execution = childProcess.spawnSync(process.execPath, [supervisorPath], {
+    const execution = childProcess.spawnSync(supervisor.executable, supervisor.args, {
       input: JSON.stringify(request),
       encoding: 'utf8',
       shell: false,
@@ -1389,7 +1420,7 @@ test('audit fixture uses trusted dispatch and controller-owned evidence', (t) =>
   const runRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'instruction-controller-audit-'));
   t.after(() => fs.rmSync(runRoot, { recursive: true, force: true }));
   const runtimeCalls = { spawn: 0, rename: 0, trustedLaunch: 0 };
-  const supervisorPath = writeTrustedSyntheticSupervisor(t);
+  const supervisor = writeTrustedSyntheticSupervisor(t);
   const runtime = {
     gitExecutable: trustedGitExecutable(),
     spawnSync(...args) {
@@ -1402,7 +1433,7 @@ test('audit fixture uses trusted dispatch and controller-owned evidence', (t) =>
       runtimeCalls.rename += 1;
       return fs.renameSync(...args);
     },
-    launchSynthetic: trustedSyntheticLauncher(supervisorPath, runtimeCalls),
+    launchSynthetic: trustedSyntheticLauncher(supervisor, runtimeCalls),
   };
   const prepared = forward.prepareFixture('audit', runRoot, runtime);
   assert.equal(prepared.status, 'prepared');
