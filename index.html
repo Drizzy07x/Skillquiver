@@ -7,6 +7,8 @@
 <meta name="description" content="23 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
 <meta name="theme-color" content="#0B0E13">
 <meta name="color-scheme" content="dark">
+<meta name="author" content="Drizzy07x">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://drizzy07x.github.io/Skillquiver/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Skillquiver">
@@ -19,7 +21,10 @@
 <meta name="twitter:title" content="Skillquiver — 23 skills for ChatGPT, Claude Code, and Codex">
 <meta name="twitter:description" content="23 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
 <meta name="twitter:image" content="https://drizzy07x.github.io/Skillquiver/assets/banner.png">
-<link rel="icon" href="assets/mark.svg">
+<link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <style>
 :root {
   --ink: #0B0E13;
@@ -164,6 +169,7 @@ a { color: inherit; }
 /* ── what is a skill ─────────────────────────────── */
 .explain { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
 .tree {
+  margin: 0; white-space: pre;
   font: 400 13px/1.9 var(--mono); color: var(--muted);
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
   padding: 22px 24px; overflow-x: auto;
@@ -195,6 +201,7 @@ a { color: inherit; }
   border-radius: 10px; padding: 18px 76px 18px 20px; margin: 0 0 12px;
 }
 .cmd pre { margin: 0; overflow-x: auto; font: 400 14px/1.8 var(--mono); }
+.cmd pre code { display: block; font: inherit; color: inherit; }
 .cmd pre .p { color: var(--copper); }
 .cmd .copy {
   position: absolute; top: 10px; right: 10px; cursor: pointer;
@@ -219,6 +226,7 @@ code { font: 400 .92em var(--mono); color: var(--gold); }
 #count { font: 400 13px var(--mono); color: var(--muted); }
 
 .group { margin-top: 40px; }
+.rows { list-style: none; margin: 0; padding: 0; }
 .group .head { display: flex; align-items: center; gap: 14px; margin: 0 0 4px; font: inherit; }
 .group .head .rule { flex: 1; height: 1px; background: var(--line); }
 .group .head .n { font: 400 12px var(--mono); color: var(--muted); }
@@ -264,7 +272,7 @@ code { font: 400 .92em var(--mono); color: var(--gold); }
 .empty { color: var(--muted); padding: 32px 4px; font-size: 15px; }
 
 /* ── chain ───────────────────────────────────────── */
-.chain { margin-top: 34px; border-left: 1px solid var(--line); }
+.chain { list-style: none; margin: 34px 0 0; padding: 0; border-left: 1px solid var(--line); }
 .step { position: relative; padding: 0 0 26px 30px; }
 .step::before {
   content: ""; position: absolute; left: -4px; top: 9px; width: 7px; height: 7px;
@@ -421,50 +429,50 @@ footer a:hover { color: var(--gold); }
   </div>
 </header>
 
-<section class="band" id="skill">
+<section class="band" id="skill" aria-labelledby="skill-h">
   <div class="wrap explain">
     <div>
       <span class="eyebrow">How it works</span>
-      <h2>A skill is a folder anchored by one instruction file.</h2>
+      <h2 id="skill-h">A skill is a folder anchored by one instruction file.</h2>
       <p class="lede">The top of <code>SKILL.md</code> says what the skill does and when to use it. The host keeps that summary in mind and opens the rest only when the moment arrives. Some skills also include scripts, templates, or references that load only when needed.</p>
     </div>
-    <div class="tree">
-Skillquiver/<br>
-├── <b>skills/</b> <i>23 shared</i><br>
-│&nbsp;&nbsp;&nbsp;├── diagnose-systematically/<br>
-│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── SKILL.md<br>
-│&nbsp;&nbsp;&nbsp;├── verify-work/<br>
-│&nbsp;&nbsp;&nbsp;├── skillquiver-doctor/<br>
-│&nbsp;&nbsp;&nbsp;└── … 20 more<br>
-├── .claude-plugin/plugin.json<br>
+    <pre class="tree">
+Skillquiver/
+├── <b>skills/</b> <i>23 shared</i>
+│   ├── diagnose-systematically/
+│   │   └── SKILL.md
+│   ├── verify-work/
+│   ├── skillquiver-doctor/
+│   └── … 20 more
+├── .claude-plugin/plugin.json
 └── .codex-plugin/plugin.json
-    </div>
+</pre>
   </div>
 </section>
 
-<section class="band" id="package">
+<section class="band" id="package" aria-labelledby="package-h">
   <div class="wrap explain">
     <div>
       <span class="eyebrow">Public directory package</span>
-      <h2>Skillquiver v2.1.0: universal release candidate.</h2>
+      <h2 id="package-h">Skillquiver v2.1.0: universal release candidate.</h2>
       <p class="lede">The update contains 23 shared Agent Skills, and the public plugin works in ChatGPT and Codex. The same source catalog also supports Claude Code. It runs through host-approved tools, with no hosted backend, account, authentication, bundled MCP server, hooks, or app UI.</p>
       <p class="note">Version 2.1.0 is prepared as an update to the existing listing under the public publisher name Drizzy07x. Portal review and publication remain separate external gates. See the <a href="privacy.html">privacy policy</a>, <a href="terms.html">terms</a>, and <a href="https://github.com/Drizzy07x/Skillquiver/issues">support</a>.</p>
     </div>
-    <div class="tree">
-<b>Skillquiver v2.1.0/</b><br>
-├── <span>writing-plans</span><br>
-├── <span>diagnose-systematically</span><br>
-├── <span>test-driven-development</span><br>
-├── <span>skillquiver-doctor</span><br>
+    <pre class="tree">
+<b>Skillquiver v2.1.0/</b>
+├── <span>writing-plans</span>
+├── <span>diagnose-systematically</span>
+├── <span>test-driven-development</span>
+├── <span>skillquiver-doctor</span>
 └── <span>… 19 more</span>
-    </div>
+</pre>
   </div>
 </section>
 
-<section class="band" id="install">
+<section class="band" id="install" aria-labelledby="install-h">
   <div class="wrap">
     <span class="eyebrow">Install</span>
-    <h2>Choose your host.</h2>
+    <h2 id="install-h">Choose your host.</h2>
     <p class="lede">The universal Plugins Directory is recommended for ChatGPT and Codex once the listing shows version 2.1.0. Claude Code can install the same 23-skill source catalog from the repository marketplace.</p>
 
     <div class="tabs" role="tablist" aria-label="Agent host">
@@ -485,19 +493,19 @@ Skillquiver/<br>
       <div class="method">
         <h3>Marketplace <span class="recommended">recommended</span></h3>
         <p>Run inside an interactive Claude Code session:</p>
-        <div class="cmd"><pre><span class="p">/</span>plugin marketplace add Drizzy07x/Skillquiver
-<span class="p">/</span>plugin install skillquiver@skillquiver</pre><button class="copy">copy</button></div>
+        <div class="cmd"><pre><code><span class="p">/</span>plugin marketplace add Drizzy07x/Skillquiver
+<span class="p">/</span>plugin install skillquiver@skillquiver</code></pre><button class="copy">copy</button></div>
         <p>Or run the equivalent commands from a terminal:</p>
-        <div class="cmd"><pre>claude plugin marketplace add Drizzy07x/Skillquiver
-claude plugin install skillquiver@skillquiver --scope user</pre><button class="copy">copy</button></div>
+        <div class="cmd"><pre><code>claude plugin marketplace add Drizzy07x/Skillquiver
+claude plugin install skillquiver@skillquiver --scope user</code></pre><button class="copy">copy</button></div>
         <p class="note">Update with <code>/plugin update skillquiver@skillquiver</code> or <code>claude plugin update skillquiver@skillquiver</code>.</p>
       </div>
       <div class="method">
         <h3>Manual</h3>
         <p>Copy the shared catalog for all 23 skills:</p>
-        <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
+        <div class="cmd"><pre><code>git clone https://github.com/Drizzy07x/Skillquiver.git
 mkdir -p ~/.claude/skills
-cp -r Skillquiver/skills/* ~/.claude/skills/</pre><button class="copy">copy</button></div>
+cp -r Skillquiver/skills/* ~/.claude/skills/</code></pre><button class="copy">copy</button></div>
         <p class="note">Use a project's <code>.claude/skills/</code> folder instead for a project-only install.</p>
       </div>
     </div>
@@ -506,18 +514,18 @@ cp -r Skillquiver/skills/* ~/.claude/skills/</pre><button class="copy">copy</but
       <div class="method">
         <h3>Marketplace <span class="recommended">recommended</span></h3>
         <p>Run from a terminal:</p>
-        <div class="cmd"><pre>codex plugin marketplace add Drizzy07x/Skillquiver
-codex plugin add skillquiver@skillquiver</pre><button class="copy">copy</button></div>
+        <div class="cmd"><pre><code>codex plugin marketplace add Drizzy07x/Skillquiver
+codex plugin add skillquiver@skillquiver</code></pre><button class="copy">copy</button></div>
         <p>Refresh the marketplace and reinstall to update:</p>
-        <div class="cmd"><pre>codex plugin marketplace upgrade skillquiver
-codex plugin add skillquiver@skillquiver</pre><button class="copy">copy</button></div>
+        <div class="cmd"><pre><code>codex plugin marketplace upgrade skillquiver
+codex plugin add skillquiver@skillquiver</code></pre><button class="copy">copy</button></div>
       </div>
       <div class="method">
         <h3>Manual</h3>
         <p>Copy all 23 shared skills to the global agent directory:</p>
-        <div class="cmd"><pre>git clone https://github.com/Drizzy07x/Skillquiver.git
+        <div class="cmd"><pre><code>git clone https://github.com/Drizzy07x/Skillquiver.git
 mkdir -p ~/.codex/skills
-cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</button></div>
+cp -r Skillquiver/skills/* ~/.codex/skills/</code></pre><button class="copy">copy</button></div>
         <p class="note">Use a project's <code>.agents/skills/</code> folder instead for a project-only install.</p>
       </div>
     </div>
@@ -526,10 +534,10 @@ cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</butt
   </div>
 </section>
 
-<section class="band" id="quiver">
+<section class="band" id="quiver" aria-labelledby="quiver-h">
   <div class="wrap">
     <span class="eyebrow">All 23</span>
-    <h2>What each skill does, and when it steps in.</h2>
+    <h2 id="quiver-h">What each skill does, and when it steps in.</h2>
     <p class="lede">Every one of them runs in all three hosts.</p>
     <div class="tools">
       <input id="filter" type="search" placeholder="Search skills…" autocomplete="off" aria-label="Search skills">
@@ -541,204 +549,264 @@ cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</butt
         <h3 class="head">
           <span class="eyebrow">Planning</span><span class="rule" aria-hidden="true"></span><span class="n">5</span>
         </h3>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/brainstorming/SKILL.md" data-id="brainstorming" data-search="brainstorming Asks what you actually want before a line of code is written. you're starting something new and the details aren't settled.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>brainstorming<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Asks what you actually want before a line of code is written.</span>
-          <span class="when">you're starting something new and the details aren't settled.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/writing-plans/SKILL.md" data-id="writing-plans" data-search="writing-plans Turns the idea into a written list of tasks, in order. you know what to build but nobody has written down the steps.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>writing-plans<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Turns the idea into a written list of tasks, in order.</span>
-          <span class="when">you know what to build but nobody has written down the steps.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/executing-plans/SKILL.md" data-id="executing-plans" data-search="executing-plans Works through a written plan one task at a time, stopping only if it gets stuck. a plan already exists and you want it carried out.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>executing-plans<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Works through a written plan one task at a time, stopping only if it gets stuck.</span>
-          <span class="when">a plan already exists and you want it carried out.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/subagent-driven-development/SKILL.md" data-id="subagent-driven-development" data-search="subagent-driven-development Hands each task to its own helper agent and reviews the result before moving on. the tasks in the plan don't depend on each other.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>subagent-driven-development<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Hands each task to its own helper agent and reviews the result before moving on.</span>
-          <span class="when">the tasks in the plan don't depend on each other.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/dispatching-parallel-agents/SKILL.md" data-id="dispatching-parallel-agents" data-search="dispatching-parallel-agents Sends out several helper agents at once, one per unrelated problem. you have two or more separate problems and no reason to fix them in order.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>dispatching-parallel-agents<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Sends out several helper agents at once, one per unrelated problem.</span>
-          <span class="when">you have two or more separate problems and no reason to fix them in order.</span>
-        </a>
+        <ul class="rows">
+          <li class="row" data-id="brainstorming" data-search="brainstorming Asks what you actually want before a line of code is written. you're starting something new and the details aren't settled.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/brainstorming/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>brainstorming<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Asks what you actually want before a line of code is written.</span>
+              <span class="when">you're starting something new and the details aren't settled.</span>
+            </a>
+          </li>
+          <li class="row" data-id="writing-plans" data-search="writing-plans Turns the idea into a written list of tasks, in order. you know what to build but nobody has written down the steps.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/writing-plans/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>writing-plans<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Turns the idea into a written list of tasks, in order.</span>
+              <span class="when">you know what to build but nobody has written down the steps.</span>
+            </a>
+          </li>
+          <li class="row" data-id="executing-plans" data-search="executing-plans Works through a written plan one task at a time, stopping only if it gets stuck. a plan already exists and you want it carried out.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/executing-plans/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>executing-plans<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Works through a written plan one task at a time, stopping only if it gets stuck.</span>
+              <span class="when">a plan already exists and you want it carried out.</span>
+            </a>
+          </li>
+          <li class="row" data-id="subagent-driven-development" data-search="subagent-driven-development Hands each task to its own helper agent and reviews the result before moving on. the tasks in the plan don't depend on each other.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/subagent-driven-development/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>subagent-driven-development<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Hands each task to its own helper agent and reviews the result before moving on.</span>
+              <span class="when">the tasks in the plan don't depend on each other.</span>
+            </a>
+          </li>
+          <li class="row" data-id="dispatching-parallel-agents" data-search="dispatching-parallel-agents Sends out several helper agents at once, one per unrelated problem. you have two or more separate problems and no reason to fix them in order.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/dispatching-parallel-agents/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>dispatching-parallel-agents<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Sends out several helper agents at once, one per unrelated problem.</span>
+              <span class="when">you have two or more separate problems and no reason to fix them in order.</span>
+            </a>
+          </li>
+        </ul>
       </div>
       <div class="group">
         <h3 class="head">
           <span class="eyebrow">Execution</span><span class="rule" aria-hidden="true"></span><span class="n">7</span>
         </h3>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/test-driven-development/SKILL.md" data-id="test-driven-development" data-search="test-driven-development Writes the failing test first, then the smallest code that makes it pass. you're adding a feature or fixing a bug.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>test-driven-development<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Writes the failing test first, then the smallest code that makes it pass.</span>
-          <span class="when">you're adding a feature or fixing a bug.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/solve-efficiently/SKILL.md" data-id="solve-efficiently" data-search="solve-efficiently Finds the few files that actually matter instead of reading the whole project. the change touches several parts of the codebase.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>solve-efficiently<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Finds the few files that actually matter instead of reading the whole project.</span>
-          <span class="when">the change touches several parts of the codebase.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/handle-host-boundaries/SKILL.md" data-id="handle-host-boundaries" data-search="handle-host-boundaries Handles a skill or tool that belongs to another agent host without pretending it exists. a request names a capability from another host.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>handle-host-boundaries<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Handles a skill or tool that belongs to another agent host without pretending it exists.</span>
-          <span class="when">a request names a capability from another host.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/execute-durably/SKILL.md" data-id="execute-durably" data-search="execute-durably Keeps progress in a file on disk so long work can be picked up where it stopped. the job is long and might get interrupted.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>execute-durably<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Keeps progress in a file on disk so long work can be picked up where it stopped.</span>
-          <span class="when">the job is long and might get interrupted.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/refactor-safely/SKILL.md" data-id="refactor-safely" data-search="refactor-safely Tidies code without changing what it does, with tests in place first. code is messy or duplicated but still has to work exactly the same.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>refactor-safely<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Tidies code without changing what it does, with tests in place first.</span>
-          <span class="when">code is messy or duplicated but still has to work exactly the same.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/using-git-worktrees/SKILL.md" data-id="using-git-worktrees" data-search="using-git-worktrees Sets up a separate working copy so your current work stays untouched. you're starting a feature and don't want to disturb what's already open.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>using-git-worktrees<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Sets up a separate working copy so your current work stays untouched.</span>
-          <span class="when">you're starting a feature and don't want to disturb what's already open.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/communicate-clearly/SKILL.md" data-id="communicate-clearly" data-search="communicate-clearly Keeps the answer as short as it can be without dropping the proof. you want less noise, or something explained in plain words.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>communicate-clearly<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Keeps the answer as short as it can be without dropping the proof.</span>
-          <span class="when">you want less noise, or something explained in plain words.</span>
-        </a>
+        <ul class="rows">
+          <li class="row" data-id="test-driven-development" data-search="test-driven-development Writes the failing test first, then the smallest code that makes it pass. you're adding a feature or fixing a bug.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/test-driven-development/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>test-driven-development<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Writes the failing test first, then the smallest code that makes it pass.</span>
+              <span class="when">you're adding a feature or fixing a bug.</span>
+            </a>
+          </li>
+          <li class="row" data-id="solve-efficiently" data-search="solve-efficiently Finds the few files that actually matter instead of reading the whole project. the change touches several parts of the codebase.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/solve-efficiently/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>solve-efficiently<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Finds the few files that actually matter instead of reading the whole project.</span>
+              <span class="when">the change touches several parts of the codebase.</span>
+            </a>
+          </li>
+          <li class="row" data-id="handle-host-boundaries" data-search="handle-host-boundaries Handles a skill or tool that belongs to another agent host without pretending it exists. a request names a capability from another host.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/handle-host-boundaries/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>handle-host-boundaries<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Handles a skill or tool that belongs to another agent host without pretending it exists.</span>
+              <span class="when">a request names a capability from another host.</span>
+            </a>
+          </li>
+          <li class="row" data-id="execute-durably" data-search="execute-durably Keeps progress in a file on disk so long work can be picked up where it stopped. the job is long and might get interrupted.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/execute-durably/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>execute-durably<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Keeps progress in a file on disk so long work can be picked up where it stopped.</span>
+              <span class="when">the job is long and might get interrupted.</span>
+            </a>
+          </li>
+          <li class="row" data-id="refactor-safely" data-search="refactor-safely Tidies code without changing what it does, with tests in place first. code is messy or duplicated but still has to work exactly the same.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/refactor-safely/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>refactor-safely<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Tidies code without changing what it does, with tests in place first.</span>
+              <span class="when">code is messy or duplicated but still has to work exactly the same.</span>
+            </a>
+          </li>
+          <li class="row" data-id="using-git-worktrees" data-search="using-git-worktrees Sets up a separate working copy so your current work stays untouched. you're starting a feature and don't want to disturb what's already open.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/using-git-worktrees/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>using-git-worktrees<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Sets up a separate working copy so your current work stays untouched.</span>
+              <span class="when">you're starting a feature and don't want to disturb what's already open.</span>
+            </a>
+          </li>
+          <li class="row" data-id="communicate-clearly" data-search="communicate-clearly Keeps the answer as short as it can be without dropping the proof. you want less noise, or something explained in plain words.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/communicate-clearly/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>communicate-clearly<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Keeps the answer as short as it can be without dropping the proof.</span>
+              <span class="when">you want less noise, or something explained in plain words.</span>
+            </a>
+          </li>
+        </ul>
       </div>
       <div class="group">
         <h3 class="head">
           <span class="eyebrow">Verification &amp; debugging</span><span class="rule" aria-hidden="true"></span><span class="n">4</span>
         </h3>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/diagnose-systematically/SKILL.md" data-id="diagnose-systematically" data-search="diagnose-systematically Reproduces the failure, shrinks it, then tests one guess at a time. something breaks and nobody knows why yet.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>diagnose-systematically<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Reproduces the failure, shrinks it, then tests one guess at a time.</span>
-          <span class="when">something breaks and nobody knows why yet.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verification-before-completion/SKILL.md" data-id="verification-before-completion" data-search="verification-before-completion Runs the command and reads the output before anyone says it works. you're about to hear “done”, “fixed”, or “all tests pass”.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>verification-before-completion<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Runs the command and reads the output before anyone says it works.</span>
-          <span class="when">you're about to hear “done”, “fixed”, or “all tests pass”.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verify-work/SKILL.md" data-id="verify-work" data-search="verify-work Checks finished work against real evidence and flags claims with nothing behind them. you want a second opinion on something that says it's complete.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>verify-work<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Checks finished work against real evidence and flags claims with nothing behind them.</span>
-          <span class="when">you want a second opinion on something that says it's complete.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/research-systematically/SKILL.md" data-id="research-systematically" data-search="research-systematically Writes the question down first, then backs every answer with a source. comparing options, measuring, or checking how a library really behaves.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>research-systematically<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Writes the question down first, then backs every answer with a source.</span>
-          <span class="when">comparing options, measuring, or checking how a library really behaves.</span>
-        </a>
+        <ul class="rows">
+          <li class="row" data-id="diagnose-systematically" data-search="diagnose-systematically Reproduces the failure, shrinks it, then tests one guess at a time. something breaks and nobody knows why yet.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/diagnose-systematically/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>diagnose-systematically<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Reproduces the failure, shrinks it, then tests one guess at a time.</span>
+              <span class="when">something breaks and nobody knows why yet.</span>
+            </a>
+          </li>
+          <li class="row" data-id="verification-before-completion" data-search="verification-before-completion Runs the command and reads the output before anyone says it works. you're about to hear “done”, “fixed”, or “all tests pass”.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verification-before-completion/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>verification-before-completion<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Runs the command and reads the output before anyone says it works.</span>
+              <span class="when">you're about to hear “done”, “fixed”, or “all tests pass”.</span>
+            </a>
+          </li>
+          <li class="row" data-id="verify-work" data-search="verify-work Checks finished work against real evidence and flags claims with nothing behind them. you want a second opinion on something that says it's complete.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verify-work/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>verify-work<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Checks finished work against real evidence and flags claims with nothing behind them.</span>
+              <span class="when">you want a second opinion on something that says it's complete.</span>
+            </a>
+          </li>
+          <li class="row" data-id="research-systematically" data-search="research-systematically Writes the question down first, then backs every answer with a source. comparing options, measuring, or checking how a library really behaves.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/research-systematically/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>research-systematically<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Writes the question down first, then backs every answer with a source.</span>
+              <span class="when">comparing options, measuring, or checking how a library really behaves.</span>
+            </a>
+          </li>
+        </ul>
       </div>
       <div class="group">
         <h3 class="head">
           <span class="eyebrow">Code review</span><span class="rule" aria-hidden="true"></span><span class="n">3</span>
         </h3>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/requesting-code-review/SKILL.md" data-id="requesting-code-review" data-search="requesting-code-review Sends the finished work to a reviewer agent and collects what it finds. a task is done and about to be merged.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>requesting-code-review<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Sends the finished work to a reviewer agent and collects what it finds.</span>
-          <span class="when">a task is done and about to be merged.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/receiving-code-review/SKILL.md" data-id="receiving-code-review" data-search="receiving-code-review Checks each review comment against the code before changing anything. feedback arrives and some of it might be wrong.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>receiving-code-review<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Checks each review comment against the code before changing anything.</span>
-          <span class="when">feedback arrives and some of it might be wrong.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/finishing-a-development-branch/SKILL.md" data-id="finishing-a-development-branch" data-search="finishing-a-development-branch Runs the tests, asks how you want to land the work, then cleans up after it. the feature is finished and needs to go somewhere.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>finishing-a-development-branch<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Runs the tests, asks how you want to land the work, then cleans up after it.</span>
-          <span class="when">the feature is finished and needs to go somewhere.</span>
-        </a>
+        <ul class="rows">
+          <li class="row" data-id="requesting-code-review" data-search="requesting-code-review Sends the finished work to a reviewer agent and collects what it finds. a task is done and about to be merged.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/requesting-code-review/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>requesting-code-review<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Sends the finished work to a reviewer agent and collects what it finds.</span>
+              <span class="when">a task is done and about to be merged.</span>
+            </a>
+          </li>
+          <li class="row" data-id="receiving-code-review" data-search="receiving-code-review Checks each review comment against the code before changing anything. feedback arrives and some of it might be wrong.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/receiving-code-review/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>receiving-code-review<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Checks each review comment against the code before changing anything.</span>
+              <span class="when">feedback arrives and some of it might be wrong.</span>
+            </a>
+          </li>
+          <li class="row" data-id="finishing-a-development-branch" data-search="finishing-a-development-branch Runs the tests, asks how you want to land the work, then cleans up after it. the feature is finished and needs to go somewhere.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/finishing-a-development-branch/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>finishing-a-development-branch<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Runs the tests, asks how you want to land the work, then cleans up after it.</span>
+              <span class="when">the feature is finished and needs to go somewhere.</span>
+            </a>
+          </li>
+        </ul>
       </div>
       <div class="group">
         <h3 class="head">
           <span class="eyebrow">UI &amp; automation</span><span class="rule" aria-hidden="true"></span><span class="n">2</span>
         </h3>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/design-ui/SKILL.md" data-id="design-ui" data-search="design-ui Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser. a screen looks generic, or you're redesigning one.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>design-ui<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser.</span>
-          <span class="when">a screen looks generic, or you're redesigning one.</span>
-        </a>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/automate-ui/SKILL.md" data-id="automate-ui" data-search="automate-ui Clicks through a website or app for you and records what actually happened. something has to be tested, reproduced, or done in a real interface.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>automate-ui<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Clicks through a website or app for you and records what actually happened.</span>
-          <span class="when">something has to be tested, reproduced, or done in a real interface.</span>
-        </a>
+        <ul class="rows">
+          <li class="row" data-id="design-ui" data-search="design-ui Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser. a screen looks generic, or you're redesigning one.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/design-ui/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>design-ui<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser.</span>
+              <span class="when">a screen looks generic, or you're redesigning one.</span>
+            </a>
+          </li>
+          <li class="row" data-id="automate-ui" data-search="automate-ui Clicks through a website or app for you and records what actually happened. something has to be tested, reproduced, or done in a real interface.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/automate-ui/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>automate-ui<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Clicks through a website or app for you and records what actually happened.</span>
+              <span class="when">something has to be tested, reproduced, or done in a real interface.</span>
+            </a>
+          </li>
+        </ul>
       </div>
       <div class="group">
         <h3 class="head">
           <span class="eyebrow">System</span><span class="rule" aria-hidden="true"></span><span class="n">1</span>
         </h3>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/skillquiver-doctor/SKILL.md" data-id="skillquiver-doctor" data-search="skillquiver-doctor Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time. the wrong skill activates, a name shows up twice, or another plugin interferes.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>skillquiver-doctor<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time.</span>
-          <span class="when">the wrong skill activates, a name shows up twice, or another plugin interferes.</span>
-        </a>
+        <ul class="rows">
+          <li class="row" data-id="skillquiver-doctor" data-search="skillquiver-doctor Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time. the wrong skill activates, a name shows up twice, or another plugin interferes.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/skillquiver-doctor/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>skillquiver-doctor<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time.</span>
+              <span class="when">the wrong skill activates, a name shows up twice, or another plugin interferes.</span>
+            </a>
+          </li>
+        </ul>
       </div>
       <div class="group">
         <h3 class="head">
           <span class="eyebrow">Prompt engineering</span><span class="rule" aria-hidden="true"></span><span class="n">1</span>
         </h3>
-        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/engineer-prompts/SKILL.md" data-id="engineer-prompts" data-search="engineer-prompts Writes a prompt with clear goals, limits, tools, and a way to tell if it worked. you're writing a prompt that other people will reuse.">
-          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>engineer-prompts<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
-          <span class="does">Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.</span>
-          <span class="when">you're writing a prompt that other people will reuse.</span>
-        </a>
+        <ul class="rows">
+          <li class="row" data-id="engineer-prompts" data-search="engineer-prompts Writes a prompt with clear goals, limits, tools, and a way to tell if it worked. you're writing a prompt that other people will reuse.">
+            <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/engineer-prompts/SKILL.md">
+              <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>engineer-prompts<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+              <span class="does">Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.</span>
+              <span class="when">you're writing a prompt that other people will reuse.</span>
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
     <p class="empty hidden" id="empty" role="status">Nothing matches. Every skill already runs in all three hosts — search by what it does instead: <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
   </div>
 </section>
 
-<section class="band">
+<section class="band" id="chain" aria-labelledby="chain-h">
   <div class="wrap">
     <span class="eyebrow">Working together</span>
-    <h2>One feature, from idea to merge.</h2>
+    <h2 id="chain-h">One feature, from idea to merge.</h2>
     <p class="lede">These aren't 23 separate tricks. Almost every step of building something has a portable skill that fits it. A normal run in ChatGPT, Claude Code, or Codex looks like this:</p>
-    <div class="chain" id="chain">
-      <div class="step">
-        <span class="k">01</span>
+    <ol class="chain" id="chain-steps">
+      <li class="step">
+        <span class="k" aria-hidden="true">01</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/brainstorming/SKILL.md">brainstorming</a>
         <span class="t">Agree what you're building.</span>
-      </div>
-      <div class="step">
-        <span class="k">02</span>
+      </li>
+      <li class="step">
+        <span class="k" aria-hidden="true">02</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/writing-plans/SKILL.md">writing-plans</a>
         <span class="t">Write the steps down, in order.</span>
-      </div>
-      <div class="step">
-        <span class="k">03</span>
+      </li>
+      <li class="step">
+        <span class="k" aria-hidden="true">03</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/using-git-worktrees/SKILL.md">using-git-worktrees</a>
         <span class="t">Get a clean workspace to build in.</span>
-      </div>
-      <div class="step">
-        <span class="k">04</span>
+      </li>
+      <li class="step">
+        <span class="k" aria-hidden="true">04</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/subagent-driven-development/SKILL.md">subagent-driven-development</a>
         <span class="t">Build it task by task, reviewed as you go.</span>
-      </div>
-      <div class="step">
-        <span class="k">05</span>
+      </li>
+      <li class="step">
+        <span class="k" aria-hidden="true">05</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/test-driven-development/SKILL.md">test-driven-development</a>
         <span class="t">Each task starts with a failing test.</span>
-      </div>
-      <div class="step">
-        <span class="k">06</span>
+      </li>
+      <li class="step">
+        <span class="k" aria-hidden="true">06</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verification-before-completion/SKILL.md">verification-before-completion</a>
         <span class="t">Run it. Read the output. Then say it works.</span>
-      </div>
-      <div class="step">
-        <span class="k">07</span>
+      </li>
+      <li class="step">
+        <span class="k" aria-hidden="true">07</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/requesting-code-review/SKILL.md">requesting-code-review</a>
         <span class="t">Get the finished work reviewed.</span>
-      </div>
-      <div class="step">
-        <span class="k">08</span>
+      </li>
+      <li class="step">
+        <span class="k" aria-hidden="true">08</span>
         <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/finishing-a-development-branch/SKILL.md">finishing-a-development-branch</a>
         <span class="t">Merge it, then clean up.</span>
-      </div>
-    </div>
+      </li>
+    </ol>
   </div>
 </section>
 
@@ -757,7 +825,7 @@ const skillUrl = id => REPO_SHARED + id + "/SKILL.md";
 
 /* the rows and the chain ship in the HTML — crawlers and no-JS readers get the
    whole catalog, and JS only layers search and the hero on top of what is there */
-const ROWS = [...document.querySelectorAll(".arrow")];
+const ROWS = [...document.querySelectorAll(".row")];
 const IDS = ROWS.map(r => r.dataset.id);
 
 /* ── search ─────────────────────────────── */
@@ -772,7 +840,7 @@ function applyFilter(raw) {
   let shown = 0;
   for (const group of document.querySelectorAll(".group")) {
     let inGroup = 0;
-    for (const row of group.querySelectorAll(".arrow")) {
+    for (const row of group.querySelectorAll(".row")) {
       const hit = row.dataset.search.toLowerCase().includes(q);
       row.classList.toggle("hidden", !hit);
       inGroup += hit;
@@ -819,6 +887,9 @@ tabs.forEach((tab, i) => {
 
 /* ── copy buttons ────────────────────────────────── */
 for (const btn of document.querySelectorAll(".copy")) {
+  /* every button reads "copy", so name each one after the command it carries */
+  const first = btn.previousElementSibling.textContent.trim().split(/\r?\n/)[0];
+  btn.setAttribute("aria-label", `Copy the ${first} command`);
   btn.addEventListener("click", async () => {
     const text = btn.previousElementSibling.textContent;
     try {
