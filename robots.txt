@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://drizzy07x.github.io/Skillquiver/sitemap.xml

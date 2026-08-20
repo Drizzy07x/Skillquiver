@@ -251,14 +251,14 @@ test('README and website list every skill with matching compatibility', () => {
   const expected = [...shared].sort();
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const groups = html.slice(html.indexOf('const GROUPS'), html.indexOf('const FLAT'));
+  const list = html.slice(html.indexOf('<div id="list">'), html.indexOf('id="empty"'));
 
   const readmeEntries = [...readme.matchAll(
     /\[([a-z0-9-]+)\]\((skills\/([a-z0-9-]+)\/SKILL\.md)\)/g
   )].map(match => ({ label: match[1], target: match[2], id: match[3] }));
-  const siteEntries = [...groups.matchAll(
-    /^\s+\["([a-z0-9-]+)",.*,\s*"shared"\],?$/gm
-  )].map(match => ({ id: match[1], compatibility: 'shared' }));
+  const siteEntries = [...list.matchAll(
+    /data-id="([a-z0-9-]+)"[\s\S]*?class="compat (shared|claude)"/g
+  )].map(match => ({ id: match[1], compatibility: match[2] }));
 
   assert.deepEqual([...new Set(readmeEntries.map(entry => entry.id))].sort(), expected);
   assert.deepEqual([...new Set(siteEntries.map(entry => entry.id))].sort(), expected);

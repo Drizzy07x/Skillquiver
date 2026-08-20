@@ -6,10 +6,19 @@
 <title>Skillquiver — 24 skills for ChatGPT, Claude Code, and Codex</title>
 <meta name="description" content="24 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
 <meta name="theme-color" content="#0B0E13">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://drizzy07x.github.io/Skillquiver/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Skillquiver">
+<meta property="og:url" content="https://drizzy07x.github.io/Skillquiver/">
 <meta property="og:title" content="Skillquiver — 24 skills for ChatGPT, Claude Code, and Codex">
-<meta property="og:description" content="24 skills shared by ChatGPT, Claude Code, and Codex.">
-<meta property="og:image" content="https://raw.githubusercontent.com/Drizzy07x/Skillquiver/main/assets/banner.png">
+<meta property="og:description" content="24 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
+<meta property="og:image" content="https://drizzy07x.github.io/Skillquiver/assets/banner.png">
+<meta property="og:image:alt" content="Skillquiver — 24 agent skills for ChatGPT, Claude Code, and Codex">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Skillquiver — 24 skills for ChatGPT, Claude Code, and Codex">
+<meta name="twitter:description" content="24 agent skills shared by ChatGPT, Claude Code, and Codex. Plan, build, diagnose, review, and verify work with host-aware workflows.">
+<meta name="twitter:image" content="https://drizzy07x.github.io/Skillquiver/assets/banner.png">
 <link rel="icon" href="assets/mark.svg">
 <style>
 :root {
@@ -21,6 +30,10 @@
   --copper: #C87941;
   --gold: #E0A458;
   --fletch: #7FA6A0;
+  /* borders on interactive controls need 3:1 against the page (WCAG 1.4.11);
+     --line stays hairline decoration, --line-strong is 3.5:1 */
+  --line-strong: #5B6980;
+  --fletch-label: #74968F;
   --display: "Segoe UI", system-ui, sans-serif;
   --body: "Segoe UI", system-ui, sans-serif;
   --mono: "Cascadia Code", SFMono-Regular, Consolas, monospace;
@@ -38,6 +51,13 @@ body {
 a { color: inherit; }
 ::selection { background: rgba(200, 121, 65, .35); }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
+.skip {
+  position: fixed; left: 16px; top: -80px; z-index: 40;
+  font: 600 14px var(--body); text-decoration: none;
+  background: var(--copper); color: #14100C;
+  padding: 12px 18px; border-radius: 8px; transition: top .15s ease;
+}
+.skip:focus { top: 14px; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 .eyebrow {
@@ -59,7 +79,7 @@ a { color: inherit; }
 .nav .name { font: 700 17px/1 var(--display); letter-spacing: -.02em; margin-right: auto; }
 .nav a.link { font-size: 14px; color: var(--muted); text-decoration: none; }
 .nav a.link:hover { color: var(--gold); }
-.nav a.gh { font-size: 14px; color: var(--bone); text-decoration: none; border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; }
+.nav a.gh { font-size: 14px; color: var(--bone); text-decoration: none; border: 1px solid var(--line-strong); border-radius: 7px; padding: 8px 12px; }
 .nav a.gh:hover { border-color: var(--copper); }
 
 /* ── hero ────────────────────────────────────────── */
@@ -80,7 +100,7 @@ a { color: inherit; }
 .btn {
   font: 600 15px var(--body); text-decoration: none;
   padding: 11px 22px; border-radius: 8px;
-  border: 1px solid var(--line); background: var(--panel); color: var(--bone);
+  border: 1px solid var(--line-strong); background: var(--panel); color: var(--bone);
 }
 .btn:hover { border-color: var(--copper); }
 .btn.solid { background: var(--copper); border-color: var(--copper); color: #14100C; }
@@ -115,12 +135,24 @@ a { color: inherit; }
 }
 .shaft.lit { height: 100%; background: linear-gradient(to top, transparent, var(--copper) 12%, var(--gold)); transform: translateY(-12px); }
 .shaft.lit::before { border-bottom-color: var(--gold); }
-.draw { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 18px; min-height: 116px; }
+.draw {
+  border-top: 1px solid var(--line); margin-top: 22px; padding-top: 18px;
+  /* tall enough for the longest condition to wrap, so the rotation never
+     shifts the layout underneath it */
+  min-height: 148px;
+}
 .draw .cond { color: var(--muted); font-size: 15px; }
 .draw .cond::before { content: "when "; color: var(--fletch); font: 500 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
 .draw .fires { font: 500 17px var(--mono); color: var(--gold); margin-top: 8px; display: block; text-decoration: none; }
 .draw .fires:hover { text-decoration: underline; text-underline-offset: 4px; }
 .draw .fires::before { content: "→ "; color: var(--copper); }
+.draw .pause {
+  margin-top: 16px; cursor: pointer;
+  font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); background: none;
+  border: 1px solid var(--line-strong); border-radius: 6px; padding: 7px 11px;
+}
+.draw .pause:hover { color: var(--gold); border-color: var(--gold); }
 .draw.swap .cond, .draw.swap .fires { opacity: 0; transform: translateY(4px); }
 .draw .cond, .draw .fires { transition: opacity .3s ease, transform .3s ease; }
 
@@ -144,9 +176,10 @@ a { color: inherit; }
 .tabs button {
   font: 500 14px var(--body); color: var(--muted); cursor: pointer;
   background: none; border: 1px solid transparent; border-radius: 7px; padding: 8px 14px;
+  min-height: 44px;
 }
 .tabs button:hover { color: var(--bone); }
-.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--line); background: var(--panel); }
+.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--line-strong); background: var(--panel); }
 .pane[hidden] { display: none; }
 .pane p { color: var(--muted); font-size: 15px; margin: 0 0 14px; }
 .method { margin-top: 28px; }
@@ -159,14 +192,15 @@ a { color: inherit; }
 }
 .cmd {
   position: relative; background: var(--panel); border: 1px solid var(--line);
-  border-radius: 10px; padding: 18px 64px 18px 20px; margin: 0 0 12px;
+  border-radius: 10px; padding: 18px 76px 18px 20px; margin: 0 0 12px;
 }
 .cmd pre { margin: 0; overflow-x: auto; font: 400 14px/1.8 var(--mono); }
 .cmd pre .p { color: var(--copper); }
 .cmd .copy {
-  position: absolute; top: 12px; right: 12px; cursor: pointer;
+  position: absolute; top: 10px; right: 10px; cursor: pointer;
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px;
   font: 500 12px var(--mono); color: var(--muted);
-  background: none; border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px;
+  background: none; border: 1px solid var(--line-strong); border-radius: 6px;
 }
 .cmd .copy:hover { color: var(--gold); border-color: var(--gold); }
 .note { color: var(--muted); font-size: 14px; margin-top: 18px; }
@@ -177,14 +211,15 @@ code { font: 400 .92em var(--mono); color: var(--gold); }
 #filter {
   flex: 1; min-width: 240px;
   font: 400 15px var(--body); color: var(--bone);
-  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 12px 14px;
+  min-height: 44px;
 }
 #filter::placeholder { color: var(--muted); }
 #filter:focus { outline: none; border-color: var(--copper); }
 #count { font: 400 13px var(--mono); color: var(--muted); }
 
 .group { margin-top: 40px; }
-.group .head { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.group .head { display: flex; align-items: center; gap: 14px; margin: 0 0 4px; font: inherit; }
 .group .head .rule { flex: 1; height: 1px; background: var(--line); }
 .group .head .n { font: 400 12px var(--mono); color: var(--muted); }
 
@@ -224,7 +259,7 @@ code { font: 400 .92em var(--mono); color: var(--gold); }
 .arrow .fletch { width: 13px; height: 11px; flex: none; color: var(--copper); }
 .arrow .does { color: var(--muted); font-size: 14.5px; line-height: 1.55; }
 .arrow .when { color: var(--fletch); font-size: 14px; line-height: 1.55; }
-.arrow .when::before { content: "use when "; font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #5D7A76; }
+.arrow .when::before { content: "use when "; font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--fletch-label); }
 .hidden { display: none !important; }
 .empty { color: var(--muted); padding: 32px 4px; font-size: 15px; }
 
@@ -255,7 +290,12 @@ footer a:hover { color: var(--gold); }
   .arrow { grid-template-columns: 1fr; gap: 8px; padding: 18px 40px 18px 4px; }
   .arrow .does, .arrow .when { padding-left: 22px; }
   .band { padding: 56px 0; }
-  .nav a.link { display: none; }
+  /* these links are the only route to Install and the catalog on a phone,
+     so let the bar scroll sideways rather than dropping them */
+  .nav .wrap { gap: 14px; overflow-x: auto; scrollbar-width: none; }
+  .nav .wrap::-webkit-scrollbar { display: none; }
+  .nav a.link, .nav a.gh, .nav .name { white-space: nowrap; }
+  .nav .name { margin-right: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -263,8 +303,61 @@ footer a:hover { color: var(--gold); }
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 </style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Skillquiver",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "description": "24 Agent Skills shared by ChatGPT, Claude Code, and Codex for planning, building, debugging, reviewing, and verifying software work.",
+  "url": "https://drizzy07x.github.io/Skillquiver/",
+  "image": "https://drizzy07x.github.io/Skillquiver/assets/banner.png",
+  "softwareVersion": "2.2.0",
+  "license": "https://opensource.org/licenses/MIT",
+  "author": {
+    "@type": "Person",
+    "name": "Drizzy07x",
+    "url": "https://github.com/Drizzy07x"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "featureList": [
+    "brainstorming",
+    "writing-plans",
+    "executing-plans",
+    "subagent-driven-development",
+    "dispatching-parallel-agents",
+    "test-driven-development",
+    "solve-efficiently",
+    "handle-host-boundaries",
+    "execute-durably",
+    "refactor-safely",
+    "using-git-worktrees",
+    "communicate-clearly",
+    "diagnose-systematically",
+    "verification-before-completion",
+    "verify-work",
+    "research-systematically",
+    "requesting-code-review",
+    "receiving-code-review",
+    "finishing-a-development-branch",
+    "design-ui",
+    "automate-ui",
+    "improve-agent-instructions",
+    "skillquiver-doctor",
+    "engineer-prompts"
+  ]
+}
+</script>
 </head>
 <body>
+
+<a class="skip" href="#main">Skip to content</a>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="fletch" viewBox="0 0 13 11">
@@ -288,7 +381,7 @@ footer a:hover { color: var(--gold); }
   </symbol>
 </svg>
 
-<nav class="nav">
+<nav class="nav" aria-label="Primary">
   <div class="wrap">
     <svg class="mark" aria-hidden="true"><use href="#quivermark"/></svg>
     <span class="name">Skillquiver</span>
@@ -299,6 +392,8 @@ footer a:hover { color: var(--gold); }
     <a class="gh" href="https://github.com/Drizzy07x/Skillquiver">GitHub</a>
   </div>
 </nav>
+
+<main id="main">
 
 <header class="hero">
   <div class="wrap">
@@ -321,6 +416,7 @@ footer a:hover { color: var(--gold); }
       <div class="draw" id="draw">
         <span class="cond"></span>
         <a class="fires" href="#quiver"></a>
+        <button class="pause" id="pause" type="button" hidden aria-pressed="false">pause</button>
       </div>
     </div>
   </div>
@@ -436,13 +532,170 @@ cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</butt
   <div class="wrap">
     <span class="eyebrow">All 24</span>
     <h2>What each skill does, and when it steps in.</h2>
+    <p class="lede">Every one of them runs in all three hosts.</p>
     <div class="tools">
       <input id="filter" type="search" placeholder="Search skills…" autocomplete="off" aria-label="Search skills">
-      <span id="count"></span>
+      <span id="count" aria-live="polite">24 shown</span>
     </div>
-    <noscript><p class="note">JavaScript is off — browse the <a href="https://github.com/Drizzy07x/Skillquiver/tree/main/skills">24 shared skills</a> on GitHub.</p></noscript>
-    <div id="list"></div>
-    <p class="empty hidden" id="empty">Nothing matches. Try <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
+    <noscript><p class="note">JavaScript is off — the full list is below, but search is unavailable.</p></noscript>
+    <div id="list">
+      <div class="group">
+        <h3 class="head">
+          <span class="eyebrow">Planning</span><span class="rule" aria-hidden="true"></span><span class="n">5</span>
+        </h3>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/brainstorming/SKILL.md" data-id="brainstorming" data-search="brainstorming Asks what you actually want before a line of code is written. you're starting something new and the details aren't settled.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>brainstorming<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Asks what you actually want before a line of code is written.</span>
+          <span class="when">you're starting something new and the details aren't settled.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/writing-plans/SKILL.md" data-id="writing-plans" data-search="writing-plans Turns the idea into a written list of tasks, in order. you know what to build but nobody has written down the steps.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>writing-plans<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Turns the idea into a written list of tasks, in order.</span>
+          <span class="when">you know what to build but nobody has written down the steps.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/executing-plans/SKILL.md" data-id="executing-plans" data-search="executing-plans Works through a written plan one task at a time, stopping only if it gets stuck. a plan already exists and you want it carried out.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>executing-plans<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Works through a written plan one task at a time, stopping only if it gets stuck.</span>
+          <span class="when">a plan already exists and you want it carried out.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/subagent-driven-development/SKILL.md" data-id="subagent-driven-development" data-search="subagent-driven-development Hands each task to its own helper agent and reviews the result before moving on. the tasks in the plan don't depend on each other.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>subagent-driven-development<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Hands each task to its own helper agent and reviews the result before moving on.</span>
+          <span class="when">the tasks in the plan don't depend on each other.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/dispatching-parallel-agents/SKILL.md" data-id="dispatching-parallel-agents" data-search="dispatching-parallel-agents Sends out several helper agents at once, one per unrelated problem. you have two or more separate problems and no reason to fix them in order.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>dispatching-parallel-agents<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Sends out several helper agents at once, one per unrelated problem.</span>
+          <span class="when">you have two or more separate problems and no reason to fix them in order.</span>
+        </a>
+      </div>
+      <div class="group">
+        <h3 class="head">
+          <span class="eyebrow">Execution</span><span class="rule" aria-hidden="true"></span><span class="n">7</span>
+        </h3>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/test-driven-development/SKILL.md" data-id="test-driven-development" data-search="test-driven-development Writes the failing test first, then the smallest code that makes it pass. you're adding a feature or fixing a bug.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>test-driven-development<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Writes the failing test first, then the smallest code that makes it pass.</span>
+          <span class="when">you're adding a feature or fixing a bug.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/solve-efficiently/SKILL.md" data-id="solve-efficiently" data-search="solve-efficiently Finds the few files that actually matter instead of reading the whole project. the change touches several parts of the codebase.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>solve-efficiently<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Finds the few files that actually matter instead of reading the whole project.</span>
+          <span class="when">the change touches several parts of the codebase.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/handle-host-boundaries/SKILL.md" data-id="handle-host-boundaries" data-search="handle-host-boundaries Handles a skill or tool that belongs to another agent host without pretending it exists. a request names a capability from another host.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>handle-host-boundaries<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Handles a skill or tool that belongs to another agent host without pretending it exists.</span>
+          <span class="when">a request names a capability from another host.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/execute-durably/SKILL.md" data-id="execute-durably" data-search="execute-durably Keeps progress in a file on disk so long work can be picked up where it stopped. the job is long and might get interrupted.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>execute-durably<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Keeps progress in a file on disk so long work can be picked up where it stopped.</span>
+          <span class="when">the job is long and might get interrupted.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/refactor-safely/SKILL.md" data-id="refactor-safely" data-search="refactor-safely Tidies code without changing what it does, with tests in place first. code is messy or duplicated but still has to work exactly the same.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>refactor-safely<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Tidies code without changing what it does, with tests in place first.</span>
+          <span class="when">code is messy or duplicated but still has to work exactly the same.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/using-git-worktrees/SKILL.md" data-id="using-git-worktrees" data-search="using-git-worktrees Sets up a separate working copy so your current work stays untouched. you're starting a feature and don't want to disturb what's already open.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>using-git-worktrees<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Sets up a separate working copy so your current work stays untouched.</span>
+          <span class="when">you're starting a feature and don't want to disturb what's already open.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/communicate-clearly/SKILL.md" data-id="communicate-clearly" data-search="communicate-clearly Keeps the answer as short as it can be without dropping the proof. you want less noise, or something explained in plain words.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>communicate-clearly<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Keeps the answer as short as it can be without dropping the proof.</span>
+          <span class="when">you want less noise, or something explained in plain words.</span>
+        </a>
+      </div>
+      <div class="group">
+        <h3 class="head">
+          <span class="eyebrow">Verification &amp; debugging</span><span class="rule" aria-hidden="true"></span><span class="n">4</span>
+        </h3>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/diagnose-systematically/SKILL.md" data-id="diagnose-systematically" data-search="diagnose-systematically Reproduces the failure, shrinks it, then tests one guess at a time. something breaks and nobody knows why yet.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>diagnose-systematically<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Reproduces the failure, shrinks it, then tests one guess at a time.</span>
+          <span class="when">something breaks and nobody knows why yet.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verification-before-completion/SKILL.md" data-id="verification-before-completion" data-search="verification-before-completion Runs the command and reads the output before anyone says it works. you're about to hear “done”, “fixed”, or “all tests pass”.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>verification-before-completion<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Runs the command and reads the output before anyone says it works.</span>
+          <span class="when">you're about to hear “done”, “fixed”, or “all tests pass”.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verify-work/SKILL.md" data-id="verify-work" data-search="verify-work Checks finished work against real evidence and flags claims with nothing behind them. you want a second opinion on something that says it's complete.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>verify-work<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Checks finished work against real evidence and flags claims with nothing behind them.</span>
+          <span class="when">you want a second opinion on something that says it's complete.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/research-systematically/SKILL.md" data-id="research-systematically" data-search="research-systematically Writes the question down first, then backs every answer with a source. comparing options, measuring, or checking how a library really behaves.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>research-systematically<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Writes the question down first, then backs every answer with a source.</span>
+          <span class="when">comparing options, measuring, or checking how a library really behaves.</span>
+        </a>
+      </div>
+      <div class="group">
+        <h3 class="head">
+          <span class="eyebrow">Code review</span><span class="rule" aria-hidden="true"></span><span class="n">3</span>
+        </h3>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/requesting-code-review/SKILL.md" data-id="requesting-code-review" data-search="requesting-code-review Sends the finished work to a reviewer agent and collects what it finds. a task is done and about to be merged.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>requesting-code-review<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Sends the finished work to a reviewer agent and collects what it finds.</span>
+          <span class="when">a task is done and about to be merged.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/receiving-code-review/SKILL.md" data-id="receiving-code-review" data-search="receiving-code-review Checks each review comment against the code before changing anything. feedback arrives and some of it might be wrong.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>receiving-code-review<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Checks each review comment against the code before changing anything.</span>
+          <span class="when">feedback arrives and some of it might be wrong.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/finishing-a-development-branch/SKILL.md" data-id="finishing-a-development-branch" data-search="finishing-a-development-branch Runs the tests, asks how you want to land the work, then cleans up after it. the feature is finished and needs to go somewhere.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>finishing-a-development-branch<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Runs the tests, asks how you want to land the work, then cleans up after it.</span>
+          <span class="when">the feature is finished and needs to go somewhere.</span>
+        </a>
+      </div>
+      <div class="group">
+        <h3 class="head">
+          <span class="eyebrow">UI &amp; automation</span><span class="rule" aria-hidden="true"></span><span class="n">2</span>
+        </h3>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/design-ui/SKILL.md" data-id="design-ui" data-search="design-ui Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser. a screen looks generic, or you're redesigning one.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>design-ui<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser.</span>
+          <span class="when">a screen looks generic, or you're redesigning one.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/automate-ui/SKILL.md" data-id="automate-ui" data-search="automate-ui Clicks through a website or app for you and records what actually happened. something has to be tested, reproduced, or done in a real interface.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>automate-ui<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Clicks through a website or app for you and records what actually happened.</span>
+          <span class="when">something has to be tested, reproduced, or done in a real interface.</span>
+        </a>
+      </div>
+      <div class="group">
+        <h3 class="head">
+          <span class="eyebrow">System</span><span class="rule" aria-hidden="true"></span><span class="n">2</span>
+        </h3>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/improve-agent-instructions/SKILL.md" data-id="improve-agent-instructions" data-search="improve-agent-instructions Audits persistent agent guidance, moves each rule to the right scope, and keeps shared project instructions aligned. AGENTS.md or CLAUDE.md is stale, duplicated, contradictory, or in the wrong place.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>improve-agent-instructions<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Audits persistent agent guidance, moves each rule to the right scope, and keeps shared project instructions aligned.</span>
+          <span class="when">AGENTS.md or CLAUDE.md is stale, duplicated, contradictory, or in the wrong place.</span>
+        </a>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/skillquiver-doctor/SKILL.md" data-id="skillquiver-doctor" data-search="skillquiver-doctor Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time. the wrong skill activates, a name shows up twice, or another plugin interferes.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>skillquiver-doctor<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time.</span>
+          <span class="when">the wrong skill activates, a name shows up twice, or another plugin interferes.</span>
+        </a>
+      </div>
+      <div class="group">
+        <h3 class="head">
+          <span class="eyebrow">Prompt engineering</span><span class="rule" aria-hidden="true"></span><span class="n">1</span>
+        </h3>
+        <a class="arrow" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/engineer-prompts/SKILL.md" data-id="engineer-prompts" data-search="engineer-prompts Writes a prompt with clear goals, limits, tools, and a way to tell if it worked. you're writing a prompt that other people will reuse.">
+          <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>engineer-prompts<span class="compat shared" aria-hidden="true">ChatGPT + Claude Code + Codex</span></span>
+          <span class="does">Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.</span>
+          <span class="when">you're writing a prompt that other people will reuse.</span>
+        </a>
+      </div>
+    </div>
+    <p class="empty hidden" id="empty" role="status">Nothing matches. Every skill already runs in all three hosts — search by what it does instead: <code>test</code>, <code>review</code>, or <code>plan</code>.</p>
   </div>
 </section>
 
@@ -451,9 +704,52 @@ cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</butt
     <span class="eyebrow">Working together</span>
     <h2>One feature, from idea to merge.</h2>
     <p class="lede">These aren't 24 separate tricks. Almost every step of building something has a portable skill that fits it. A normal run in ChatGPT, Claude Code, or Codex looks like this:</p>
-    <div class="chain" id="chain"></div>
+    <div class="chain" id="chain">
+      <div class="step">
+        <span class="k">01</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/brainstorming/SKILL.md">brainstorming</a>
+        <span class="t">Agree what you're building.</span>
+      </div>
+      <div class="step">
+        <span class="k">02</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/writing-plans/SKILL.md">writing-plans</a>
+        <span class="t">Write the steps down, in order.</span>
+      </div>
+      <div class="step">
+        <span class="k">03</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/using-git-worktrees/SKILL.md">using-git-worktrees</a>
+        <span class="t">Get a clean workspace to build in.</span>
+      </div>
+      <div class="step">
+        <span class="k">04</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/subagent-driven-development/SKILL.md">subagent-driven-development</a>
+        <span class="t">Build it task by task, reviewed as you go.</span>
+      </div>
+      <div class="step">
+        <span class="k">05</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/test-driven-development/SKILL.md">test-driven-development</a>
+        <span class="t">Each task starts with a failing test.</span>
+      </div>
+      <div class="step">
+        <span class="k">06</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/verification-before-completion/SKILL.md">verification-before-completion</a>
+        <span class="t">Run it. Read the output. Then say it works.</span>
+      </div>
+      <div class="step">
+        <span class="k">07</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/requesting-code-review/SKILL.md">requesting-code-review</a>
+        <span class="t">Get the finished work reviewed.</span>
+      </div>
+      <div class="step">
+        <span class="k">08</span>
+        <a class="s" href="https://github.com/Drizzy07x/Skillquiver/blob/main/skills/finishing-a-development-branch/SKILL.md">finishing-a-development-branch</a>
+        <span class="t">Merge it, then clean up.</span>
+      </div>
+    </div>
   </div>
 </section>
+
+</main>
 
 <footer>
   <div class="wrap">
@@ -466,74 +762,25 @@ cp -r Skillquiver/skills/* ~/.codex/skills/</pre><button class="copy">copy</butt
 const REPO_SHARED = "https://github.com/Drizzy07x/Skillquiver/blob/main/skills/";
 const skillUrl = id => REPO_SHARED + id + "/SKILL.md";
 
-const GROUPS = [
-  ["Planning", [
-    ["brainstorming", "Asks what you actually want before a line of code is written.", "you're starting something new and the details aren't settled.", "shared"],
-    ["writing-plans", "Turns the idea into a written list of tasks, in order.", "you know what to build but nobody has written down the steps.", "shared"],
-    ["executing-plans", "Works through a written plan one task at a time, stopping only if it gets stuck.", "a plan already exists and you want it carried out.", "shared"],
-    ["subagent-driven-development", "Hands each task to its own helper agent and reviews the result before moving on.", "the tasks in the plan don't depend on each other.", "shared"],
-    ["dispatching-parallel-agents", "Sends out several helper agents at once, one per unrelated problem.", "you have two or more separate problems and no reason to fix them in order.", "shared"],
-  ]],
-  ["Execution", [
-    ["test-driven-development", "Writes the failing test first, then the smallest code that makes it pass.", "you're adding a feature or fixing a bug.", "shared"],
-    ["solve-efficiently", "Finds the few files that actually matter instead of reading the whole project.", "the change touches several parts of the codebase.", "shared"],
-    ["handle-host-boundaries", "Handles a skill or tool that belongs to another agent host without pretending it exists.", "a request names a capability from another host.", "shared"],
-    ["execute-durably", "Keeps progress in a file on disk so long work can be picked up where it stopped.", "the job is long and might get interrupted.", "shared"],
-    ["refactor-safely", "Tidies code without changing what it does, with tests in place first.", "code is messy or duplicated but still has to work exactly the same.", "shared"],
-    ["using-git-worktrees", "Sets up a separate working copy so your current work stays untouched.", "you're starting a feature and don't want to disturb what's already open.", "shared"],
-    ["communicate-clearly", "Keeps the answer as short as it can be without dropping the proof.", "you want less noise, or something explained in plain words.", "shared"],
-  ]],
-  ["Verification & debugging", [
-    ["diagnose-systematically", "Reproduces the failure, shrinks it, then tests one guess at a time.", "something breaks and nobody knows why yet.", "shared"],
-    ["verification-before-completion", "Runs the command and reads the output before anyone says it works.", "you're about to hear “done”, “fixed”, or “all tests pass”.", "shared"],
-    ["verify-work", "Checks finished work against real evidence and flags claims with nothing behind them.", "you want a second opinion on something that says it's complete.", "shared"],
-    ["research-systematically", "Writes the question down first, then backs every answer with a source.", "comparing options, measuring, or checking how a library really behaves.", "shared"],
-  ]],
-  ["Code review", [
-    ["requesting-code-review", "Sends the finished work to a reviewer agent and collects what it finds.", "a task is done and about to be merged.", "shared"],
-    ["receiving-code-review", "Checks each review comment against the code before changing anything.", "feedback arrives and some of it might be wrong.", "shared"],
-    ["finishing-a-development-branch", "Runs the tests, asks how you want to land the work, then cleans up after it.", "the feature is finished and needs to go somewhere.", "shared"],
-  ]],
-  ["UI & automation", [
-    ["design-ui", "Commits to a look on purpose instead of the default one, builds it as one system, then checks it in a real browser.", "a screen looks generic, or you're redesigning one.", "shared"],
-    ["automate-ui", "Clicks through a website or app for you and records what actually happened.", "something has to be tested, reproduced, or done in a real interface.", "shared"],
-  ]],
-  ["System", [
-    ["improve-agent-instructions", "Audits persistent agent guidance, moves each rule to the right scope, and keeps shared project instructions aligned.", "AGENTS.md or CLAUDE.md is stale, duplicated, contradictory, or in the wrong place.", "shared"],
-    ["skillquiver-doctor", "Audits skills, plugins, and hooks for demonstrated conflicts, then offers reversible repairs one at a time.", "the wrong skill activates, a name shows up twice, or another plugin interferes.", "shared"],
-  ]],
-  ["Prompt engineering", [
-    ["engineer-prompts", "Writes a prompt with clear goals, limits, tools, and a way to tell if it worked.", "you're writing a prompt that other people will reuse.", "shared"],
-  ]],
-];
+/* the 24 rows and the chain ship in the HTML — crawlers and no-JS readers get the
+   whole catalog, and JS only layers search and the hero on top of what is there */
+const ROWS = [...document.querySelectorAll(".arrow")];
+const IDS = ROWS.map(r => r.dataset.id);
 
-const FLAT = GROUPS.flatMap(([, s]) => s);
-
-/* ── skills list ─────────────────────────────────── */
-document.getElementById("list").innerHTML = GROUPS.map(([group, skills]) => `
-  <div class="group">
-    <div class="head">
-      <span class="eyebrow">${group}</span><span class="rule"></span><span class="n">${skills.length}</span>
-    </div>
-    ${skills.map(([id, does, when, compatibility]) => `
-      <a class="arrow" href="${skillUrl(id)}">
-        <span class="id"><svg class="fletch" aria-hidden="true"><use href="#fletch"/></svg>${id}<span class="compat ${compatibility}">ChatGPT + Claude Code + Codex</span></span>
-        <span class="does">${does}</span>
-        <span class="when">${when}</span>
-      </a>`).join("")}
-  </div>`).join("");
-
+/* ── search ─────────────────────────────── */
 const count = document.getElementById("count");
 const empty = document.getElementById("empty");
-count.textContent = `${FLAT.length} shown`;
+const filter = document.getElementById("filter");
 
-document.getElementById("filter").addEventListener("input", e => {
-  const q = e.target.value.trim().toLowerCase();
+function applyFilter(raw) {
+  /* match name, summary and trigger only — not the host badge, which is identical
+     on every row and would make a search for "codex" return all 24 */
+  const q = raw.trim().toLowerCase();
   let shown = 0;
   for (const group of document.querySelectorAll(".group")) {
     let inGroup = 0;
     for (const row of group.querySelectorAll(".arrow")) {
-      const hit = row.textContent.toLowerCase().includes(q);
+      const hit = row.dataset.search.toLowerCase().includes(q);
       row.classList.toggle("hidden", !hit);
       inGroup += hit;
     }
@@ -541,27 +788,14 @@ document.getElementById("filter").addEventListener("input", e => {
     group.querySelector(".n").textContent = inGroup;
     shown += inGroup;
   }
-  count.textContent = shown === FLAT.length ? `${FLAT.length} shown` : `${shown} of ${FLAT.length}`;
+  count.textContent = shown === ROWS.length ? `${ROWS.length} shown` : `${shown} of ${ROWS.length}`;
   empty.classList.toggle("hidden", shown > 0);
-});
+}
 
-/* ── chain ───────────────────────────────────────── */
-const CHAIN = [
-  ["brainstorming", "Agree what you're building."],
-  ["writing-plans", "Write the steps down, in order."],
-  ["using-git-worktrees", "Get a clean workspace to build in."],
-  ["subagent-driven-development", "Build it task by task, reviewed as you go."],
-  ["test-driven-development", "Each task starts with a failing test."],
-  ["verification-before-completion", "Run it. Read the output. Then say it works."],
-  ["requesting-code-review", "Get the finished work reviewed."],
-  ["finishing-a-development-branch", "Merge it, then clean up."],
-];
-document.getElementById("chain").innerHTML = CHAIN.map(([id, t], i) => `
-  <div class="step">
-    <span class="k">${String(i + 1).padStart(2, "0")}</span>
-    <a class="s" href="${skillUrl(id)}">${id}</a>
-    <span class="t">${t}</span>
-  </div>`).join("");
+filter.addEventListener("input", e => applyFilter(e.target.value));
+filter.addEventListener("keydown", e => {
+  if (e.key === "Escape" && filter.value) { filter.value = ""; applyFilter(""); }
+});
 
 /* ── install tabs ────────────────────────────────── */
 const tabs = [...document.querySelectorAll('[role="tab"]')];
@@ -576,9 +810,15 @@ function selectTab(tab) {
 tabs.forEach((tab, i) => {
   tab.addEventListener("click", () => selectTab(tab));
   tab.addEventListener("keydown", e => {
-    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-    if (!step) return;
-    const next = tabs[(i + step + tabs.length) % tabs.length];
+    let next;
+    if (e.key === "Home") next = tabs[0];
+    else if (e.key === "End") next = tabs[tabs.length - 1];
+    else {
+      const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      next = tabs[(i + step + tabs.length) % tabs.length];
+    }
+    e.preventDefault();
     selectTab(next);
     next.focus();
   });
@@ -600,9 +840,9 @@ for (const btn of document.querySelectorAll(".copy")) {
   });
 }
 
-/* ── hero: the draw ──────────────────────────────── */
+/* ── hero: the draw ────────────────────── */
 const shafts = document.getElementById("shafts");
-for (let i = 0; i < FLAT.length; i++) {
+for (let i = 0; i < ROWS.length; i++) {
   const s = document.createElement("div");
   s.className = "shaft";
   s.style.setProperty("--h", 30 + Math.round(33 * (1 + Math.sin(i * 1.1))) + "%");
@@ -618,17 +858,19 @@ const DRAWS = [
   ["four unrelated tests broke at once", "dispatching-parallel-agents"],
   ["the page looks like every other page", "design-ui"],
 ];
-/* self-check: every id the hero and the chain link to must be a real skill folder */
-const KNOWN = new Set(FLAT.map(([id]) => id));
-for (const id of [...DRAWS.map(d => d[1]), ...CHAIN.map(c => c[0])]) {
-  if (!KNOWN.has(id)) console.error(`Skillquiver: "${id}" is not one of the ${FLAT.length} skills — link would 404.`);
+/* self-check: every id the hero and the chain link to must be a real skill row */
+const KNOWN = new Set(IDS);
+const CHAIN_IDS = [...document.querySelectorAll(".chain .s")].map(a => a.textContent.trim());
+for (const id of [...DRAWS.map(d => d[1]), ...CHAIN_IDS]) {
+  if (!KNOWN.has(id)) console.error(`Skillquiver: "${id}" is not one of the ${ROWS.length} skills — link would 404.`);
 }
 
 const draw = document.getElementById("draw");
 const cond = draw.querySelector(".cond");
 const fires = draw.querySelector(".fires");
+const pause = document.getElementById("pause");
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-let n = 0, held = false;
+let n = 0, held = false, timer = null;
 
 /* hold the cycle while the reader is on it — otherwise the link moves under the cursor */
 draw.addEventListener("pointerenter", () => (held = true));
@@ -638,7 +880,7 @@ draw.addEventListener("focusout", () => (held = false));
 
 function paint(i) {
   const [c, skill] = DRAWS[i];
-  const idx = FLAT.findIndex(([id]) => id === skill);
+  const idx = IDS.indexOf(skill);
   BARS.forEach((b, k) => b.classList.toggle("lit", k === idx));
   cond.textContent = c;
   fires.textContent = skill;
@@ -646,8 +888,13 @@ function paint(i) {
 }
 paint(0);
 
-if (!still) {
-  setInterval(() => {
+/* WCAG 2.2.2: auto-updating content needs a way to stop it. Reduced-motion readers
+   start stopped and can opt in; everyone else can pause and it stays paused. */
+let paused = still;
+
+function start() {
+  if (timer || paused) return;
+  timer = setInterval(() => {
     if (held) return;
     draw.classList.add("swap");
     setTimeout(() => {
@@ -656,6 +903,22 @@ if (!still) {
     }, 320);
   }, 3800);
 }
+function stop() { clearInterval(timer); timer = null; }
+
+function setPaused(on) {
+  paused = on;
+  pause.textContent = on ? "play" : "pause";
+  pause.setAttribute("aria-pressed", String(on));
+  pause.setAttribute("aria-label", on ? "Play the rotating example" : "Pause the rotating example");
+  on ? stop() : start();
+}
+
+pause.addEventListener("click", () => setPaused(!paused));
+pause.hidden = false;
+setPaused(paused);
+
+/* nothing to animate behind a hidden tab */
+document.addEventListener("visibilitychange", () => (document.hidden ? stop() : start()));
 </script>
 </body>
 </html>
